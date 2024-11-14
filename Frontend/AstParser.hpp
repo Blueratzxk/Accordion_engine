@@ -122,6 +122,8 @@ public:
 
         auto limitCount = parseLimitCount(selectStmt["limitCount"]);
 
+        if(from == NULL)
+            this->astExceptionCollector->recordError("Unsupported query type!");
 
         return astAllocator->new_QuerySpecification("0",select,from,where,groupBy,NULL,NULL,NULL,"");
     }
