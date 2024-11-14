@@ -1,0 +1,8 @@
+nation,1,1
+supplier,1,1
+region,1,1
+part,1,1
+partsupp,1,1
+customer,1,1
+orders,1,4
+lineitem,1,4

@@ -1,0 +1,847 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+	<meta charset="utf-8">
+	<title>Cloud Admin | Dashboard</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+	<meta name="description" content="">
+	<meta name="author" content="">
+	<link rel="stylesheet" type="text/css" href="css/cloud-admin.css" >
+	<link rel="stylesheet" type="text/css"  href="css/themes/default.css" id="skin-switcher" >
+	<link rel="stylesheet" type="text/css"  href="css/responsive.css" >
+	<!-- STYLESHEETS --><!--[if lt IE 9]><script src="js/flot/excanvas.min.js"></script><script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script><script src="http://css3-mediaqueries-js.googlecode.com/svn/trunk/css3-mediaqueries.js"></script><![endif]-->
+	<link href="font-awesome/css/font-awesome.min.css" rel="stylesheet">
+	<!-- ANIMATE -->
+	<link rel="stylesheet" type="text/css" href="css/animatecss/animate.min.css" />
+	<!-- DATE RANGE PICKER -->
+	<link rel="stylesheet" type="text/css" href="js/bootstrap-daterangepicker/daterangepicker-bs3.css" />
+	<!-- TODO -->
+	<link rel="stylesheet" type="text/css" href="js/jquery-todo/css/styles.css" />
+	<!-- FULL CALENDAR -->
+	<link rel="stylesheet" type="text/css" href="js/fullcalendar/fullcalendar.min.css" />
+	<!-- GRITTER -->
+	<link rel="stylesheet" type="text/css" href="js/gritter/css/jquery.gritter.css" />
+	<!-- FONTS -->
+	<link href='http://fonts.useso.com/css?family=Open+Sans:300,400,600,700' rel='stylesheet' type='text/css'>
+</head>
+<body>
+	<!-- HEADER -->
+	<header class="navbar clearfix" id="header">
+		<div class="container">
+				<div class="navbar-brand">
+					<!-- COMPANY LOGO -->
+					<a href="index.html">
+						<img src="img/logo/logo.png" alt="Cloud Admin Logo" class="img-responsive" height="30" width="120">
+					</a>
+					<!-- /COMPANY LOGO -->
+					<!-- TEAM STATUS FOR MOBILE -->
+					<div class="visible-xs">
+						<a href="#" class="team-status-toggle switcher btn dropdown-toggle">
+							<i class="fa fa-users"></i>
+						</a>
+					</div>
+					<!-- /TEAM STATUS FOR MOBILE -->
+					<!-- SIDEBAR COLLAPSE -->
+					<div id="sidebar-collapse" class="sidebar-collapse btn">
+						<i class="fa fa-bars" 
+							data-icon1="fa fa-bars" 
+							data-icon2="fa fa-bars" ></i>
+					</div>
+					<!-- /SIDEBAR COLLAPSE -->
+				</div>
+				<!-- NAVBAR LEFT -->
+				<ul class="nav navbar-nav pull-left hidden-xs" id="navbar-left">
+					<li class="dropdown">
+						<a href="#" class="team-status-toggle dropdown-toggle tip-bottom" data-toggle="tooltip" title="Toggle Team View">
+							<i class="fa fa-users"></i>
+							<span class="name">Team Status</span>
+							<i class="fa fa-angle-down"></i>
+						</a>
+					</li>
+					<li class="dropdown">
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown">
+							<i class="fa fa-cog"></i>
+							<span class="name">Skins</span>
+							<i class="fa fa-angle-down"></i>
+						</a>
+						<ul class="dropdown-menu skins">
+							<li class="dropdown-title">
+								<span><i class="fa fa-leaf"></i> Theme Skins</span>
+							</li>
+							<li><a href="#" data-skin="default">Subtle (default)</a></li>
+							<li><a href="#" data-skin="night">Night</a></li>
+							<li><a href="#" data-skin="earth">Earth</a></li>
+							<li><a href="#" data-skin="utopia">Utopia</a></li>
+							<li><a href="#" data-skin="nature">Nature</a></li>
+							<li><a href="#" data-skin="graphite">Graphite</a></li>
+						 </ul>
+					</li>
+				</ul>
+				<!-- /NAVBAR LEFT -->
+				<!-- BEGIN TOP NAVIGATION MENU -->					
+				<ul class="nav navbar-nav pull-right">
+					<!-- BEGIN NOTIFICATION DROPDOWN -->	
+					<li class="dropdown" id="header-notification">
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown">
+							<i class="fa fa-bell"></i>
+							<span class="badge">7</span>						
+						</a>
+						<ul class="dropdown-menu notification">
+							<li class="dropdown-title">
+								<span><i class="fa fa-bell"></i> 7 Notifications</span>
+							</li>
+							<li>
+								<a href="#">
+									<span class="label label-success"><i class="fa fa-user"></i></span>
+									<span class="body">
+										<span class="message">5 users online. </span>
+										<span class="time">
+											<i class="fa fa-clock-o"></i>
+											<span>Just now</span>
+										</span>
+									</span>
+								</a>
+							</li>
+							<li>
+								<a href="#">
+									<span class="label label-primary"><i class="fa fa-comment"></i></span>
+									<span class="body">
+										<span class="message">Martin commented.</span>
+										<span class="time">
+											<i class="fa fa-clock-o"></i>
+											<span>19 mins</span>
+										</span>
+									</span>
+								</a>
+							</li>
+							<li>
+								<a href="#">
+									<span class="label label-warning"><i class="fa fa-lock"></i></span>
+									<span class="body">
+										<span class="message">DW1 server locked.</span>
+										<span class="time">
+											<i class="fa fa-clock-o"></i>
+											<span>32 mins</span>
+										</span>
+									</span>
+								</a>
+							</li>
+							<li>
+								<a href="#">
+									<span class="label label-info"><i class="fa fa-twitter"></i></span>
+									<span class="body">
+										<span class="message">Twitter connected.</span>
+										<span class="time">
+											<i class="fa fa-clock-o"></i>
+											<span>55 mins</span>
+										</span>
+									</span>
+								</a>
+							</li>
+							<li>
+								<a href="#">
+									<span class="label label-danger"><i class="fa fa-heart"></i></span>
+									<span class="body">
+										<span class="message">Jane liked. </span>
+										<span class="time">
+											<i class="fa fa-clock-o"></i>
+											<span>2 hrs</span>
+										</span>
+									</span>
+								</a>
+							</li>
+							<li>
+								<a href="#">
+									<span class="label label-warning"><i class="fa fa-exclamation-triangle"></i></span>
+									<span class="body">
+										<span class="message">Database overload.</span>
+										<span class="time">
+											<i class="fa fa-clock-o"></i>
+											<span>6 hrs</span>
+										</span>
+									</span>
+								</a>
+							</li>
+							<li class="footer">
+								<a href="#">See all notifications <i class="fa fa-arrow-circle-right"></i></a>
+							</li>
+						</ul>
+					</li>
+					<!-- END NOTIFICATION DROPDOWN -->
+					<!-- BEGIN INBOX DROPDOWN -->
+					<li class="dropdown" id="header-message">
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown">
+						<i class="fa fa-envelope"></i>
+						<span class="badge">3</span>
+						</a>
+						<ul class="dropdown-menu inbox">
+							<li class="dropdown-title">
+								<span><i class="fa fa-envelope-o"></i> 3 Messages</span>
+								<span class="compose pull-right tip-right" title="Compose message"><i class="fa fa-pencil-square-o"></i></span>
+							</li>
+							<li>
+								<a href="#">
+									<img src="img/avatars/avatar2.jpg" alt="" />
+									<span class="body">
+										<span class="from">Jane Doe</span>
+										<span class="message">
+										Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse mole ...
+										</span> 
+										<span class="time">
+											<i class="fa fa-clock-o"></i>
+											<span>Just Now</span>
+										</span>
+									</span>
+									 
+								</a>
+							</li>
+							<li>
+								<a href="#">
+									<img src="img/avatars/avatar1.jpg" alt="" />
+									<span class="body">
+										<span class="from">Vince Pelt</span>
+										<span class="message">
+										Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse mole ...
+										</span> 
+										<span class="time">
+											<i class="fa fa-clock-o"></i>
+											<span>15 min ago</span>
+										</span>
+									</span>
+									 
+								</a>
+							</li>
+							<li>
+								<a href="#">
+									<img src="img/avatars/avatar8.jpg" alt="" />
+									<span class="body">
+										<span class="from">Debby Doe</span>
+										<span class="message">
+										Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse mole ...
+										</span> 
+										<span class="time">
+											<i class="fa fa-clock-o"></i>
+											<span>2 hours ago</span>
+										</span>
+									</span>
+									 
+								</a>
+							</li>
+							<li class="footer">
+								<a href="#">See all messages <i class="fa fa-arrow-circle-right"></i></a>
+							</li>
+						</ul>
+					</li>
+					<!-- END INBOX DROPDOWN -->
+					<!-- BEGIN TODO DROPDOWN -->
+					<li class="dropdown" id="header-tasks">
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown">
+						<i class="fa fa-tasks"></i>
+						<span class="badge">3</span>
+						</a>
+						<ul class="dropdown-menu tasks">
+							<li class="dropdown-title">
+								<span><i class="fa fa-check"></i> 6 tasks in progress</span>
+							</li>
+							<li>
+								<a href="#">
+									<span class="header clearfix">
+										<span class="pull-left">Software Update</span>
+										<span class="pull-right">60%</span>
+									</span>
+									<div class="progress">
+									  <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: 60%;">
+										<span class="sr-only">60% Complete</span>
+									  </div>
+									</div>
+								</a>
+							</li>
+							<li>
+								<a href="#">
+									<span class="header clearfix">
+										<span class="pull-left">Software Update</span>
+										<span class="pull-right">25%</span>
+									</span>
+									<div class="progress">
+									  <div class="progress-bar progress-bar-info" role="progressbar" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100" style="width: 25%;">
+										<span class="sr-only">25% Complete</span>
+									  </div>
+									</div>
+								</a>
+							</li>
+							<li>
+								<a href="#">
+									<span class="header clearfix">
+										<span class="pull-left">Software Update</span>
+										<span class="pull-right">40%</span>
+									</span>
+									<div class="progress progress-striped">
+									  <div class="progress-bar progress-bar-warning" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width: 40%;">
+										<span class="sr-only">40% Complete</span>
+									  </div>
+									</div>
+								</a>
+							</li>
+							<li>
+								<a href="#">
+									<span class="header clearfix">
+										<span class="pull-left">Software Update</span>
+										<span class="pull-right">70%</span>
+									</span>
+									<div class="progress progress-striped active">
+									  <div class="progress-bar progress-bar-danger" role="progressbar" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100" style="width: 70%;">
+										<span class="sr-only">70% Complete</span>
+									  </div>
+									</div>
+								</a>
+							</li>
+							<li>
+								<a href="#">
+									<span class="header clearfix">
+										<span class="pull-left">Software Update</span>
+										<span class="pull-right">65%</span>
+									</span>
+									<div class="progress">
+									  <div class="progress-bar progress-bar-success" style="width: 35%">
+										<span class="sr-only">35% Complete (success)</span>
+									  </div>
+									  <div class="progress-bar progress-bar-warning" style="width: 20%">
+										<span class="sr-only">20% Complete (warning)</span>
+									  </div>
+									  <div class="progress-bar progress-bar-danger" style="width: 10%">
+										<span class="sr-only">10% Complete (danger)</span>
+									  </div>
+									</div>
+								</a>
+							</li>
+							<li class="footer">
+								<a href="#">See all tasks <i class="fa fa-arrow-circle-right"></i></a>
+							</li>
+						</ul>
+					</li>
+					<!-- END TODO DROPDOWN -->
+					<!-- BEGIN USER LOGIN DROPDOWN -->
+					<li class="dropdown user" id="header-user">
+					<!--
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown">
+							<img alt="" src="img/avatars/avatar3.jpg" />
+							<span class="username">John Doe</span>
+							<i class="fa fa-angle-down"></i>
+						</a>
+						-->
+						<ul class="dropdown-menu">
+							<li><a href="#"><i class="fa fa-user"></i> My Profile</a></li>
+							<li><a href="#"><i class="fa fa-cog"></i> Account Settings</a></li>
+							<li><a href="#"><i class="fa fa-eye"></i> Privacy Settings</a></li>
+							<li><a href="login.html"><i class="fa fa-power-off"></i> Log Out</a></li>
+						</ul>
+					</li>
+					<!-- END USER LOGIN DROPDOWN -->
+				</ul>
+				<!-- END TOP NAVIGATION MENU -->
+		</div>
+		<!-- TEAM STATUS -->
+		<div class="container team-status" id="team-status">
+		  <div id="scrollbar">
+			<div class="handle">
+			</div>
+		  </div>
+		  <div id="teamslider">
+			  <ul class="team-list">
+				<li class="current">
+				  <a href="javascript:void(0);">
+				  <span class="image">
+					  <img src="img/avatars/avatar3.jpg" alt="" />
+				  </span>
+				  <span class="title">
+					You
+				  </span>
+					<div class="progress">
+					  <div class="progress-bar progress-bar-success" style="width: 35%">
+						<span class="sr-only">35% Complete (success)</span>
+					  </div>
+					  <div class="progress-bar progress-bar-warning" style="width: 20%">
+						<span class="sr-only">20% Complete (warning)</span>
+					  </div>
+					  <div class="progress-bar progress-bar-danger" style="width: 10%">
+						<span class="sr-only">10% Complete (danger)</span>
+					  </div>
+					</div>
+					<span class="status">
+						<div class="field">
+							<span class="badge badge-green">6</span> completed
+							<span class="pull-right fa fa-check"></span>
+						</div>
+						<div class="field">
+							<span class="badge badge-orange">3</span> in-progress
+							<span class="pull-right fa fa-adjust"></span>
+						</div>
+						<div class="field">
+							<span class="badge badge-red">1</span> pending
+							<span class="pull-right fa fa-list-ul"></span>
+						</div>
+				    </span>
+				  </a>
+				</li>
+				<li>
+				  <a href="javascript:void(0);">
+				  <span class="image">
+					  <img src="img/avatars/avatar1.jpg" alt="" />
+				  </span>
+				  <span class="title">
+					Max Doe
+				  </span>
+					<div class="progress">
+					  <div class="progress-bar progress-bar-success" style="width: 15%">
+						<span class="sr-only">35% Complete (success)</span>
+					  </div>
+					  <div class="progress-bar progress-bar-warning" style="width: 40%">
+						<span class="sr-only">20% Complete (warning)</span>
+					  </div>
+					  <div class="progress-bar progress-bar-danger" style="width: 20%">
+						<span class="sr-only">10% Complete (danger)</span>
+					  </div>
+					</div>
+					<span class="status">
+						<div class="field">
+							<span class="badge badge-green">2</span> completed
+							<span class="pull-right fa fa-check"></span>
+						</div>
+						<div class="field">
+							<span class="badge badge-orange">8</span> in-progress
+							<span class="pull-right fa fa-adjust"></span>
+						</div>
+						<div class="field">
+							<span class="badge badge-red">4</span> pending
+							<span class="pull-right fa fa-list-ul"></span>
+						</div>
+				    </span>
+				  </a>
+				</li>
+				<li>
+				  <a href="javascript:void(0);">
+				  <span class="image">
+					  <img src="img/avatars/avatar2.jpg" alt="" />
+				  </span>
+				  <span class="title">
+					Jane Doe
+				  </span>
+					<div class="progress">
+					  <div class="progress-bar progress-bar-success" style="width: 65%">
+						<span class="sr-only">35% Complete (success)</span>
+					  </div>
+					  <div class="progress-bar progress-bar-warning" style="width: 10%">
+						<span class="sr-only">20% Complete (warning)</span>
+					  </div>
+					  <div class="progress-bar progress-bar-danger" style="width: 15%">
+						<span class="sr-only">10% Complete (danger)</span>
+					  </div>
+					</div>
+					<span class="status">
+						<div class="field">
+							<span class="badge badge-green">10</span> completed
+							<span class="pull-right fa fa-check"></span>
+						</div>
+						<div class="field">
+							<span class="badge badge-orange">3</span> in-progress
+							<span class="pull-right fa fa-adjust"></span>
+						</div>
+						<div class="field">
+							<span class="badge badge-red">4</span> pending
+							<span class="pull-right fa fa-list-ul"></span>
+						</div>
+				    </span>
+				  </a>
+				</li>
+				<li>
+				  <a href="javascript:void(0);">
+				  <span class="image">
+					  <img src="img/avatars/avatar4.jpg" alt="" />
+				  </span>
+				  <span class="title">
+					Ellie Doe
+				  </span>
+					<div class="progress">
+					  <div class="progress-bar progress-bar-success" style="width: 5%">
+						<span class="sr-only">35% Complete (success)</span>
+					  </div>
+					  <div class="progress-bar progress-bar-warning" style="width: 48%">
+						<span class="sr-only">20% Complete (warning)</span>
+					  </div>
+					  <div class="progress-bar progress-bar-danger" style="width: 27%">
+						<span class="sr-only">10% Complete (danger)</span>
+					  </div>
+					</div>
+					<span class="status">
+						<div class="field">
+							<span class="badge badge-green">1</span> completed
+							<span class="pull-right fa fa-check"></span>
+						</div>
+						<div class="field">
+							<span class="badge badge-orange">6</span> in-progress
+							<span class="pull-right fa fa-adjust"></span>
+						</div>
+						<div class="field">
+							<span class="badge badge-red">2</span> pending
+							<span class="pull-right fa fa-list-ul"></span>
+						</div>
+				    </span>
+				  </a>
+				</li>
+				<li>
+				  <a href="javascript:void(0);">
+				  <span class="image">
+					  <img src="img/avatars/avatar5.jpg" alt="" />
+				  </span>
+				  <span class="title">
+					Lisa Doe
+				  </span>
+					<div class="progress">
+					  <div class="progress-bar progress-bar-success" style="width: 21%">
+						<span class="sr-only">35% Complete (success)</span>
+					  </div>
+					  <div class="progress-bar progress-bar-warning" style="width: 20%">
+						<span class="sr-only">20% Complete (warning)</span>
+					  </div>
+					  <div class="progress-bar progress-bar-danger" style="width: 40%">
+						<span class="sr-only">10% Complete (danger)</span>
+					  </div>
+					</div>
+					<span class="status">
+						<div class="field">
+							<span class="badge badge-green">4</span> completed
+							<span class="pull-right fa fa-check"></span>
+						</div>
+						<div class="field">
+							<span class="badge badge-orange">5</span> in-progress
+							<span class="pull-right fa fa-adjust"></span>
+						</div>
+						<div class="field">
+							<span class="badge badge-red">9</span> pending
+							<span class="pull-right fa fa-list-ul"></span>
+						</div>
+				    </span>
+				  </a>
+				</li>
+				<li>
+				  <a href="javascript:void(0);">
+				  <span class="image">
+					  <img src="img/avatars/avatar6.jpg" alt="" />
+				  </span>
+				  <span class="title">
+					Kelly Doe
+				  </span>
+					<div class="progress">
+					  <div class="progress-bar progress-bar-success" style="width: 45%">
+						<span class="sr-only">35% Complete (success)</span>
+					  </div>
+					  <div class="progress-bar progress-bar-warning" style="width: 21%">
+						<span class="sr-only">20% Complete (warning)</span>
+					  </div>
+					  <div class="progress-bar progress-bar-danger" style="width: 10%">
+						<span class="sr-only">10% Complete (danger)</span>
+					  </div>
+					</div>
+					<span class="status">
+						<div class="field">
+							<span class="badge badge-green">6</span> completed
+							<span class="pull-right fa fa-check"></span>
+						</div>
+						<div class="field">
+							<span class="badge badge-orange">3</span> in-progress
+							<span class="pull-right fa fa-adjust"></span>
+						</div>
+						<div class="field">
+							<span class="badge badge-red">1</span> pending
+							<span class="pull-right fa fa-list-ul"></span>
+						</div>
+				    </span>
+				  </a>
+				</li>
+				<li>
+				  <a href="javascript:void(0);">
+				  <span class="image">
+					  <img src="img/avatars/avatar7.jpg" alt="" />
+				  </span>
+				  <span class="title">
+					Jessy Doe
+				  </span>
+					<div class="progress">
+					  <div class="progress-bar progress-bar-success" style="width: 7%">
+						<span class="sr-only">35% Complete (success)</span>
+					  </div>
+					  <div class="progress-bar progress-bar-warning" style="width: 30%">
+						<span class="sr-only">20% Complete (warning)</span>
+					  </div>
+					  <div class="progress-bar progress-bar-danger" style="width: 10%">
+						<span class="sr-only">10% Complete (danger)</span>
+					  </div>
+					</div>
+					<span class="status">
+						<div class="field">
+							<span class="badge badge-green">1</span> completed
+							<span class="pull-right fa fa-check"></span>
+						</div>
+						<div class="field">
+							<span class="badge badge-orange">6</span> in-progress
+							<span class="pull-right fa fa-adjust"></span>
+						</div>
+						<div class="field">
+							<span class="badge badge-red">2</span> pending
+							<span class="pull-right fa fa-list-ul"></span>
+						</div>
+				    </span>
+				  </a>
+				</li>
+				<li>
+				  <a href="javascript:void(0);">
+				  <span class="image">
+					  <img src="img/avatars/avatar8.jpg" alt="" />
+				  </span>
+				  <span class="title">
+					Debby Doe
+				  </span>
+					<div class="progress">
+					  <div class="progress-bar progress-bar-success" style="width: 70%">
+						<span class="sr-only">35% Complete (success)</span>
+					  </div>
+					  <div class="progress-bar progress-bar-warning" style="width: 20%">
+						<span class="sr-only">20% Complete (warning)</span>
+					  </div>
+					  <div class="progress-bar progress-bar-danger" style="width: 5%">
+						<span class="sr-only">10% Complete (danger)</span>
+					  </div>
+					</div>
+					<span class="status">
+						<div class="field">
+							<span class="badge badge-green">13</span> completed
+							<span class="pull-right fa fa-check"></span>
+						</div>
+						<div class="field">
+							<span class="badge badge-orange">7</span> in-progress
+							<span class="pull-right fa fa-adjust"></span>
+						</div>
+						<div class="field">
+							<span class="badge badge-red">1</span> pending
+							<span class="pull-right fa fa-list-ul"></span>
+						</div>
+				    </span>
+				  </a>
+				</li>
+			  </ul>
+			</div>
+		  </div>
+		<!-- /TEAM STATUS -->
+	</header>
+	<!--/HEADER -->
+	<div class="copyrights">Collect </div>
+	<!-- PAGE -->
+	<section id="page">
+				<!-- SIDEBAR -->
+				
+								<div class="panel panel-default">
+									<div class="panel-body">
+										<table  class="table table-striped table-bordered table-hover">
+										 <thead id="resultTableHead">
+										
+										 </thead>
+										 <tbody id="resultTableBody">
+											
+										 </tbody>
+									</table>
+									</div>
+								</div>
+						
+						<!-- /CALENDAR & CHAT -->
+						<div class="footer-tools">
+							<span class="go-top">
+								<i class="fa fa-chevron-up"></i> Top
+							</span>
+						</div>
+					</div><!-- /CONTENT-->
+				</div>
+			</div>
+		</div>
+	</section>
+	<!--/PAGE -->
+	<!-- JAVASCRIPTS -->
+	<!-- Placed at the end of the document so the pages load faster -->
+	<!-- JQUERY -->
+	<script src="js/jquery/jquery-2.0.3.min.js"></script>
+	<!-- JQUERY UI-->
+	<script src="js/jquery-ui-1.10.3.custom/js/jquery-ui-1.10.3.custom.min.js"></script>
+	<!-- BOOTSTRAP -->
+	<script src="bootstrap-dist/js/bootstrap.min.js"></script>
+	
+		
+	<!-- DATE RANGE PICKER -->
+	<script src="js/bootstrap-daterangepicker/moment.min.js"></script>
+	
+	<script src="js/bootstrap-daterangepicker/daterangepicker.min.js"></script>
+	<!-- SLIMSCROLL -->
+	<script type="text/javascript" src="js/jQuery-slimScroll-1.3.0/jquery.slimscroll.min.js"></script>
+	<!-- SLIMSCROLL -->
+	<script type="text/javascript" src="js/jQuery-slimScroll-1.3.0/jquery.slimscroll.min.js"></script><script type="text/javascript" src="js/jQuery-slimScroll-1.3.0/slimScrollHorizontal.min.js"></script>
+	<!-- BLOCK UI -->
+	<script type="text/javascript" src="js/jQuery-BlockUI/jquery.blockUI.min.js"></script>
+	<!-- SPARKLINES -->
+	<script type="text/javascript" src="js/sparklines/jquery.sparkline.min.js"></script>
+	<!-- EASY PIE CHART -->
+	<script src="js/jquery-easing/jquery.easing.min.js"></script>
+	<script type="text/javascript" src="js/easypiechart/jquery.easypiechart.min.js"></script>
+	<!-- FLOT CHARTS -->
+	<script src="js/flot/jquery.flot.min.js"></script>
+	<script src="js/flot/jquery.flot.time.min.js"></script>
+    <script src="js/flot/jquery.flot.selection.min.js"></script>
+	<script src="js/flot/jquery.flot.resize.min.js"></script>
+    <script src="js/flot/jquery.flot.pie.min.js"></script>
+    <script src="js/flot/jquery.flot.stack.min.js"></script>
+    <script src="js/flot/jquery.flot.crosshair.min.js"></script>
+	<!-- TODO -->
+	<script type="text/javascript" src="js/jquery-todo/js/paddystodolist.js"></script>
+	<!-- TIMEAGO -->
+	<script type="text/javascript" src="js/timeago/jquery.timeago.min.js"></script>
+	<!-- FULL CALENDAR -->
+	<script type="text/javascript" src="js/fullcalendar/fullcalendar.min.js"></script>
+	<!-- COOKIE -->
+	<script type="text/javascript" src="js/jQuery-Cookie/jquery.cookie.min.js"></script>
+	<!-- GRITTER -->
+	<script type="text/javascript" src="js/gritter/js/jquery.gritter.min.js"></script>
+	<!-- CUSTOM SCRIPT -->
+	<script src="js/script.js"></script>
+	<script>
+	
+var serverIp = '192.168.226.129:9080'
+	var queryId = getQueryIdByWindowPara();
+	
+	
+	function resolveData(data){
+	
+		resolveHeader(data);
+		
+	
+	}
+	
+	function resolveRow(data,index)
+	{
+		rowString = data[index];
+		var rows = rowString.split('|')
+		
+		var $tr=$("<tr></tr>");
+		
+		for(var i = 0 ; i < rows.length - 1 ; i++){
+			var $td=$('<td class="hidden-xs">'+rows[i]+'</td>');
+			$tr.append($td);
+		}
+		
+		$("#resultTableBody").append($tr);
+		
+	
+	}
+	
+	function resolveRows(array){
+	
+		var index = 2;
+		for(;index < array.length ; index++)
+		{
+			resolveRow(array,index);
+		}
+		
+	}
+	
+	function resolveHeader(data){
+	
+		var array = data.split("\n");
+		console.log(array);
+		
+		columns = array[0];
+		types = array[1];
+		
+		
+		var $tr=$("<tr></tr>");
+		var $trForTypes=$("<tr></tr>");
+		
+		var cols = columns.split('|')
+		var ts = types.split('|')
+		
+		for(var i = 0 ; i < cols.length - 1 ; i++){
+			var $td=$('<th class="hidden-xs">'+cols[i]+'</th>');
+			$tr.append($td);
+		}	
+		$("#resultTableHead").append($tr);
+		
+		for(var i = 0 ; i < ts.length - 1 ; i++){
+			var $td=$('<th class="hidden-xs">'+ts[i]+'</th>');
+			$trForTypes.append($td);
+		}	
+
+		$("#resultTableHead").append($trForTypes);
+		
+		resolveRows(array);
+	
+	}
+	
+	function getQueryIdByWindowPara()
+	{
+		var url = location.search; //获取url中"?"符后的字串
+		if (url.indexOf("?") != -1) { //判断是否有参数
+			var str = url.substr(1); //从第一个字符开始 因为第0个是?号 获取所有除问号的所有符串
+			strs = str.split("="); //用等号进行分隔 （因为知道只有一个参数 所以直接用等号进分隔 如果有多个参数 要用&号分隔 再用等号进行分隔）
+			return strs[1];   //直接弹出第一个参数 （如果有多个参数 还要进行循环的）
+		}
+	}
+	
+	
+	
+	
+	$.ajax({
+	
+	
+			
+            // 设置ajax的参数
+            // 请求数据的url地址：接口地址
+            url: 'http://'+serverIp+'/v1/query/getQueryResultExtern/'+queryId,  
+            // 请求数据方式：get  post
+            type: 'get',    
+           
+            // data:发送给接口的数据
+            data:{},
+            // 请求成功之后要执行的回调函数
+            success: function (dat) {
+                //dat:服务端返回的数据
+                console.log(dat)
+				resolveData(dat)
+			
+		
+            },
+            // 请求失败
+            error: function (e) {
+                //alert('请求失败')
+            }
+        });
+		
+		
+		function createTable1(){
+			//创建表格
+			
+			var $table=$("<table></table>");
+			var $tr=$("<tr></tr>");
+			var $td=$("<td>Hello,我是td</td>");
+			$tr.append($td);
+			$table.append($tr);
+			$("#resultTableBody").append('<tr><td><a href="#">Fortune 500</a></td><td class="hidden-xs">Gold Level Virtual Server</td><td>$ 2310.23</td><td><span class="label label-success label-sm">Paid</span></td></tr>');
+		
+		$("#resultTableHead").append('<tr><th><i class="fa fa-user"></i> Client</th><th class="hidden-xs"><i class="fa fa-quote-left"></i> Sales Item</th><th><i class="fa fa-dollar"></i> Amount</th><th><i class="fa fa-bars"></i> Status</th></tr>');
+		}
+
+		//createTable1();
+		
+	</script>
+	<!-- /JAVASCRIPTS -->
+<style>
+.copyrights{text-indent:-9999px;height:0;line-height:0;font-size:0;overflow:hidden;}
+</style>
+
+</body>
+</html>

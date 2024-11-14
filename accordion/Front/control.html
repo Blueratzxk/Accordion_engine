@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+	<meta charset="utf-8">
+	<title>Cloud Admin | Dashboard</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+	<meta name="description" content="">
+	<meta name="author" content="">
+	<link rel="stylesheet" type="text/css" href="css/cloud-admin.css" >
+	<link rel="stylesheet" type="text/css"  href="css/themes/default.css" id="skin-switcher" >
+	<link rel="stylesheet" type="text/css"  href="css/responsive.css" >
+	<!-- STYLESHEETS --><!--[if lt IE 9]><script src="js/flot/excanvas.min.js"></script><script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script><script src="http://css3-mediaqueries-js.googlecode.com/svn/trunk/css3-mediaqueries.js"></script><![endif]-->
+	<link href="font-awesome/css/font-awesome.min.css" rel="stylesheet">
+	<!-- ANIMATE -->
+	<link rel="stylesheet" type="text/css" href="css/animatecss/animate.min.css" />
+	<!-- DATE RANGE PICKER -->
+	<link rel="stylesheet" type="text/css" href="js/bootstrap-daterangepicker/daterangepicker-bs3.css" />
+	<!-- TODO -->
+	<link rel="stylesheet" type="text/css" href="js/jquery-todo/css/styles.css" />
+	<!-- FULL CALENDAR -->
+	<link rel="stylesheet" type="text/css" href="js/fullcalendar/fullcalendar.min.css" />
+	<!-- GRITTER -->
+	<link rel="stylesheet" type="text/css" href="js/gritter/css/jquery.gritter.css" />
+	<!-- FONTS -->
+	<link href='http://fonts.useso.com/css?family=Open+Sans:300,400,600,700' rel='stylesheet' type='text/css'>
+	
+	<script src="http://d3js.org/d3.v3.min.js"></script>
+</head>
+<body>
+
+	<!-- HEADER -->
+	<header class="navbar clearfix" id="header">
+		<div class="container">
+				<div class="navbar-brand">
+					<!-- COMPANY LOGO -->
+					<a href="index.html">
+						<img src="img/logo/logo.png" alt="Cloud Admin Logo" class="img-responsive" height="30" width="120">
+					</a>
+					<!-- /COMPANY LOGO -->
+					<!-- TEAM STATUS FOR MOBILE -->
+					<div class="visible-xs">
+						<a href="#" class="team-status-toggle switcher btn dropdown-toggle">
+							<i class="fa fa-users"></i>
+						</a>
+					</div>
+					<!-- /TEAM STATUS FOR MOBILE -->
+					<!-- SIDEBAR COLLAPSE -->
+					<div id="sidebar-collapse" class="sidebar-collapse btn">
+						<i class="fa fa-bars" 
+							data-icon1="fa fa-bars" 
+							data-icon2="fa fa-bars" ></i>
+					</div>
+					<!-- /SIDEBAR COLLAPSE -->
+				</div>
+				<!-- NAVBAR LEFT -->
+				<ul class="nav navbar-nav pull-left hidden-xs" id="navbar-left">
+					<li class="dropdown">
+						<a href="#" class="team-status-toggle dropdown-toggle tip-bottom" data-toggle="tooltip" title="Toggle Team View">
+							<i class="fa fa-users"></i>
+							<span class="name">Team Status</span>
+							<i class="fa fa-angle-down"></i>
+						</a>
+					</li>
+					<li class="dropdown">
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown">
+							<i class="fa fa-cog"></i>
+							<span class="name">Skins</span>
+							<i class="fa fa-angle-down"></i>
+						</a>
+						<ul class="dropdown-menu skins">
+							<li class="dropdown-title">
+								<span><i class="fa fa-leaf"></i> Theme Skins</span>
+							</li>
+							<li><a href="#" data-skin="default">Subtle (default)</a></li>
+							<li><a href="#" data-skin="night">Night</a></li>
+							<li><a href="#" data-skin="earth">Earth</a></li>
+							<li><a href="#" data-skin="utopia">Utopia</a></li>
+							<li><a href="#" data-skin="nature">Nature</a></li>
+							<li><a href="#" data-skin="graphite">Graphite</a></li>
+						 </ul>
+					</li>
+				</ul>
+				<!-- /NAVBAR LEFT -->
+				<!-- BEGIN TOP NAVIGATION MENU -->					
+				<ul class="nav navbar-nav pull-right">
+					<!-- BEGIN NOTIFICATION DROPDOWN -->	
+					<li class="dropdown" id="header-notification">
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown">
+							<i class="fa fa-bell"></i>
+							<span class="badge">7</span>						
+						</a>
+						<ul class="dropdown-menu notification">
+							<li class="dropdown-title">
+								<span><i class="fa fa-bell"></i> 7 Notifications</span>
+							</li>
+							<li>
+								<a href="#">
+									<span class="label label-success"><i class="fa fa-user"></i></span>
+									<span class="body">
+										<span class="message">5 users online. </span>
+										<span class="time">
+											<i class="fa fa-clock-o"></i>
+											<span>Just now</span>
+										</span>
+									</span>
+								</a>
+							</li>
+							<li>
+								<a href="#">
+									<span class="label label-primary"><i class="fa fa-comment"></i></span>
+									<span class="body">
+										<span class="message">Martin commented.</span>
+										<span class="time">
+											<i class="fa fa-clock-o"></i>
+											<span>19 mins</span>
+										</span>
+									</span>
+								</a>
+							</li>
+							<li>
+								<a href="#">
+									<span class="label label-warning"><i class="fa fa-lock"></i></span>
+									<span class="body">
+										<span class="message">DW1 server locked.</span>
+										<span class="time">
+											<i class="fa fa-clock-o"></i>
+											<span>32 mins</span>
+										</span>
+									</span>
+								</a>
+							</li>
+							<li>
+								<a href="#">
+									<span class="label label-info"><i class="fa fa-twitter"></i></span>
+									<span class="body">
+										<span class="message">Twitter connected.</span>
+										<span class="time">
+											<i class="fa fa-clock-o"></i>
+											<span>55 mins</span>
+										</span>
+									</span>
+								</a>
+							</li>
+							<li>
+								<a href="#">
+									<span class="label label-danger"><i class="fa fa-heart"></i></span>
+									<span class="body">
+										<span class="message">Jane liked. </span>
+										<span class="time">
+											<i class="fa fa-clock-o"></i>
+											<span>2 hrs</span>
+										</span>
+									</span>
+								</a>
+							</li>
+							<li>
+								<a href="#">
+									<span class="label label-warning"><i class="fa fa-exclamation-triangle"></i></span>
+									<span class="body">
+										<span class="message">Database overload.</span>
+										<span class="time">
+											<i class="fa fa-clock-o"></i>
+											<span>6 hrs</span>
+										</span>
+									</span>
+								</a>
+							</li>
+							<li class="footer">
+								<a href="#">See all notifications <i class="fa fa-arrow-circle-right"></i></a>
+							</li>
+						</ul>
+					</li>
+					<!-- END NOTIFICATION DROPDOWN -->
+					<!-- BEGIN INBOX DROPDOWN -->
+					<li class="dropdown" id="header-message">
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown">
+						<i class="fa fa-envelope"></i>
+						<span class="badge">3</span>
+						</a>
+						<ul class="dropdown-menu inbox">
+							<li class="dropdown-title">
+								<span><i class="fa fa-envelope-o"></i> 3 Messages</span>
+								<span class="compose pull-right tip-right" title="Compose message"><i class="fa fa-pencil-square-o"></i></span>
+							</li>
+							<li>
+								<a href="#">
+									<img src="img/avatars/avatar2.jpg" alt="" />
+									<span class="body">
+										<span class="from">Jane Doe</span>
+										<span class="message">
+										Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse mole ...
+										</span> 
+										<span class="time">
+											<i class="fa fa-clock-o"></i>
+											<span>Just Now</span>
+										</span>
+									</span>
+									 
+								</a>
+							</li>
+							<li>
+								<a href="#">
+									<img src="img/avatars/avatar1.jpg" alt="" />
+									<span class="body">
+										<span class="from">Vince Pelt</span>
+										<span class="message">
+										Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse mole ...
+										</span> 
+										<span class="time">
+											<i class="fa fa-clock-o"></i>
+											<span>15 min ago</span>
+										</span>
+									</span>
+									 
+								</a>
+							</li>
+							<li>
+								<a href="#">
+									<img src="img/avatars/avatar8.jpg" alt="" />
+									<span class="body">
+										<span class="from">Debby Doe</span>
+										<span class="message">
+										Duis autem vel eum iriure dolor in hendrerit in vulputate velit esse mole ...
+										</span> 
+										<span class="time">
+											<i class="fa fa-clock-o"></i>
+											<span>2 hours ago</span>
+										</span>
+									</span>
+									 
+								</a>
+							</li>
+							<li class="footer">
+								<a href="#">See all messages <i class="fa fa-arrow-circle-right"></i></a>
+							</li>
+						</ul>
+					</li>
+					<!-- END INBOX DROPDOWN -->
+					<!-- BEGIN TODO DROPDOWN -->
+					<li class="dropdown" id="header-tasks">
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown">
+						<i class="fa fa-tasks"></i>
+						<span class="badge">3</span>
+						</a>
+						<ul class="dropdown-menu tasks">
+							<li class="dropdown-title">
+								<span><i class="fa fa-check"></i> 6 tasks in progress</span>
+							</li>
+							<li>
+								<a href="#">
+									<span class="header clearfix">
+										<span class="pull-left">Software Update</span>
+										<span class="pull-right">60%</span>
+									</span>
+									<div class="progress">
+									  <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: 60%;">
+										<span class="sr-only">60% Complete</span>
+									  </div>
+									</div>
+								</a>
+							</li>
+							<li>
+								<a href="#">
+									<span class="header clearfix">
+										<span class="pull-left">Software Update</span>
+										<span class="pull-right">25%</span>
+									</span>
+									
+									<div class="progress">
+									
+									  <div class="progress-bar progress-bar-info" role="progressbar" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100" style="width: 25%;">
+										<span class="sr-only">25% Complete</span>
+									  </div>
+									</div>
+								</a>
+							</li>
+							<li>
+								<a href="#">
+									<span class="header clearfix">
+										<span class="pull-left">Software Update</span>
+										<span class="pull-right">40%</span>
+									</span>
+									<div class="progress progress-striped">
+									  <div class="progress-bar progress-bar-warning" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width: 40%;">
+										<span class="sr-only">40% Complete</span>
+									  </div>
+									</div>
+								</a>
+							</li>
+							<li>
+								<a href="#">
+									<span class="header clearfix">
+										<span class="pull-left">Software Update</span>
+										<span class="pull-right">70%</span>
+									</span>
+									<div class="progress progress-striped active">
+									  <div class="progress-bar progress-bar-danger" role="progressbar" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100" style="width: 70%;">
+										<span class="sr-only">70% Complete</span>
+									  </div>
+									</div>
+								</a>
+							</li>
+							<li>
+								<a href="#">
+									<span class="header clearfix">
+										<span class="pull-left">Software Update</span>
+										<span class="pull-right">65%</span>
+									</span>
+									<div class="progress">
+									 
+									</div>
+								</a>
+							</li>
+							<li class="footer">
+								<a href="#">See all tasks <i class="fa fa-arrow-circle-right"></i></a>
+							</li>
+						</ul>
+					</li>
+					<!-- END TODO DROPDOWN -->
+					<!-- BEGIN USER LOGIN DROPDOWN -->
+					<li class="dropdown user" id="header-user">
+					<!--
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown">
+							<img alt="" src="img/avatars/avatar3.jpg" />
+							<span class="username">John Doe</span>
+							<i class="fa fa-angle-down"></i>
+						</a>
+						-->
+						<ul class="dropdown-menu">
+							
+						</ul>
+					</li>
+					<!-- END USER LOGIN DROPDOWN -->
+				</ul>
+				<!-- END TOP NAVIGATION MENU -->
+		</div>
+		
+	</header>
+	<!--/HEADER -->
+	
+	<!--<div class="controlPanel">control panel</div>-->
+
+	<!-- PAGE -->
+	
+	<section id="page">
+	
+	
+	
+			
+			<div class="row">
+							<!-- CALENDAR -->
+							<div class="col-md-6">
+
+								<div class="tabbable header-tabs">
+								
+								<span class="header clearfix">
+							
+								<div id = "boxLeft" class="box"></div>
+								
+									
+								</span>
+							
+							</div>	
+								
+							</div>	
+							
+							
+						
+							
+							<div class="col-md-6">
+							
+							<!--<div style="resize:none;width:50%;float:left">
+								
+								</div>-->
+							<div style="width:100%; position:relative">
+							<label class="control-label" style="width:10%;font-size:120%;display: inline-block;">Assistant</label>
+							
+							<textarea id="assistant"class="form-control" style="resize:none;width:70%;margin:4px 1px;display: inline-block;cursor:default;" rows="6" readonly></textarea>
+							
+						    
+							<button style="resize:none;width:15%;margin:1px 1px;display: inline-block;position: absolute;top: 50%;transform: translate(5%, 20%);" onclick="getQueryBottlenecks()" >Get Hints</button>
+							
+							<input id="DOPFactor" value="1" min="1" max="20" type="number" style="width:6%;margin:1px 1px;display: inline-block;position: absolute;top: 50%;transform: translate(86%, -100%);" ></input>
+							
+							
+							</div>
+							 
+                                <button onclick="foldall()">Fold All</button>
+								
+								<div class="tabbable header-tabs" >
+								
+								<span id="queryList" class="header clearfix">
+								
+								
+								<!--
+								<div class="divStyle3" id="stage">
+
+								stage1
+							<input value="task:3"></input>
+							
+								<button class="btnAdjust">Add</button>
+								<button class="btnAdjust">Cancel</button>
+								
+								
+								
+								<div class="divStyle" id="task">
+								task1
+								<div class="divStyle2" id="pipeline">
+								<button class="btnAdjust">driver:3</button>
+								<button class="btnNode">tableScan</button><button class="btnNode"> project</button>
+								</div>
+								
+							
+								<div class="divStyle2" id="pipeline">
+								<button class="btnAdjust">driver:2</button>
+								<button class="btnNode">lookupJoin</button><button class="btnNode">aggregation(partial)</button>
+								</div>
+								
+								</div>
+								
+								
+								
+								
+								<div class="divStyle" id="task">
+								task2
+								<div class="divStyle2" id="pipeline">
+								<button class="btnAdjust">driver:3</button>
+								<button class="btnNode">tableScan</button><button class="btnNode"> project</button>
+								</div>
+								
+							
+								<div class="divStyle2" id="pipeline">
+								<button class="btnAdjust">driver:2</button>
+								<button class="btnNode">lookupJoin</button><button class="btnNode">aggregation(partial)</button>
+								</div>
+								
+								</div>
+								
+								
+								
+							
+								</div>
+								-->
+								
+								
+									
+								
+								
+								
+								
+								</span>
+				
+								</div>
+							</div>	
+							
+							
+							
+						
+							
+							
+							
+								
+			</div>					
+			
+			
+			
+			
+									</section>
+	<!--/PAGE -->
+	<!-- JAVASCRIPTS -->
+	<!-- Placed at the end of the document so the pages load faster -->
+	<!-- JQUERY -->
+	<script src="js/jquery/jquery-2.0.3.min.js"></script>
+	<!-- JQUERY UI-->
+	<script src="js/jquery-ui-1.10.3.custom/js/jquery-ui-1.10.3.custom.min.js"></script>
+	<!-- BOOTSTRAP -->
+	<script src="bootstrap-dist/js/bootstrap.min.js"></script>
+	
+		
+	<!-- DATE RANGE PICKER -->
+	<script src="js/bootstrap-daterangepicker/moment.min.js"></script>
+	
+	<script src="js/bootstrap-daterangepicker/daterangepicker.min.js"></script>
+	<!-- SLIMSCROLL -->
+	<script type="text/javascript" src="js/jQuery-slimScroll-1.3.0/jquery.slimscroll.min.js"></script>
+	<!-- SLIMSCROLL -->
+	<script type="text/javascript" src="js/jQuery-slimScroll-1.3.0/jquery.slimscroll.min.js"></script><script type="text/javascript" src="js/jQuery-slimScroll-1.3.0/slimScrollHorizontal.min.js"></script>
+	<!-- BLOCK UI -->
+	<script type="text/javascript" src="js/jQuery-BlockUI/jquery.blockUI.min.js"></script>
+	<!-- SPARKLINES -->
+	<script type="text/javascript" src="js/sparklines/jquery.sparkline.min.js"></script>
+	<!-- EASY PIE CHART -->
+	<script src="js/jquery-easing/jquery.easing.min.js"></script>
+	<script type="text/javascript" src="js/easypiechart/jquery.easypiechart.min.js"></script>
+	<!-- FLOT CHARTS -->
+	<script src="js/flot/jquery.flot.min.js"></script>
+	<script src="js/flot/jquery.flot.time.min.js"></script>
+    <script src="js/flot/jquery.flot.selection.min.js"></script>
+	<script src="js/flot/jquery.flot.resize.min.js"></script>
+    <script src="js/flot/jquery.flot.pie.min.js"></script>
+    <script src="js/flot/jquery.flot.stack.min.js"></script>
+    <script src="js/flot/jquery.flot.crosshair.min.js"></script>
+	<!-- TODO -->
+	<script type="text/javascript" src="js/jquery-todo/js/paddystodolist.js"></script>
+	<!-- TIMEAGO -->
+	<script type="text/javascript" src="js/timeago/jquery.timeago.min.js"></script>
+	<!-- FULL CALENDAR -->
+	<script type="text/javascript" src="js/fullcalendar/fullcalendar.min.js"></script>
+	<!-- COOKIE -->
+	<script type="text/javascript" src="js/jQuery-Cookie/jquery.cookie.min.js"></script>
+	<!-- GRITTER -->
+	<script type="text/javascript" src="js/gritter/js/jquery.gritter.min.js"></script>
+	<!-- CUSTOM SCRIPT -->
+	<script src="js/script.js"></script>
+	  
+	<script>
+	
+	
+var serverIp = '192.168.226.129:9080'
+	var queryId = getQueryIdByWindowPara();
+	
+	var treeDrawed = false;
+
+
+function drawTree(jsonStr){
+
+	if(treeDrawed)
+		return;
+
+ var width = 1000,height = 2500;
+ var cluster = d3.layout.tree().size([width - 400, height- 200]).separation(function(a,b){
+  return (a.parent==b.parent?1:1)/a.depth;
+  });
+ 
+       var diagonal = d3.svg.diagonal()
+            .projection(function (d) {
+                return [d.x, d.y];
+            });
+        var svg = d3.select("#boxLeft").append("svg")
+            .attr("width", width)
+            .attr("height", height)
+            .attr("transform", "translate(" + 60 + "," + 60 + ")");
+ 
+        //箭头
+        var marker =
+            svg.append("marker")
+                .attr("id", "resolved")
+                .attr("markerUnits", "strokeWidth")//设置为strokeWidth箭头会随着线的粗细发生变化
+                .attr("markerUnits", "userSpaceOnUse")
+                .attr("viewBox", "0 -5 10 10")//坐标系的区域
+                .attr("refX", 10)//箭头坐标
+                .attr("refY", 0)
+                .attr("markerWidth", 12)//标识的大小
+                .attr("markerHeight", 12)
+                .attr("orient", "auto")//绘制方向，可设定为：auto（自动确认方向）和 角度值
+                .attr("stroke-width", 2)//箭头宽度
+                .append("path")
+                .attr("d", "M0,-5L10,0L0,5")//箭头的路径
+                .attr('fill', '#000000');//箭头颜色
+ 
+ 
+        var root = {
+		name:"TaskOutput",
+		children:[
+			{
+				name:"LookUpProbe",
+				children:[
+					{name:"TableScan" ,value:100},
+					{
+				name:"HashBuilder",
+				children:[
+					{
+						name:"Project",
+						children:[
+							{name:"TableScan",value:100},
+            				
+						]
+					},
+					{name:"TableScan",value:100},
+        			
+				]
+			}
+				]
+			}
+			
+		]};
+		
+		
+		//var jsonStr='{"children":[{"children":[{"children":[{"children":[{"children":[{"children":[{"children":[{"children":[{"children":[{"name":"TableScanNode"}],"name":"FilterNode"}],"name":"ProjectNode"}],"name":"ExchangeNode"}],"name":"LocalExchangeNode"}],"name":"PartialAggregationNode"}],"name":"LocalExchangeNode"}],"name":"ExchangeNode"}],"name":"FinalAggregationNode"}],"name":"TaskOutputNode"}'
+
+		console.log(jsonStr);
+		var json2map=JSON.parse(jsonStr);
+		console.log(json2map);
+ 
+        var i = 0;
+        var nodes = cluster.nodes(json2map).reverse();
+        nodes.forEach(function (d) { d.y = d.depth * 80; if(d.x!=d.x){d.x = 250;}});
+ 
+        var links = cluster.links(nodes);
+ 
+ 
+ 
+ 
+      
+ var linkEnter = svg.selectAll("path.link")
+            .data(links);
+			
+			
+ 
+ 
+        linkEnter.enter().append("path")
+            .attr("class", "link")
+            .attr("d", diagonal)
+            .attr("stroke", "white")
+       
+			
+            .attr("marker-mid","url(#resolved)")
+            .style("fill", "white")
+            .style("fill-opacity", 1);
+           
+ 
+        //为连线添加文字
+        linkEnter.enter().append('text')
+            .attr('x', 100)
+            .attr('y', 80)
+            .style('fill', 'green')
+            .style('font-size', '15px')
+            .style('font-weight', 'bold')
+            .append('textPath');
+ 
+ console.log(nodes);
+        var node = svg.selectAll(".node")
+            .data(nodes)
+            .enter()
+            .append("g")
+            .attr("class", "node")
+            .attr("transform", function (d) {
+			  
+                return "translate(" + (d.x) + "," + (d.y) + ")";
+            })
+ 
+ 
+        var colors=['fill:#FA8072','fill:#BDB76B','fill:#2E8B57','fill:#008080','fill:#1E90FF','fill:#BA55D3','fill:#A0522D','fill:#20B2AA','fill:#4B0082','fill:#FF69B4','fill:#BC8F8F'];
+        node.append("rect")
+            .attr("width", 100)
+            .attr("height", 50)
+            .attr("x", -100/2)
+            .attr("y", -1)
+			
+			//.attr("style", "fill:#00008B;")
+            .attr("style", function (d) {
+			
+			
+			    var paras = d.name.split("\n");
+				
+				var selectedColor = colors[0];
+				if(paras.length  == 2)
+                    selectColor = colors[paras[1]%colors.length];
+				else 
+				    selectColor = 'fill:#0';
+			
+			    return selectColor;
+				//if(d.name.indexOf('LocalExchange') !== -1)
+                // return "fill:#2990ca;";
+			//	else
+				//  return "fill:#00008B;";
+            })
+			
+            .attr("rx", 4);
+ 
+        node.append("text")
+            .attr("dx", function (d) {
+                return 0;
+            })
+            .attr("dy", 50/2+3)
+            .style("text-anchor", function (d) {
+                return "middle";
+            })
+            .style("fill", "#fff")
+			.style('font-weight', 'bold')
+            .text(function (d) { 
+			
+			var out = d.name.replace("Node","");
+			out = out.replace("TableScan","TS");
+			out = out.replace("PartialAggregation","PartialAgg");
+			out = out.replace("FinalAggregation","FinalAgg");
+			out = out.replace("LocalExchange","LocalExch");
+			
+			var paras = out.split("\n");
+			
+			var num = -1;
+			var re = out;
+			if(paras.length == 2){
+			    num = Number(paras[1]);   
+				re = paras[0]+' '+num;
+            }	
+  	
+			
+			return re; 
+			
+			});
+			
+		treeDrawed = true;
+ 
+     
+}
+		
+	
+	let queryId_stageDivs = {};
+	let stageId_taskDivs = {};
+	let taskId_pipelineDivs = {};
+	
+	var DOPFactor;
+	
+	function getQueryBottlenecks()
+	{    
+	
+	
+	DOPFactorOb = document.getElementById("DOPFactor");
+	DOPFactor = DOPFactorOb.value;
+	
+	if(DOPFactor == 1){
+   
+  
+	 $.ajax({
+            type:"GET",
+            url: 'http://'+serverIp+'/v1/query/getQueryBottleneckExtern/'+queryId,  
+         
+            success: function(data) {
+			
+			 let x = document.getElementById("assistant");
+                x.value = data;
+                   
+            }
+        });
+		
+	}
+	else{
+
+	 $.ajax({
+            type:"GET",
+            url: 'http://'+serverIp+'/v1/query/getQueryBottleneckStagesAndAnalyzeExterns/'+queryId+'/'+DOPFactor,  
+         
+            success: function(data) {
+			
+			 let x = document.getElementById("assistant");
+                x.value = data;
+                   
+            }
+        });
+	
+	}
+	  
+	}
+	
+	
+	function sendDecreaseTaskRequest(obj)
+	{    
+		var queryId = $(obj).attr("QID");
+		var stageId = $(obj).attr("SID");
+       
+	 
+//alert('http://192.168.226.135:9083/v1/query/addStageConcurrentExtern/'+queryId+'/'+stageId);
+	   
+	 $.ajax({
+            type:"GET",
+            url: 'http://'+serverIp+'/v1/query/decreaseStageParallelismExtern/'+queryId+'/'+stageId,  
+         
+            success: function(data) {
+                   if(data == "NO" || data=="NULL")
+					{
+					   document.getElementById(stageId+"_response").value="REJECT";
+					   document.getElementById(stageId+"_response").style.color="#FF0000";  
+					}
+					else if(data == "YES" ||data == "OK" )
+					{
+					   document.getElementById(stageId+"_response").value="ACCEPT";
+					   document.getElementById(stageId+"_response").style.color="#008000";
+					}
+            }
+        });
+	  
+	}
+	
+	function sendAdjustTaskRequest(obj)
+	{    
+		var queryId = $(obj).attr("QID");
+		var stageId = $(obj).attr("SID");
+       
+	 
+//alert('http://192.168.226.135:9083/v1/query/addStageConcurrentExtern/'+queryId+'/'+stageId);
+	   
+	 $.ajax({
+            type:"GET",
+            url: 'http://'+serverIp+'/v1/query/addStageConcurrentExtern/'+queryId+'/'+stageId,  
+         
+            success: function(data) {
+			
+                    if(data == "NO" || data=="NULL")
+					{
+					   document.getElementById(stageId+"_response").value="REJECT";
+					   document.getElementById(stageId+"_response").style.color="#FF0000";  
+					}
+					else if(data == "YES" ||data == "OK" )
+					{
+					   document.getElementById(stageId+"_response").value="ACCEPT";
+					   document.getElementById(stageId+"_response").style.color="#008000";
+					}
+					
+            }
+        });
+	  
+	}
+	
+	function sendAdjustTaskGroupRequest(obj)
+	{    
+		var queryId = $(obj).attr("QID");
+		var stageId = $(obj).attr("SID");
+        var radixId = queryId+"_"+stageId+"_"+"radix";
+		var taskNum = document.getElementById(radixId).value;
+		
+		
+	 
+	
+//alert('http://192.168.226.135:9083/v1/query/addStageConcurrentExtern/'+queryId+'/'+stageId);
+	   
+	 $.ajax({
+            type:"GET",
+            url: 'http://'+serverIp+'/v1/query/addStageTaskGroupConcurrentExtern/'+queryId+'/'+stageId+'/'+taskNum,  
+         
+            success: function(data) {
+                    
+					 if(data == "NO" || data=="NULL")
+					{
+					   document.getElementById(stageId+"_response").value="REJECT";
+					   document.getElementById(stageId+"_response").style.color="#FF0000";  
+					}
+					else if(data == "YES" ||data == "OK" )
+					{
+					   document.getElementById(stageId+"_response").value="ACCEPT";
+					   document.getElementById(stageId+"_response").style.color="#008000";
+					}
+					
+            }
+        });
+	  
+	}
+	
+	
+	function sendAdjustPipelineRequest(obj)
+	{    
+		var queryId = $(obj).attr("QID");
+		var stageId = $(obj).attr("SID");
+		var pipelineId = $(obj).attr("PID");
+		
+		
+		$.ajax({
+            type:"GET",
+            url: 'http://'+serverIp+'/v1/query/addStageAllTaskPipelineConcurrentExtern/'+queryId+'/'+stageId+'/'+pipelineId,  
+         
+            success: function(data) {
+                    if(data == "NO" || data=="NULL")
+					{
+					   document.getElementById(stageId+"_response").value="REJECT";
+					   document.getElementById(stageId+"_response").style.color="#FF0000";  
+					}
+					else if(data == "YES" ||data == "OK" )
+					{
+					   document.getElementById(stageId+"_response").value="ACCEPT";
+					   document.getElementById(stageId+"_response").style.color="#008000";
+					}
+            }
+        });
+		
+	}
+	
+	function sendSubPipelineRequest(obj)
+	{    
+		var queryId = $(obj).attr("QID");
+		var stageId = $(obj).attr("SID");
+		var pipelineId = $(obj).attr("PID");
+		
+		
+		$.ajax({
+            type:"GET",
+            url: 'http://'+serverIp+'/v1/query/subStageAllTaskPipelineConcurrentExtern/'+queryId+'/'+stageId+'/'+pipelineId,  
+         
+            success: function(data) {
+                    if(data == "NO" || data=="NULL")
+					{
+					   document.getElementById(stageId+"_response").value="REJECT";
+					   document.getElementById(stageId+"_response").style.color="#FF0000";  
+					}
+					else if(data == "YES" ||data == "OK" )
+					{
+					   document.getElementById(stageId+"_response").value="ACCEPT";
+					}
+            }
+        });
+		
+	}
+	
+	
+	
+	
+	
+	
+	function appendQueryReturnIfExist(queryId)
+	{
+		if(!queryId_stageDivs.hasOwnProperty(queryId)){
+			queryId_stageDivs[queryId] = [];
+			return false;
+		}
+		return true;
+	}
+	
+	function appendStageDiv(queryId,stageId,stageData)
+	{
+		appendQueryReturnIfExist(queryId);
+		
+		var stageIds = queryId_stageDivs[queryId];
+		
+		var taskCount = stageData["taskCount"];
+		if(!stageIds.includes(queryId+stageId)){
+	
+		
+		
+		var partitionStyle = stageData["stagePartitioningStyle"];
+
+        var stageAppendContent = "";
+		if(partitionStyle != "UNSUPPORT"){
+		
+		    if(partitionStyle.indexOf("HASH") == -1 && partitionStyle.indexOf("SHUFFLE") == -1){
+		        stageAppendContent = '&nbsp;&nbsp;&nbsp;&nbsp;<div style="color:black;font-size:120%;" class="fa fa-rocket"></div>&nbsp;<span style="color:black;font-size:120%">Throughputs:<\span>&nbsp;&nbsp;<input id='+stageId+'_'+'throughput'+' style="width:80px;background-color:#ECECEC" value=" ">&nbsp;tuples/ms&nbsp;&nbsp;&nbsp;&nbsp;<div style="color:black;font-size:110%;" class="fa fa-clock-o"></div>&nbsp;<span style="color:black;">Time Left:<\span>&nbsp;&nbsp;<input id='+stageId+'_'+'remaintime'+' style="width:80px;background-color:#ECECEC" value=" "><div id="'+queryId+stageId+'_ID_TaskAppend'+'" style="margin-top:10px;display:none;">Response:<input id='+stageId+'_'+'response'+' value="" style="width:10%;border:0px; background-color: #ECECEC;" readonly unselectable="on">&nbsp;&nbsp;&nbsp;&nbsp;No. of tasks:<input style="width:3%;border:0px; background-color: transparent;" id="'+stageId+'_tasknumber" value="'+taskCount+'"><\span>&nbsp;&nbsp;<button QID='+queryId+' SID='+stageId+' onclick="sendAdjustTaskRequest(this)" class="btnAdjust">Add Task</button>  DOP:<input RID='+queryId+'_'+stageId+'_'+'radix'+'           style="border:none;width:5%;" value="1">   </input><button QID='+queryId+' SID='+stageId+' onclick="sendDecreaseTaskRequest(this)" class="btnAdjust" >Close A Task</button></div>';
+			}
+			else
+			{
+			    stageAppendContent = '&nbsp;&nbsp;&nbsp;&nbsp;<div style="color:black;font-size:120%;" class="fa fa-rocket"></div>&nbsp;<span style="color:black;font-size:120%">Throughputs:<\span>&nbsp;&nbsp;<input id='+stageId+'_'+'throughput'+' style="width:80px;background-color:#ECECEC" value=" " readonly>&nbsp;tuples/ms&nbsp;&nbsp;&nbsp;&nbsp;<div style="color:black;font-size:110%;" class="fa fa-clock-o"></div>&nbsp;<span style="color:black;">Time Left:<\span>&nbsp;&nbsp;<input id='+stageId+'_'+'remaintime'+' style="width:80px;background-color:#ECECEC" value=" " readonly><div id="'+queryId+stageId+'_ID_TaskAppend'+'" style="margin-top:10px;display:none;">Response:<input id='+stageId+'_'+'response'+' value="" style="width:10%;border:0px; background-color: #ECECEC;" readonly unselectable="on">&nbsp;&nbsp;&nbsp;&nbsp;No. of tasks:<input style="width:3%;border:0px; background-color: transparent;" id="'+stageId+'_tasknumber" value="'+taskCount+'"><\span>&nbsp;&nbsp;<button QID='+queryId+' SID='+stageId+' onclick="sendAdjustTaskGroupRequest(this)" class="btnAdjust">Add Task group</button>  DOP:<input id='+queryId+'_'+stageId+'_'+'radix'+' style="border:none;width:5%;" value="1"></div>';
+			}
+		}
+		else
+		{
+		   stageAppendContent = '&nbsp;&nbsp;&nbsp;&nbsp;<div style="color:black;font-size:120%;" class="fa fa-rocket"></div>&nbsp;<span style="color:black;font-size:120%">Throughputs:<\span>&nbsp;&nbsp;<input id='+stageId+'_'+'throughput'+' style="width:80px;background-color:#ECECEC" value=" " readonly="true">&nbsp;tuples/ms&nbsp;&nbsp;&nbsp;&nbsp;<div style="color:black;font-size:110%;" class="fa fa-clock-o"></div>&nbsp;<span style="color:black;">Time Left:<\span>&nbsp;&nbsp;<input id='+stageId+'_'+'remaintime'+' style="width:80px;background-color:#ECECEC" value=" " readonly="true"><div id="'+queryId+stageId+'_ID_TaskAppend'+'" style="margin-top:10px;display:none;" >No. of tasks:<input style="width:3%;border:0px;background-color: transparent;" id="'+stageId+'_tasknumber" value="'+taskCount+'">&nbsp;&nbsp;</div>';
+		}
+		
+			var stageAppend = '<div id="'+queryId+stageId+'_ID'+'" style="margin-top:2%;margin-bottom:1%;">'+'<button id="'+stageId+'_slabel" style="font-size:130%;color:orange;" onclick=fold("'+queryId+'","'+stageId+'")> Stage:'+stageId+'</button>'+stageAppendContent+'</div><div style="border: 0;height: 1px;background: #333;background-image: linear-gradient(to right, #ccc, #333, #ccc);"></div>'
+			$('#queryList').append(stageAppend);
+			queryId_stageDivs[queryId].push(queryId+stageId);
+		
+		
+		 
+		}
+		
+		{
+		  $("#"+stageId+"_tasknumber").val(taskCount);
+		}
+		
+		var stageState = stageData["stageState"];
+		
+		if(stageState === "FINISHED")
+		{ 
+		    var labelID = stageId+'_slabel';
+		    document.getElementById(labelID).style.color = "green";
+			
+		
+		}
+		
+	
+	}
+	function getTaskTid(taskId)
+	{
+		arrays = taskId.split('$');
+		return arrays[arrays.length - 1];
+	}
+	
+	function appendTaskDiv(queryId,stageId,taskId)
+	{
+		taskId = getTaskTid(taskId);
+		if(!stageId_taskDivs.hasOwnProperty(queryId+stageId))
+		{
+			stageId_taskDivs[queryId+stageId] = [];
+			
+		}
+		var tasks = stageId_taskDivs[queryId+stageId]
+		
+		if(!tasks.includes(queryId+stageId+taskId+'_tid')){
+		
+			stageId_taskDivs[queryId+stageId].push(queryId+stageId+taskId+'_tid');
+			
+			var taskAppend = '<div class="divStyle" id="'+queryId+stageId+taskId+'_tid">'+'Task'+taskId+'</div>';
+			$('#'+queryId+stageId+'_ID_TaskAppend').append(taskAppend);
+		
+		}		
+	}
+	
+	
+	
+	function appendPipelineDiv(queryId,stageId,taskId,pipelineInfo)
+	{
+	
+		pipelineId = pipelineInfo["pipelineId"];
+		
+		var pipelineNodes = pipelineInfo["pipelineFormat"].split(",");
+		
+		var scalable = pipelineInfo["isScalable"];
+		
+		
+		var pipelineNodesAppend = '';
+		if(scalable != 0){
+		pipelineNodesAppend = '<button QID='+queryId+' SID='+stageId+' TID='+taskId+' PID='+pipelineId+' onclick="sendAdjustPipelineRequest(this)" class="btnAdjust">driver:'+pipelineInfo["activePipelineDriverNumber"]+'</button>';
+		
+		pipelineSub = '<button QID='+queryId+' SID='+stageId+' TID='+taskId+' PID='+pipelineId+' onclick="sendSubPipelineRequest(this)" class="btnAdjust">close'+'</button>';
+		
+		pipelineNodesAppend+=pipelineSub;
+		
+		}
+		
+		
+		
+
+		for(var i = 0; i < pipelineNodes.length ; i++)
+		{
+			pipelineNodesAppend = pipelineNodesAppend+ '<button class="btnNode">'+pipelineNodes[i].split("_")[1].replace('Operator','')+'</button>';
+	
+		}
+		
+		
+		
+		taskId = getTaskTid(taskId);
+		if(!taskId_pipelineDivs.hasOwnProperty(queryId+stageId+taskId+'_tid'))
+		{
+			taskId_pipelineDivs[queryId+stageId+taskId+'_tid'] = [];
+			
+		}
+		
+		var pipelines = taskId_pipelineDivs[queryId+stageId+taskId+'_tid'];
+		
+		if(!pipelines.includes(queryId+stageId+taskId+pipelineId)){
+		
+		
+		taskId_pipelineDivs[queryId+stageId+taskId+'_tid'].push(queryId+stageId+taskId+pipelineId);
+			
+			var pipelineAppend = '<div class="divStyle2" id="'+queryId+stageId+taskId+pipelineId+'">'+pipelineId+'</div>';
+			
+
+			
+			$('#'+queryId+stageId+taskId+'_tid').append(pipelineAppend);
+			
+			$('#'+queryId+stageId+taskId+pipelineId).append(pipelineNodesAppend);
+		}
+		
+	}
+	
+	
+	
+	
+	
+	
+		function resolveJson(data) {
+	
+		originQueryId = data["queryId"];
+		planTree = data["planTree"];
+		queryContext = data["queryContext"];
+		
+		drawTree(JSON.stringify(planTree));
+
+		for(var i=0 ; i< queryContext.length; i++){
+		
+		
+		    var stageIdInt = parseInt(queryContext[i]["stageId"]);
+	       
+			if(stageIdInt > maxStageId)
+			{
+			   maxStageId = stageIdInt;
+			}
+			
+			appendStageDiv(queryId,queryContext[i]["stageId"],queryContext[i]);
+			
+			
+		   
+			
+			var taskInfos = queryContext[i]["taskInfos"];
+			
+			
+				for(var j = 0 ; j < taskInfos.length ; j++){
+				
+					appendTaskDiv(queryId,queryContext[i]["stageId"],taskInfos[j]["TaskId"])
+					var pipeInfos = taskInfos[j]["Pipeline Descriptors"];
+						for(var k = 0 ; k < pipeInfos.length ; k++)
+						{ 
+							appendPipelineDiv(queryId,queryContext[i]["stageId"],taskInfos[j]["TaskId"],pipeInfos[k]);
+								
+						}								
+								
+				}
+				
+				
+	       
+
+     	}
+		
+		
+		
+	
+		if("exeTime" in data && "actualTime" in data && "originTime" in data)
+		{ 
+		    var exetime = (data["exeTime"]/1000).toFixed(3);
+		    var actual = data["actualTime"]/1000;
+			var origin = data["originTime"]/1000;
+			var result = "";
+			result = result + "Query is finished!\nExecution time: "+exetime;
+		    if(origin > actual){      		
+            result = result+"s\nTotal saved "+((((origin-actual)/origin)*100).toFixed(3))+"%"+" of time !";
+			document.getElementById("assistant").value=result;
+		    }
+			
+			document.getElementById("assistant").value=result;
+		
+		}
+				
+				
+			
+	
+	}
+
+    var maxStageId = 0;
+    var isfoldall = true;
+    function fold(queryId,stageId)
+	{ 
+
+    //console.log($('#'+queryId+stageId+'_ID_TaskAppend'));
+	   $('#'+queryId+stageId+'_ID_TaskAppend').toggle()
+	   
+	}
+	function foldall()
+	{ 
+     
+	 if(isfoldall){
+	    for(var i = 0 ; i <= maxStageId ; i++){
+	       $('#'+queryId+i+'_ID_TaskAppend').show();
+        }
+		isfoldall = false;
+	 }
+     else
+     {
+         for(var i = 0 ; i <= maxStageId ; i++){
+	       $('#'+queryId+i+'_ID_TaskAppend').hide();
+        }
+		isfoldall = true;
+	 }	 
+	 
+	
+    }	
+
+	function getQueryIdByWindowPara()
+	{
+		var url = location.search; //获取url中"?"符后的字串
+		if (url.indexOf("?") != -1) { //判断是否有参数
+			var str = url.substr(1); //从第一个字符开始 因为第0个是?号 获取所有除问号的所有符串
+			strs = str.split("="); //用等号进行分隔 （因为知道只有一个参数 所以直接用等号进分隔 如果有多个参数 要用&号分隔 再用等号进行分隔）
+			return strs[1];   //直接弹出第一个参数 （如果有多个参数 还要进行循环的）
+		}
+	}
+	
+	function updateThroughputs(data)
+	{
+	   
+	   console.log(data)
+	    $.each(data, function (n, v) {
+		
+		if(n.indexOf("_") == -1){
+		var id = "#"+n+"_throughput";
+			   $(id).val(v);
+		}
+		else
+		{
+		   
+		   var n=n.split("_");
+		   var id = "#"+n[0]+"_throughput";
+		   var idtime = "#"+n[0]+"_remaintime";
+			var vv = $(id).val();
+			
+			 $(id).val(vv);
+			 $(idtime).val(v+"s");
+		}
+		
+               
+        });
+
+	}
+	
+	
+	function getData(){
+	$.ajax({
+            // 设置ajax的参数
+            // 请求数据的url地址：接口地址
+            url: 'http://'+serverIp+'/v1/query/getQueryInfoExtern/'+queryId,  
+            // 请求数据方式：get  post
+            type: 'get',    
+            // 返回的数据格式  json
+            dataType: 'json',
+            // data:发送给接口的数据
+            data:{},
+            // 请求成功之后要执行的回调函数
+            success: function (dat) {
+                //dat:服务端返回的数据
+                console.log(dat)
+				resolveJson(dat)
+            },
+            // 请求失败
+            error: function (e) {
+                //alert('请求失败')
+            }
+        });
+	
+	}
+	
+	
+	function getThroughputs(){
+	$.ajax({
+            // 设置ajax的参数
+            // 请求数据的url地址：接口地址
+            url: 'http://'+serverIp+'/v1/query/getQueryThroughputsExtern/'+queryId,  
+            // 请求数据方式：get  post
+            type: 'get',    
+            // 返回的数据格式  json
+            dataType: 'json',
+            // data:发送给接口的数据
+            data:{},
+            // 请求成功之后要执行的回调函数
+            success: function (dat) {
+                //dat:服务端返回的数据
+
+				updateThroughputs(dat);
+            },
+            // 请求失败
+            error: function (e) {
+                //alert('请求失败')
+            }
+        });
+	
+	}
+	
+	getData();
+	setInterval(function () {
+	
+	  getData();
+	
+		  },1000);
+		  
+	setInterval(function () {
+	
+	  getThroughputs();
+	
+		  },500);	  
+	</script>
+	<!-- /JAVASCRIPTS -->
+<style>
+.divStyle{ border:2px solid #808080;
+margin: 1px 1px;
+} 
+
+.divStyle2{
+border:2px solid #808080;
+margin: 1px 1px;
+} 
+
+.divStyle3{
+border:2px solid #000000;
+margin: 3px 1px;
+} 
+
+.controlPanel{
+
+			font-size:40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+
+
+}
+.copyrights{text-indent:-9999px;height:0;line-height:0;font-size:0;overflow:hidden;}
+  .box {
+       
+        background: white;
+        border:3px solid #808080;
+		height:100%;
+		margin: 1px 1px;
+      }
+      .inner-border {
+        border: 20px solid white;
+        box-shadow: inset 0px 0px 0px 10px #969696;
+        box-sizing: border-box;
+      }
+      .inner-outline {
+        outline: 10px solid lightblue;
+        outline-offset: -30px;
+      }
+	  
+
+	  .btnNode{
+				width: 130px;
+				height: 20px;
+				
+				background:#800080;
+				border: none;
+				color: white;
+				font-size:90%;
+				margin: 3px 3px;
+				border-radius: 5px;
+			}
+			
+		.btnAdjust{
+			border-radius: 3px;
+				color: white;
+		background-color: #4CAF50;
+				font-size:90%;
+				margin: 1px 1px;
+				
+		}
+			
+		.singleArrow::after {
+		content: '';
+		display: block;
+		position: absolute;
+		right: -20px;  /* 箭头位置 */
+		top: -5px;  /* 箭头位置 */
+		border-top: 10px solid transparent; 	/* 箭头高低 */
+		border-bottom: 10px solid transparent; /* 箭头高低 */
+		border-left: 20px solid #00b9f7; /* 箭头长度*/
+	}
+	
+	    .node {
+            font: 12px sans-serif;
+        }
+ 
+        .link {
+            fill: none;
+            stroke: #ccc;
+            stroke-width: 1.5px;
+        }
+
+</style>
+
+</body>
+</html>

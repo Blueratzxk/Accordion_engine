@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/partitionsMaker.dir/main.cpp.o -o partitionsMaker
