@@ -1,0 +1,910 @@
+/*
+//
+// Created by zxk on 7/9/24.
+//
+
+#ifndef OLVP_PPM_HPP
+#define OLVP_PPM_HPP
+
+//Performance prediction module
+
+#include "../NodeCluster/NodesManager.h"
+#include "../Execution/Scheduler/SqlQueryExecution.hpp"
+#include "ClusterContext.hpp"
+
+class smallWindow
+{
+    int index = 0;
+    vector<double> values;
+    int windowLength = 20;
+public:
+
+    smallWindow()
+    {
+
+    }
+    double getAvg()
+    {
+        double all = 0.0;
+        for(auto val : values)
+            all+=val;
+        if(values.size() < windowLength)
+        {
+            return all/values.size();
+        }
+        else
+            return all/windowLength;
+    }
+    void addValue(double value)
+    {
+        if(index%windowLength >= values.size())
+        {
+            values.push_back(value);
+            index++;
+            index = index%(windowLength);
+        }
+        else
+        {
+            (values)[index] = value;
+            index++;
+            index = index%(windowLength);
+        }
+    }
+};
+class QueryRecorder
+{
+public:
+    int counter = 0;
+    int windowLength = 20;
+    map<int,map<shared_ptr<ClusterNode>,shared_ptr<smallWindow>>> record;
+
+
+    QueryRecorder(){}
+
+
+    double getStageMinImprovement(int stageId)
+    {
+        double min = 99999999;
+        if(record.count(stageId) > 0)
+        {
+            for(auto im : record[stageId])
+            {
+                if(im.second->getAvg() < min)
+                    min = im.second->getAvg();
+            }
+        }
+        return min;
+    }
+
+    void view()
+    {
+        spdlog::info("count:"+to_string(counter));
+        for(auto stage : record) {
+            spdlog::info("For stage : " + to_string(stage.first));
+            for (auto node: stage.second) {
+
+                spdlog::info("On node" + node.first->getNodeLocation() + " improve " + to_string(node.second->getAvg()));
+            }
+        }
+
+    }
+
+
+};
+
+
+class CpuBottleneckResult
+{
+    int stageId;
+    string node;
+    set<int> taskIds;
+    double maxValue;
+    double curValue;
+public:
+    CpuBottleneckResult(int stageId, string node, set<int> taskIds,double maxValue,double curValue){
+        this->stageId = stageId;
+        this->node = node;
+        this->taskIds = taskIds;
+        this->maxValue = maxValue;
+        this->curValue = curValue;
+    }
+
+    int getStageId(){return this->stageId;}
+    double getMaxValue(){return this->maxValue;}
+    double getCurValue(){return this->curValue;}
+    string getNode(){return this->node;};
+    set<int> getTaskIds(){return this->taskIds;};
+
+};
+class NetBottleneckResult
+{
+    int stageId;
+    string node;
+    set<int> taskIds;
+    double maxValue;
+    double curValue;
+public:
+    NetBottleneckResult(int stageId, string node, set<int> taskIds,double maxValue,double curValue)
+    {
+        this->stageId = stageId;
+        this->node = node;
+        this->taskIds = taskIds;
+        this->maxValue = maxValue;
+        this->curValue = curValue;
+    }
+
+    int getStageId(){return this->stageId;}
+    double getMaxValue(){return this->maxValue;}
+    double getCurValue(){return this->curValue;}
+    string getNode(){return this->node;};
+    set<int> getTaskIds(){return this->taskIds;};
+
+};
+
+class QueryBottleneckResult
+{
+public:
+    static enum type{net,compute};
+private:
+    int stageId;
+    type bottleneckType;
+public:
+
+    QueryBottleneckResult(int stageId,type bottleneckType)
+    {
+        this->stageId = stageId;
+        this->bottleneckType = bottleneckType;
+    }
+    int getStageId(){return this->stageId;}
+    type getBottleneckType(){return this->bottleneckType;}
+};
+
+class StageTaskMaxImproveRatioResult
+{
+    int stageId;
+    double maxRatio;
+
+public:
+    StageTaskMaxImproveRatioResult(int stageId,double maxRatio)
+    {
+        this->stageId = stageId;
+        this->maxRatio = maxRatio;
+    }
+
+    int getStageId()
+    {
+        return this->stageId;
+    }
+    double getMaxRatio()
+    {
+        return this->maxRatio;
+    }
+};
+
+class PPM
+{
+    shared_ptr<NodesManager> nodesManager;
+    shared_ptr<ClusterContext> clusterContext;
+
+
+    shared_ptr<SqlQueryExecution> queryToPredict;
+
+
+    map<shared_ptr<ClusterNode>,float> nodeCpuUsageSnap;
+    map<int,shared_ptr<map<shared_ptr<ClusterNode>, set<shared_ptr<HttpRemoteTask>>>>> stagesNodeTaskMapSnap;
+
+    shared_ptr<map<string,shared_ptr<SqlQueryExecution>>> queries;
+
+
+
+
+
+    //-----------------------------------results---------------------------------------------------//
+    map<string,shared_ptr<QueryRecorder>> query_stage_node_net_improvement;
+    map<string,shared_ptr<QueryRecorder>> query_stage_node_shuffle_improvement;
+    map<string,vector<shared_ptr<CpuBottleneckResult>>> cpuBottleneckResult;
+    map<string,vector<shared_ptr<NetBottleneckResult>>> netTransBottleneckResult;
+    map<string,vector<shared_ptr<NetBottleneckResult>>> netRecBottleneckResult;
+    map<string,vector<shared_ptr<QueryBottleneckResult>>> queryBottleneckResult;
+    map<string,vector<shared_ptr<StageTaskMaxImproveRatioResult>>> stageTaskMaxImproveRatioResult;
+
+public:
+    PPM(shared_ptr<map<string,shared_ptr<SqlQueryExecution>>> queries,shared_ptr<NodesManager> nodesManager)
+    {
+        this->nodesManager = nodesManager;
+        this->queries = queries;
+        this->clusterContext = make_shared<ClusterContext>(this->queries);
+
+    }
+
+    void collect()
+    {
+
+        this->clusterContext->gatherInfos();
+        for(auto query : (*this->queries)) {
+            if (!query.second->isQueryFinished()) {
+                this->queryToPredict = query.second;
+                this->updateCpuUsageSnap();
+                spdlog::info("+++++++++++++++++++++++++++++++++++++++++++++++++");
+                this->cpuBottleneckResult[query.first] = this->analyzeCpuBottleneckForStages();
+                spdlog::info("+++++++++++++++++++++++++++++++++++++++++++++++++");
+                this->netTransBottleneckResult[query.first] = this->analyzeTransNetBottlenecksForStages();
+                this->netRecBottleneckResult[query.first] = this->analyzeRecNetBottlenecksForStages();
+                spdlog::info("+++++++++++++++++++++++++++++++++++++++++++++++++");
+
+
+
+
+                if(this->query_stage_node_net_improvement.count(query.first) > 0) {
+                    auto rec = query_stage_node_net_improvement[query.first];
+                   this->analyzeMaxNetThroughputImprovementForStages(rec);
+                }
+                else {
+                    shared_ptr<QueryRecorder> rec = make_shared<QueryRecorder>();
+                    query_stage_node_net_improvement[query.first] = rec;
+
+                    this->analyzeMaxNetThroughputImprovementForStages(rec);
+                }
+
+                spdlog::info("===================================================");
+                spdlog::info("analyzeMaxNetThroughputImprovementForStage:");
+                for(auto query : this->query_stage_node_net_improvement)
+                {
+                    spdlog::info("queryID:"+query.first);
+                    query.second->view();
+                }
+                spdlog::info("===================================================");
+
+
+
+
+
+                spdlog::info("+++++++++++++++++++++++++++++++++++++++++++++++++");
+
+
+                if(this->query_stage_node_shuffle_improvement.count(query.first) > 0) {
+                    auto rec = query_stage_node_shuffle_improvement[query.first];
+                    this->analyzeMaxShuffleRateImprovementForStages(rec);
+
+                }
+                else {
+                    shared_ptr<QueryRecorder> rec = make_shared<QueryRecorder>();
+                    query_stage_node_shuffle_improvement[query.first] = rec;
+                    this->analyzeMaxShuffleRateImprovementForStages(rec);
+
+                }
+
+                spdlog::info("===================================================");
+                spdlog::info("analyzeMaxShuffleRateImprovementForStage:");
+                for(auto query : this->query_stage_node_shuffle_improvement)
+                {
+                    spdlog::info("queryID:"+query.first);
+                    query.second->view();
+                }
+                spdlog::info("===================================================");
+                stageTaskMaxImproveRatioResult[query.first] = analyzeMaxStageCpuUsageImprovementOnCurrentCluster();
+                spdlog::info("+++++++++++++++++++++++++++++++++++++++++++++++++");
+
+                queryBottleneckResult[query.first] = analyzeQueryBottleneck();
+            }
+            else
+            {
+                query_stage_node_net_improvement.erase(query.first);
+                query_stage_node_shuffle_improvement.erase(query.first);
+                cpuBottleneckResult.erase(query.first);
+                netTransBottleneckResult.erase(query.first);
+                netRecBottleneckResult.erase(query.first);
+                queryBottleneckResult.erase(query.first);
+
+            }
+        }
+
+    }
+
+    void updateCpuUsageSnap()
+    {
+        auto allNodes = nodesManager->getAllNodes();
+        for(auto node : allNodes)
+            nodeCpuUsageSnap[node] = node->getCurrentCpuUsage();
+
+        this->stagesNodeTaskMapSnap = *(this->queryToPredict->getStagesNodeTaskMap());
+
+
+    }
+    vector<shared_ptr<CpuBottleneckResult>> analyzeCpuBottleneckForStages()
+    {
+        vector<shared_ptr<CpuBottleneckResult>> results;
+        for(auto stage : this->stagesNodeTaskMapSnap)
+        {
+            auto re = this->analyzeCpuBottleneckForStage(stage.first);
+
+            for(auto res : re)
+            {
+                results.push_back(res);
+            }
+        }
+        return results;
+    }
+
+    vector<shared_ptr<CpuBottleneckResult>> analyzeCpuBottleneckForStage(int stageId)
+    {
+
+        vector<shared_ptr<CpuBottleneckResult>> results;
+
+        map<shared_ptr<ClusterNode>, set<shared_ptr<HttpRemoteTask>>> stageTasks = (*this->stagesNodeTaskMapSnap[stageId]);
+
+        string taskIdStr;
+        set<int> tasks;
+        bool hasBottleneck = false;
+        for(auto node : stageTasks)
+        {
+            taskIdStr = "";
+            hasBottleneck = false;
+            float maxCpuUsage = node.first->getCoreNums()*100.0;
+            float currentCpuUsage = node.first->getCurrentCpuUsage();
+
+
+            for(auto task: node.second) {
+                taskIdStr.append(to_string(task->getTaskId()->getId()));
+                tasks.insert(task->getTaskId()->getId());
+                taskIdStr.append(",");
+            }
+            if(!taskIdStr.empty())
+                taskIdStr.pop_back();
+
+            if(taskIdStr.empty()) {
+                continue;
+            }
+
+            if(maxCpuUsage-currentCpuUsage < 100)
+            {
+
+                shared_ptr<CpuBottleneckResult> result = make_shared<CpuBottleneckResult>(stageId,node.first->getNodeLocation(),tasks,maxCpuUsage,currentCpuUsage);
+
+                results.push_back(result);
+
+                spdlog::info("On node: "+node.first->getNodeLocation()+"->Stage "+ to_string(stageId) + ": tasks <"+taskIdStr+"> encounter CPU bottleneck! Max:"+ to_string(maxCpuUsage) + " Cur:" +
+                                     to_string(currentCpuUsage));
+                hasBottleneck = true;
+            }
+        }
+
+        if(!taskIdStr.empty() && !hasBottleneck)
+            spdlog::info("Stage "+ to_string(stageId) + " don't have CPU bottleneck!");
+
+        return results;
+    }
+
+    vector<shared_ptr<NetBottleneckResult>> analyzeTransNetBottlenecksForStages()
+    {
+        vector<shared_ptr<NetBottleneckResult>> transResult;
+        for(auto stage : this->stagesNodeTaskMapSnap)
+        {
+            auto re = this->isEncounterNetTransBottleneckForStage(stage.first);
+
+            for(auto res : re)
+                transResult.push_back(res);
+        }
+        return transResult;
+    }
+
+    vector<shared_ptr<NetBottleneckResult>> analyzeRecNetBottlenecksForStages()
+    {
+
+        vector<shared_ptr<NetBottleneckResult>> recResult;
+        for(auto stage : this->stagesNodeTaskMapSnap)
+        {
+            auto re = this->isEncounterNetRecBottleneckForStage(stage.first);
+            for(auto res : re)
+                recResult.push_back(res);
+        }
+
+        return recResult;
+    }
+
+    vector<shared_ptr<NetBottleneckResult>> isEncounterNetTransBottleneckForStage(int stageId)
+    {
+        map<shared_ptr<ClusterNode>, set<shared_ptr<HttpRemoteTask>>> stageTasks = (*this->stagesNodeTaskMapSnap[stageId]);
+
+        string taskIdStr;
+        set<int> tasks;
+        bool hasBottleneck = false;
+
+        vector<shared_ptr<NetBottleneckResult>> results;
+
+        for(auto node : stageTasks)
+        {
+
+            taskIdStr = "";
+            hasBottleneck = false;
+
+            for(auto task: node.second) {
+                taskIdStr.append(to_string(task->getTaskId()->getId()));
+                taskIdStr.append(",");
+                tasks.insert(task->getTaskId()->getId());
+            }
+            if(!taskIdStr.empty())
+                taskIdStr.pop_back();
+
+            if(taskIdStr.empty()) {
+                continue;
+            }
+
+
+            float maxSpeed = ((float)node.first->getNetSpeed())*1.024/8*1000;
+            spdlog::info(to_string(maxSpeed) + "|"+ to_string(node.first->getCurrentNetTransRate()));
+            if(node.first->hitTransBottleNeck())
+            {
+                shared_ptr<NetBottleneckResult> result = make_shared<NetBottleneckResult>(stageId,node.first->getNodeLocation(),tasks,maxSpeed,node.first->getCurrentNetTransRate());
+                spdlog::info("On node: "+node.first->getNodeLocation()+"->Stage "+ to_string(stageId) + ": tasks <"+taskIdStr+"> encounter trans net bottleneck! Max:"+ to_string(maxSpeed) + " Cur:" +
+                             to_string(node.first->getCurrentNetTransRate()));
+
+                results.push_back(result);
+                hasBottleneck = true;
+            }
+        }
+        if(!taskIdStr.empty() && !hasBottleneck)
+            spdlog::info("Stage "+ to_string(stageId) + " don't have trans net bottleneck!");
+
+        return results;
+
+    }
+    vector<shared_ptr<NetBottleneckResult>> isEncounterNetRecBottleneckForStage(int stageId)
+    {
+        map<shared_ptr<ClusterNode>, set<shared_ptr<HttpRemoteTask>>> stageTasks = (*this->stagesNodeTaskMapSnap[stageId]);
+
+        string taskIdStr;
+        bool hasBottleneck = false;
+        vector<shared_ptr<NetBottleneckResult>> results;
+        set<int> tasks;
+        for(auto node : stageTasks)
+        {
+
+            taskIdStr = "";
+            hasBottleneck = false;
+
+
+
+
+            for(auto task: node.second) {
+                taskIdStr.append(to_string(task->getTaskId()->getId()));
+                taskIdStr.append(",");
+            }
+            if(!taskIdStr.empty())
+                taskIdStr.pop_back();
+
+            if(taskIdStr.empty()) {
+                continue;
+            }
+
+
+            float maxSpeed = ((float)node.first->getNetSpeed())*1.024/8*1000;
+            spdlog::info(to_string(maxSpeed) + "|"+ to_string(node.first->getCurrentNetRecRate()));
+            if(node.first->hitRecBottleNeck())
+            {
+
+                shared_ptr<NetBottleneckResult> result = make_shared<NetBottleneckResult>(stageId,node.first->getNodeLocation(),tasks,maxSpeed,node.first->getCurrentNetRecRate());
+                spdlog::info("On node: "+node.first->getNodeLocation()+"->Stage "+ to_string(stageId) + ": tasks <"+taskIdStr+"> encounter trans net bottleneck! Max:"+ to_string(maxSpeed) + " Cur:" +
+                             to_string(node.first->getCurrentNetTransRate()));
+
+                results.push_back(result);
+
+                hasBottleneck = true;
+            }
+        }
+        if(!taskIdStr.empty() && !hasBottleneck)
+            spdlog::info("Stage "+ to_string(stageId) + " don't have rec net bottleneck!");
+
+        return results;
+
+    }
+    void analyzeMaxNetThroughputImprovementForStages(shared_ptr<QueryRecorder> preImprovement)
+    {
+        map<int,map<shared_ptr<ClusterNode>,vector<double>>> newImprovements;
+
+        for(auto stage : this->stagesNodeTaskMapSnap)
+        {
+
+            if(preImprovement->record.count(stage.first) > 0)
+                this->analyzeMaxNetThroughputImprovementForStage(stage.first,&preImprovement->record[stage.first]);
+            else {
+                preImprovement->record[stage.first] = {};
+                this->analyzeMaxNetThroughputImprovementForStage(stage.first, &preImprovement->record[stage.first]);
+            }
+
+        }
+
+
+    }
+    void analyzeMaxShuffleRateImprovementForStages(shared_ptr<QueryRecorder> preImprovement)
+    {
+
+        map<int,map<shared_ptr<ClusterNode>,vector<double>>> newImprovements;
+        for(auto stage : this->stagesNodeTaskMapSnap)
+        {
+            if(preImprovement->record.count(stage.first) > 0)
+                this->analyzeMaxShuffleRateImprovementForStage(stage.first,&preImprovement->record[stage.first]);
+            else {
+                preImprovement->record[stage.first] = {};
+                this->analyzeMaxShuffleRateImprovementForStage(stage.first,&preImprovement->record[stage.first]);
+            }
+        }
+
+    }
+
+
+
+
+    void analyzeMaxNetThroughputImprovementForStage(int stageId,map<shared_ptr<ClusterNode>,shared_ptr<smallWindow>> *preImprovement)
+    {
+        map<shared_ptr<ClusterNode>, set<shared_ptr<HttpRemoteTask>>> stageTasks = (*this->stagesNodeTaskMapSnap[stageId]);
+
+        set<shared_ptr<ClusterNode>> selectedNodes;
+
+        for(auto node : stageTasks)
+            selectedNodes.insert(node.first);
+
+
+        auto allTasksOnSelectedNodes = this->clusterContext->getTaskInfosByNodes(selectedNodes);
+
+        map<shared_ptr<ClusterNode>,double> totalOutputThroughputOnEachNode;
+        map<shared_ptr<ClusterNode>,double> targetQueryOutputThroughputOnEachNode;
+
+        for(auto node : allTasksOnSelectedNodes)
+        {
+            totalOutputThroughputOnEachNode[node.first] = node.second->getLongTotalOutputThroughput();
+        }
+
+
+        for(auto node : stageTasks)
+        {
+            double totalQueryTasksNetUsageByNode = 0.0;
+            for(auto task : node.second)
+            {
+                totalQueryTasksNetUsageByNode+=task->getTaskInfoFetcher()->getLongAvgThroughputBytes();
+            }
+            targetQueryOutputThroughputOnEachNode[node.first] = totalQueryTasksNetUsageByNode;
+        }
+
+        map<shared_ptr<ClusterNode>,double> improvementsOfStage;
+
+        for(auto node : totalOutputThroughputOnEachNode)
+        {
+            double ratio = targetQueryOutputThroughputOnEachNode[node.first]/totalOutputThroughputOnEachNode[node.first];
+           // spdlog::info(to_string(targetQueryOutputThroughputOnEachNode[node.first])+"/"+ to_string(totalOutputThroughputOnEachNode[node.first]));
+            double netWidthOccupy = node.first->getCurrentNetTransRate() * ratio;
+            if(netWidthOccupy > 0)
+                improvementsOfStage[node.first] = node.first->getRemainingTransThroughput()/netWidthOccupy;
+            else
+                improvementsOfStage[node.first] = 0;
+        }
+
+
+   //     spdlog::info("For stage : "+ to_string(stageId));
+  //      for(auto node : improvementsOfStage)
+  //      {
+  //          spdlog::info("On node" + node.first->getNodeLocation()+" improve "+ to_string(node.second));
+ //       }
+
+        for(auto node : improvementsOfStage)
+        {
+            if((*preImprovement).count(node.first) > 0)
+            {
+                (*preImprovement)[node.first]->addValue(node.second);
+            }
+            else
+            {
+                (*preImprovement)[node.first] = make_shared<smallWindow>();
+                (*preImprovement)[node.first]->addValue(node.second);
+            }
+
+        }
+    }
+
+    double getRemainingCpuUsageOfNode(shared_ptr<ClusterNode> node)
+    {
+        double cur = node->getCurrentCpuUsage();
+        double max = ((double)node->getCoreNums()) * 100;
+        if(max-cur < 0)
+            return 0;
+        return max -cur;
+    }
+    void analyzeMaxShuffleRateImprovementForStage(int stageId,map<shared_ptr<ClusterNode>,shared_ptr<smallWindow>> *preImprovement)
+    {
+
+        map<shared_ptr<ClusterNode>, set<shared_ptr<HttpRemoteTask>>> stageTasks = (*this->stagesNodeTaskMapSnap[stageId]);
+
+        map<shared_ptr<ClusterNode>,double> improvements;
+        for(auto node : stageTasks)
+        {
+            double totalShuffleCpuUsage = 0.0;
+            for(auto task : node.second)
+            {
+                totalShuffleCpuUsage+=task->getTaskInfoFetcher()->getAvgShuffleCpuUsage();
+            }
+            if(totalShuffleCpuUsage == 0)
+                improvements[node.first] = 0;
+            else
+                improvements[node.first] = this->getRemainingCpuUsageOfNode(node.first)/totalShuffleCpuUsage;
+        }
+
+
+    //    spdlog::info("For stage : "+ to_string(stageId));
+    //    for(auto node : improvements)
+    //    {
+    //        spdlog::info("On node" + node.first->getNodeLocation()+" improve "+ to_string(node.second));
+    //    }
+        for(auto node : improvements)
+        {
+            if((*preImprovement).count(node.first) > 0)
+            {
+                (*preImprovement)[node.first]->addValue(improvements[node.first]);
+            }
+            else
+            {
+                (*preImprovement)[node.first] = make_shared<smallWindow>();
+            }
+        }
+
+    }
+
+
+
+    vector<shared_ptr<StageTaskMaxImproveRatioResult>> analyzeMaxStageCpuUsageImprovementOnCurrentCluster()
+    {
+        vector<shared_ptr<StageTaskMaxImproveRatioResult>> results;
+        for(auto stage : this->stagesNodeTaskMapSnap)
+        {
+            auto ratio = this->maxStageCpuUsageImprovementOnCurrentCluster(stage.first);
+            spdlog::info("Stage Id:" + to_string(stage.first) + " maximum number of tasks on cur cluster:"+ to_string(ratio));
+            results.push_back(make_shared<StageTaskMaxImproveRatioResult>(stage.first,ratio));
+        }
+        return results;
+
+    }
+
+    double maxStageCpuUsageImprovementOnCurrentCluster(int stageId)
+    {
+
+        double avgTaskCpuUsage = this->queryToPredict->getSingleTaskCpuUsageOfStage(stageId);
+        auto result = this->nodesManager->getRemainingCpuUsagesImprovementRatio(avgTaskCpuUsage);
+        return result;
+    }
+
+
+
+
+    void traverseToFindBottleneck(set<shared_ptr<StageExecutionAndScheduler>> &result,
+                                  shared_ptr<StageExecutionAndScheduler>stage,vector<shared_ptr<StageExecutionAndScheduler>> &stages)
+    {
+        auto trend = stage->getStageExecution()->getStageBufferSizeChangingTrend();
+
+
+        if(trend[0] == 1 && trend[3] != 1) {
+            //Output buffer expand! Exchange buffer not shrink!
+
+            if(this->queryToPredict->getScheduler()->getLeftChildStagesSetForStage(to_string(stage->getStageExecution()->getStageId().getId())).empty()){
+
+                if(!this->queryToPredict->getScheduler()->isRootStage(stage->getStageExecution()))
+                    result.insert(stage);
+            }
+            else {
+                shared_ptr<StageExecutionAndScheduler> back = stages.back();
+                stages.pop_back();
+                traverseToFindBottleneck(result, back, stages);
+            }
+        }
+      //  else if(trend[1] == 1) {
+    //        //"Output buffer shrink!
+    //    }
+     //   else if(trend[2] == 1) {
+   //         //Exchange buffer expand!
+    //    }
+        else if(trend[3] == 1 && !this->queryToPredict->getScheduler()->isRootStage(stage->getStageExecution())) {
+            //Exchange buffer shrink!
+
+            result.insert(stage);
+
+            auto childs = this->queryToPredict->getScheduler()->getLeftChildStagesSetForStage
+                    (to_string(stage->getStageExecution()->getStageId().getId()));
+
+            for (auto it = stages.begin(); it != stages.end();) {
+                if (childs.contains(*it))
+                    it = stages.erase(it);
+                else
+                    ++it;
+            }
+        }
+
+        if(!stages.empty()) {
+            auto back = stages.back();
+            stages.pop_back();
+            traverseToFindBottleneck(result, back, stages);
+        }
+    }
+
+
+    vector<shared_ptr<QueryBottleneckResult>> analyzeQueryBottleneck()
+    {
+
+        auto stages = this->queryToPredict->getScheduler()->getStageExeSchedulers();
+
+        vector<shared_ptr<StageExecutionAndScheduler>> stageExes;
+
+        for(auto stage : stages)
+        {
+            spdlog::info("Stage Id:"+ to_string(stage.getStageExecution()->getStageId().getId()));
+            bitset<4> re = stage.getStageExecution()->getStageBufferSizeChangingTrend();
+            if(re[0] == 1)
+                spdlog::info("Output buffer expand!");
+            if(re[1] == 1)
+                spdlog::info("Output buffer shrink!");
+            if(re[2] == 1)
+                spdlog::info("Exchange buffer expand!");
+            if(re[3] == 1)
+                spdlog::info("Exchange buffer shrink!");
+
+            stageExes.push_back(make_shared<StageExecutionAndScheduler>(stage.getStageExecution(),stage.getStageLinkage(),stage.getStageScheduler()));
+
+        }
+
+        set<shared_ptr<StageExecutionAndScheduler>> result;
+        auto back = stageExes.back();
+        stages.pop_back();
+        traverseToFindBottleneck(result,back,stageExes);
+
+        vector<shared_ptr<QueryBottleneckResult>> finalResults;
+
+        for(auto re : result) {
+            spdlog::info("stage" + to_string(re->getStageExecution()->getStageId().getId()) + "is bottleneck!");
+
+            finalResults.push_back(make_shared<QueryBottleneckResult>(re->getStageExecution()->getStageId().getId(),QueryBottleneckResult::compute));
+        }
+
+        auto recbottlenecks = this->netTransBottleneckResult[this->queryToPredict->getSession()->getQueryId()];
+
+        if(!recbottlenecks.empty())
+        {
+            for(auto bottleneck : recbottlenecks)
+            {
+                finalResults.push_back(make_shared<QueryBottleneckResult>(bottleneck->getStageId(),QueryBottleneckResult::net));
+            }
+        }
+
+        return finalResults;
+
+    }
+
+    void findBottlenecksForStageExtern(string queryId,int stageId,vector<shared_ptr<CpuBottleneckResult>> &cpu,vector<shared_ptr<NetBottleneckResult>> &nettrans,vector<shared_ptr<NetBottleneckResult>> &netrec)
+    {
+        auto cres = this->cpuBottleneckResult[queryId];
+        auto ntres = this->netTransBottleneckResult[queryId];
+        auto nrres = this->netTransBottleneckResult[queryId];
+
+        vector<shared_ptr<CpuBottleneckResult>> cpuout;
+        vector<shared_ptr<NetBottleneckResult>> nettransout;
+        vector<shared_ptr<NetBottleneckResult>> netrecout;
+
+        for(auto result : cres)
+            if(result->getStageId() == 0)
+                cpuout.push_back(result);
+
+        for(auto result : ntres)
+            if(result->getStageId() == 0)
+                nettransout.push_back(result);
+
+        for(auto result : nrres)
+            if(result->getStageId() == 0)
+                netrecout.push_back(result);
+
+
+    }
+
+
+    bool isStageCanImprove(string queryId,int stageId,int n)
+    {
+        auto stagesMaxTasks = this->stageTaskMaxImproveRatioResult[queryId];
+        for(auto s : stagesMaxTasks)
+        {
+            if(s->getStageId() == stageId)
+            {
+                if(s->getMaxRatio()+1 > n)
+                    return true;
+            }
+        }
+        return false;
+    }
+
+
+
+
+    vector<shared_ptr<QueryBottleneckResult>> getQueryBottleneckStagesExtern(string queryId)
+    {
+        if(this->queryBottleneckResult.count(queryId) > 0) {
+
+
+
+
+            return this->queryBottleneckResult[queryId];
+        }
+        else
+            return {};
+    }
+
+    bool getStageImprovementPredictionExtern(string queryId,int stageId,int n)
+    {
+
+        double preTime = 0.0;
+        auto targetStage = (*this->queries)[queryId]->getScheduler();
+
+        //find the left tablescan stage to get the remaining time
+        auto tableScanStage = targetStage->findRootTableScanStageForStage(to_string(stageId));
+        double remainingTime = tableScanStage->getStageExecution()->getRemainingTime()/1000;
+
+        //get the hashtable build time
+        double buildTime = targetStage->getStageExecutionAndSchedulerByStagId(stageId)->getStageExecution()->getMaxHashTableBuildTimeofTasks();
+
+        preTime = remainingTime - buildTime;
+
+        //first let we figure out is there enough cpu resources to create new tasks for this stage
+        if(this->isStageCanImprove(queryId,stageId,n)) return false;
+
+        vector<shared_ptr<CpuBottleneckResult>> cpu;
+        vector<shared_ptr<NetBottleneckResult>> nettrans;
+        vector<shared_ptr<NetBottleneckResult>> netrec;
+        findBottlenecksForStageExtern(queryId,stageId,cpu,nettrans,netrec);
+
+        //then we figure out is there net rec bottleneck on this stage
+        for(auto rec : netrec)
+        {
+            if(rec->getStageId() == stageId)
+            {
+                //preTime = remainingTime;
+            }
+        }
+
+        //then we figure out if the left upstream stage's net and cpu usage can be boosted by n
+
+        auto childStages = targetStage->getStageExecutionAndSchedulerByStagId(stageId)->getStageLinkage();
+        if(!childStages->getChildStages().empty())
+        {
+           auto leftChild = childStages->getChildStages()[0];
+
+
+            auto netIm = this->query_stage_node_net_improvement[queryId];
+            auto shuffleIm = this->query_stage_node_shuffle_improvement[queryId];
+            double netImprove = netIm->getStageMinImprovement(leftChild->getStageId().getId());
+            double shuffleImprove = shuffleIm->getStageMinImprovement(leftChild->getStageId().getId());
+
+            if(netImprove + 1 > n && shuffleImprove + 1 > n)
+            {
+                preTime = preTime/n;
+            }
+            else
+            {
+                preTime = preTime/(netImprove + 1) >= preTime/(shuffleImprove + 1)? preTime/(shuffleImprove + 1) : preTime/netImprove + 1;
+            }
+        }
+        else
+        {
+            preTime = remainingTime;
+        }
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+};
+
+
+#endif //OLVP_PPM_HPP
+*/

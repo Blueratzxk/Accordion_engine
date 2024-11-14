@@ -1,0 +1,8 @@
+//
+// Created by zxk on 5/31/23.
+//
+
+#ifndef OLVP_OUTPUTBUFFERINFO_HPP
+#define OLVP_OUTPUTBUFFERINFO_HPP
+
+#endif //OLVP_OUTPUTBUFFERINFO_HPP
