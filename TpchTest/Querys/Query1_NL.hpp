@@ -45,17 +45,19 @@ public:
     {
         TableScanNode *tableScanLineItem = new TableScanNode(UUID::create_uuid(),TableScanDescriptor("tpch_test","tpch_1","lineitem"));
 
-        shared_ptr<PartitioningScheme> schemetableScan = make_shared<PartitioningScheme>(Partitioning::create(SystemPartitioningHandle::get("SCALED_SIMPLE_DISTRIBUTION_BUF"),{}));
-        ExchangeNode *tableScanExchange = new ExchangeNode("probeExchange",ExchangeNode::REPARTITION,schemetableScan,tableScanLineItem);
 
      //   LocalExchangeNode *tableScanLocalExchange = new LocalExchangeNode("tableScanLocalExchange");
      //   tableScanLocalExchange->addSource(tableScanExchange);
 
         PlanNode *filterTime = createFilterNode();
-        filterTime->addSource(tableScanExchange);
+        filterTime->addSource(tableScanLineItem);
+
+        shared_ptr<PartitioningScheme> schemetableScan = make_shared<PartitioningScheme>(Partitioning::create(SystemPartitioningHandle::get("SCALED_SIMPLE_DISTRIBUTION_BUF"),{}));
+        ExchangeNode *tableScanExchange = new ExchangeNode("probeExchange",ExchangeNode::REPARTITION,schemetableScan,filterTime);
+
 
         PlanNode *project = createProject();
-        project->addSource(filterTime);
+        project->addSource(tableScanExchange);
 
 
 
