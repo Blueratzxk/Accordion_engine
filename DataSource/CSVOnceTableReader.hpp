@@ -42,7 +42,7 @@ class CSVOnceTableReader:public ConnectorPageSource
 
 public:
 
-    CSVOnceTableReader(shared_ptr<Session> session)
+    CSVOnceTableReader(shared_ptr<Session> session) : ConnectorPageSource("CSVOnceTableReader")
     {
         this->session = session;
     }

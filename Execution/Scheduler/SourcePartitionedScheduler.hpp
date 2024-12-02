@@ -133,6 +133,12 @@ public:
                     partitionInfos.push_back({hosts.front(),split});
 
                 }
+                else if (split->getConnectorSplit()->getId() == "TpchAutoGenSplit") {
+                    shared_ptr<ConnectorSplit> cs = split->getConnectorSplit();
+                    shared_ptr<TpchAutoGenSplit> tpchAutoGenSplit = static_pointer_cast<TpchAutoGenSplit>(cs);
+                    hosts = tpchAutoGenSplit->getPreferredNodes();
+                    partitionInfos.push_back({hosts.front(),split});
+                }
             }
         }
 

@@ -56,6 +56,8 @@ public:
         return true;
     }
 
+    std::shared_ptr<arrow::ArrayBuilder> getBuilder(){return this->builder;}
+
     int getBytesSize()
     {
         return this->builder->length()*this->builder->type()->byte_width();

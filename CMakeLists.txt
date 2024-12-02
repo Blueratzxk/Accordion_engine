@@ -457,6 +457,37 @@ add_executable(OLVP main.cpp
         Frontend/RowExpressionToAstExpression.hpp
         Frontend/Planner/VariableExtractor.hpp
         Frontend/Optimizations/OptimizeOutputProject.hpp
+
+
+        DataSource/tpch/TpchGen.cpp
+        DataSource/tpch/TpchGen.h
+        DataSource/tpch/TpchTableGen.hpp
+        DataSource/tpch/gen/DBGenIterator.cpp
+        DataSource/tpch/gen/DBGenIterator.h
+        DataSource/tpch/gen/dbgen/dbgen.cpp
+        DataSource/tpch/gen/dbgen/build.cpp
+        DataSource/tpch/gen/dbgen/bm_utils.cpp
+        DataSource/tpch/gen/dbgen/dbgen_gunk.cpp
+        DataSource/tpch/gen/dbgen/rnd.cpp
+        DataSource/tpch/gen/dbgen/permute.cpp
+        DataSource/tpch/gen/dbgen/rng64.cpp
+        DataSource/tpch/gen/dbgen/speed_seed.cpp
+        DataSource/tpch/gen/dbgen/text.cpp
+        DataSource/tpch/gen/dbgen/include/tpch_constants.hpp
+        DataSource/tpch/gen/dbgen/include/dbgen/config.h
+        DataSource/tpch/gen/dbgen/include/dbgen/dbgen_gunk.hpp
+        DataSource/tpch/gen/dbgen/include/dbgen/dists_dss.h
+        DataSource/tpch/gen/dbgen/include/dbgen/dss.h
+        DataSource/tpch/gen/dbgen/include/dbgen/dsstypes.h
+        DataSource/tpch/gen/dbgen/include/dbgen/permute.h
+        DataSource/tpch/gen/dbgen/include/dbgen/release.h
+        DataSource/tpch/gen/dbgen/include/dbgen/rnd.h
+        DataSource/tpch/gen/dbgen/include/dbgen/rng64.h
+        DataSource/tpch/gen/dbgen/include/dbgen/shared.h
+        DataSource/TpchAutoGenPageSource.hpp
+        Split/TpchAutoGenSplit.hpp
+
+
 )
 
 

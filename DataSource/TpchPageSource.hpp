@@ -30,12 +30,12 @@ class TpchPageSource: public ConnectorPageSource
     string defaultScanSize = "-1";
 
 public:
-    TpchPageSource(shared_ptr<Session> session)
+    TpchPageSource(shared_ptr<Session> session): ConnectorPageSource("TpchPageSource")
     {
         this->session = session;
     }
 
-    TpchPageSource(shared_ptr<Session> session,string defaultScanSize)
+    TpchPageSource(shared_ptr<Session> session,string defaultScanSize): ConnectorPageSource("TpchPageSource")
     {
         this->session = session;
         this->defaultScanSize = defaultScanSize;

@@ -37,7 +37,7 @@ class CSVCacheableTableReader:public ConnectorPageSource
 
 public:
 
-    CSVCacheableTableReader(shared_ptr<Session> session)
+    CSVCacheableTableReader(shared_ptr<Session> session) : ConnectorPageSource("CSVCacheableTableReader")
     {
         this->session = session;
     }

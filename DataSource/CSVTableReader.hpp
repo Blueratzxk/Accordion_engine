@@ -37,12 +37,12 @@ class CSVTableReader:public ConnectorPageSource
     string scanBlockSize = "-1";
 public:
 
-    CSVTableReader(shared_ptr<Session> session)
+    CSVTableReader(shared_ptr<Session> session) : ConnectorPageSource("CSVTableReader")
     {
         this->session = session;
     }
 
-    CSVTableReader(shared_ptr<Session> session,string blockSize)
+    CSVTableReader(shared_ptr<Session> session,string blockSize) : ConnectorPageSource("CSVTableReader")
     {
         this->session = session;
         this->scanBlockSize = blockSize;

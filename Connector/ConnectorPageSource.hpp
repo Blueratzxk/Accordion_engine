@@ -9,10 +9,20 @@
 
 #include <arrow/record_batch.h>
 
+#include <utility>
+
 class ConnectorPageSource
 {
+    string connectorPageSourceId;
 public:
+    explicit ConnectorPageSource(string connectorPageSourceId){
+        this->connectorPageSourceId = std::move(connectorPageSourceId);
+    }
 
+    string getConnectorPageSourceId()
+    {
+        return this->connectorPageSourceId;
+    }
     virtual std::shared_ptr<arrow::RecordBatch> getNextBatch() = 0;
     virtual bool loadTable(std::string path) {return false;}
     virtual size_t getFileBytesSize(){return 0;}

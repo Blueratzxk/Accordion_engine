@@ -7,6 +7,7 @@
 
 #include "../RemoteSplit.hpp"
 #include "../TpchSplit.hpp"
+#include "../TpchAutoGenSplit.hpp"
 #include "../Split.hpp"
 
 class SplitSerial
@@ -24,6 +25,10 @@ public:
         if(connectorSplit->getId() == "TpchSplit") {
             result = TpchSplit::Serialize(*static_pointer_cast<TpchSplit>(connectorSplit));
             type = "TpchSplit";
+        }
+        else if(connectorSplit->getId() == "TpchAutoGenSplit") {
+            result = TpchAutoGenSplit::Serialize(*static_pointer_cast<TpchAutoGenSplit>(connectorSplit));
+            type = "TpchAutoGenSplit";
         }
         else if(connectorSplit->getId() == "RemoteSplit") {
             result = RemoteSplit::Serialize(*static_pointer_cast<RemoteSplit>(connectorSplit));
@@ -44,6 +49,10 @@ public:
         if(type == "TpchSplit") {
             connectorSplit = TpchSplit::Deserialize(connectorSplitString);
             type = "TpchSplit";
+        }
+        else if(type == "TpchAutoGenSplit") {
+            connectorSplit = TpchAutoGenSplit::Deserialize(connectorSplitString);
+            type = "TpchAutoGenSplit";
         }
         else if(type == "RemoteSplit") {
             connectorSplit = RemoteSplit::Deserialize(connectorSplitString);

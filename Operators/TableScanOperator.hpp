@@ -140,12 +140,27 @@ public:
 
             if(this->tableScanRecord == NULL)
             {
-                this->tableScanRecord = make_shared<TableScanRecord>(this->tableScanId,
-                                                                     this->connectorPageSource->getCatalogName(),
-                                                                     this->connectorPageSource->getSchemaName(),
-                                                                     this->connectorPageSource->getTableName(),
-                                                                     0,
-                                                                     this->connectorPageSource->getFileBytesSize());
+                if(this->connectorPageSource->getConnectorPageSourceId() == "TpchAutoGenPageSource") {
+                    auto pageSource = dynamic_pointer_cast<TpchAutoGenPageSource>(this->connectorPageSource);
+                    this->tableScanRecord = make_shared<TableScanRecord>(this->tableScanId,
+                                                                         this->connectorPageSource->getCatalogName(),
+                                                                         this->connectorPageSource->getSchemaName(),
+                                                                         this->connectorPageSource->getTableName(),
+                                                                         0,
+                                                                         this->connectorPageSource->getFileBytesSize(),
+                                                                         true, pageSource->getScaleFactor());
+
+
+                }
+                else
+                    this->tableScanRecord = make_shared<TableScanRecord>(this->tableScanId,
+                                                                         this->connectorPageSource->getCatalogName(),
+                                                                         this->connectorPageSource->getSchemaName(),
+                                                                         this->connectorPageSource->getTableName(),
+                                                                         0,
+                                                                         this->connectorPageSource->getFileBytesSize());
+
+
                 this->driverContext->recordTableScanInfo(this->tableScanRecord);
             }
 

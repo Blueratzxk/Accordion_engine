@@ -18,9 +18,12 @@ class TableScanRecord
     string schemaName;
     string tableName;
     string tableScanId;
+    bool tpchAutoGen = false;
+    int scaleFactor = -1;
 
 public:
-    TableScanRecord(string tableScanId,string catalogName,string schemaName,string tableName,size_t scanedBytes,size_t totalTableBytes)
+    TableScanRecord(string tableScanId,string catalogName,string schemaName,string tableName,
+                    size_t scanedBytes,size_t totalTableBytes,bool tpchAutoGen = false, int scaleFactor = -1)
     {
         this->catalogName = catalogName;
         this->schemaName = schemaName;
@@ -28,6 +31,8 @@ public:
         this->scanedBytes = scanedBytes;
         this->totalTableBytes = totalTableBytes;
         this->tableScanId = tableScanId;
+        this->tpchAutoGen = tpchAutoGen;
+        this->scaleFactor = scaleFactor;
     }
     size_t getTotalTableBytes()
     {
@@ -37,6 +42,9 @@ public:
     {
         return this->scanedBytes;
     }
+
+    bool getTpchAutoGen(){return this->tpchAutoGen;}
+    int getScaleFactor(){return this->scaleFactor;}
 
     void updateScanedBytes(size_t scaned)
     {
@@ -82,6 +90,12 @@ public:
         result.append(",");
         result.append("\"totalTableBytes\":");
         result.append("\""+ to_string(this->totalTableBytes)+"\"");
+        result.append(",");
+        result.append("\"tpchAutoGen\":");
+        result.append("\""+ to_string(this->tpchAutoGen)+"\"");
+        result.append(",");
+        result.append("\"scaleFactor\":");
+        result.append("\""+ to_string(this->scaleFactor)+"\"");
         result.append("}");
 
 
@@ -100,6 +114,8 @@ public:
         json["catalogName"] = tableScanRecord->catalogName;
         json["schemaName"] = tableScanRecord->schemaName;
         json["tableName"] = tableScanRecord->tableName;
+        json["tpchAutoGen"] = tableScanRecord->tpchAutoGen;
+        json["scaleFactor"] = tableScanRecord->scaleFactor;
 
         string result = json.dump();
         return result;
@@ -111,7 +127,9 @@ public:
         u_int64_t scanedBytesJson = json["scanedBytes"];
         u_int64_t totalTableBytesJson = json["totalTableBytes"];
 
-        return make_shared<TableScanRecord>(json["tableScanId"],json["catalogName"],json["schemaName"],json["tableName"],(size_t)scanedBytesJson,(size_t)totalTableBytesJson);
+        return make_shared<TableScanRecord>(json["tableScanId"],json["catalogName"],json["schemaName"],
+                                            json["tableName"],(size_t)scanedBytesJson,(size_t)totalTableBytesJson
+                                            ,json["tpchAutoGen"],json["scaleFactor"]);
     }
 
 

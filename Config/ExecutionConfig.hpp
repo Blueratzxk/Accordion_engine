@@ -34,6 +34,7 @@ class ExecutionConfig
     string lazy_task_group_close_mode;
     string intial_plan_used_nodes;
     string intra_task_hash_build_concurrency;
+    string tpch_AutoGen_ScaleFactor;
 
 public:
     ExecutionConfig(){
@@ -73,6 +74,10 @@ public:
         this->log_level = jsonTree["log_level"];
         this->script_path = jsonTree["script_path"];
 
+        if(jsonTree.contains("tpch_AutoGen_ScaleFactor"))
+            this->tpch_AutoGen_ScaleFactor = jsonTree["tpch_AutoGen_ScaleFactor"];
+        else
+            this->tpch_AutoGen_ScaleFactor = "0";
 
         in.close();
         this->hasRead = true;
@@ -202,6 +207,15 @@ public:
         else
             return "false";
     }
+
+    string getTpch_AutoGen_ScaleFactor()
+    {
+        if(readConfigFile())
+            return this->tpch_AutoGen_ScaleFactor;
+        else
+            return "0";
+    }
+
 
 };
 
