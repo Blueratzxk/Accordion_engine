@@ -1497,7 +1497,19 @@ var serverIp = '192.168.226.129:9080'
 	  
 	  var string="";
 	  var curcommandStartY = 3;
+	  var curcommandShiftY = 3;
 	  var backupline=true;
+	  
+	  
+	  term.attachCustomKeyEventHandler(ev => {
+	  
+	  console.log(ev)
+        if (ev.code === 'ArrowUp' || ev.code === 'ArrowDown' || ev.code === 'ArrowLeft' || ev.code === 'ArrowRight' || ev.code === 'Home' || ev.code === 'End' || ev.code === 'PageUp' || ev.code === 'PageDown') {
+	
+          return false;
+        }
+        return true;
+      });
 	  
 	  term.onKey(e => {
         const printable = !e.domEvent.altKey && !e.domEvent.altGraphKey && !e.domEvent.ctrlKey && !e.domEvent.metaKey
@@ -1512,7 +1524,7 @@ var serverIp = '192.168.226.129:9080'
 		   //term.clear();
 		      
            }
-		
+
 		
 		if(string != ""){
 		
@@ -1523,6 +1535,7 @@ var serverIp = '192.168.226.129:9080'
            term.write('\n'+cmdresult);
 		   
 		   curcommandStartY = term._core.buffer.y+1;
+           curcommandShiftY = curcommandStartY;
 		    string = "";
           term.prompt()   
           }		   
@@ -1530,27 +1543,55 @@ var serverIp = '192.168.226.129:9080'
 		   string = "";
           term.prompt()   
 		    curcommandStartY = term._core.buffer.y;
+		     curcommandShiftY = curcommandStartY;
 		 }
 		  
 		  
         } else if (e.domEvent.keyCode === 8) { // back 删除的情况
 		console.log(term._core.buffer.x);
 		 console.log(term._core.buffer.y);
+
+         console.log(curcommandStartY,curcommandShiftY)
+
           if (curcommandStartY != term._core.buffer.y) {
+          console.log("-1-1-1")
+           if(curcommandShiftY === curcommandStartY && term._core.buffer.x <= promptStr.length)
+		    return;
+		    
 		  string = string.substring(0, string.length - 1)
             term.write('\b \b');
+			  console.log("000")
+			if(term._core.buffer.x === 0 && backupline === true){
+			      backupline = false;
+            }
+		    else if(term._core.buffer.x === 0 && backupline === false){
+		    console.log("111")
+			      term.write('\033['+colsValue+'C\033[A ');
+			      curcommandShiftY = curcommandShiftY - 1;
+				  backupline = true;
+            }
+				  
+          }
+		   else if(curcommandStartY < curcommandShiftY)
+		  {
+			console.log("222")
+		       string = string.substring(0, string.length - 1)
+               term.write('\b \b');
 			
 			if(term._core.buffer.x === 0 && backupline === true){
 			      backupline = false;
             }
 		    else if(term._core.buffer.x === 0 && backupline === false){
 			      term.write('\033['+colsValue+'C\033[A ');
+				  curcommandShiftY = curcommandShiftY - 1;
+				
 				  backupline = true;
             }
-				  
-          }
-		  else if(term._core.buffer.x > promptStr.length)
+		  }
+		  
+		  else if(curcommandShiftY === curcommandStartY && term._core.buffer.x > promptStr.length)
 		  {
+		      console.log("3333")
 		      string = string.substring(0, string.length - 1)
               term.write('\b \b')
 		  }
@@ -1563,7 +1604,15 @@ var serverIp = '192.168.226.129:9080'
 		  if(term._core.buffer.x === colsValue)
 		       term.write('\033[1B\r')
 			   
-		 
+		 if(term._core.buffer.y === rowsValue - 1 && term._core.buffer.x === colsValue)
+		 {
+		    term.write('\n')
+			curcommandShiftY = curcommandShiftY+1;
+		 }
+		 else if(term._core.buffer.x === colsValue)
+		 {
+		    curcommandShiftY = curcommandShiftY+1;
+		 }
 			   
 	      backupline = true;
 		  
