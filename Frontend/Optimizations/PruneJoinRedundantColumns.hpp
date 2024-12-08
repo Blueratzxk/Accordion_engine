@@ -258,10 +258,12 @@ public:
             if(node->getSource()->getType() != "LookupJoinNode" && node->getSource()->getType() != "TableScanNode")
             {
                 for(auto assignment : assignments)
-                {
-
                     pruneContext->addColumnName(assignment.second->getNameOrValue());
-                }
+            }
+            else if(getParent()->getType() != "LookupJoinNode" && node->getSource()->getType() == "LookupJoinNode")
+            {
+                for(auto assignment : assignments)
+                    pruneContext->addColumnName(assignment.second->getNameOrValue());
             }
 
 

@@ -23,12 +23,17 @@ class LazyOutputBuffer: public OutputBuffer
     atomic<bool> bufferReady = false;
     shared_ptr<TaskContext> taskContext = NULL;
     shared_ptr<SimpleEvent> event;
+    shared_ptr<SimpleEvent> bufferReadyEvent;
 
+    atomic<bool> bufferEventReady = false;
 
 public:
     LazyOutputBuffer(shared_ptr<TaskId> taskId){
         this->taskId = taskId;
         this->event = make_shared<SimpleEvent>();
+
+        this->bufferReadyEvent = make_shared<SimpleEvent>();
+        bufferEventReady = true;
     }
 
 
@@ -109,12 +114,18 @@ public:
     }
 
     void enqueue(vector<shared_ptr<DataPage>> pages) {
-        while(!bufferReady);
+
+
+        while(!bufferReady)usleep(5000);
+
         recordInputTupleInfos(pages);
         this->delegate->enqueue(pages);
     }
     bool isFull() {
-        while(!bufferReady);
+
+
+        while(!bufferReady)usleep(5000);
+
         if(this->delegate == NULL)
             return false;
         else {
@@ -130,7 +141,8 @@ public:
     }
     bool isEmpty()
     {
-        while(!bufferReady);
+        while(!bufferReady)usleep(5000);
+
         if(this->delegate == NULL)
             return false;
         else
@@ -165,7 +177,8 @@ public:
     }
 
     void regOutputOperator(){
-        while(!bufferReady);
+        while(!bufferReady)usleep(5000);
+
         this->delegate->regOutputOperator();
     }
 
@@ -200,6 +213,8 @@ public:
 
         this->delegate->setOutputBuffersSchema(schema);
         this->bufferReady = true;
+
+
 
     }
 

@@ -171,6 +171,11 @@ public:
             {
                 string originFieldName = this->outputAssignments.getAssignments()[i].first.getFieldName();
                 int fieldIndex = input->get()->schema()->GetFieldIndex(originFieldName);
+
+                if(fieldIndex == -1)
+                    spdlog::error(input->get()->schema()->ToString());
+
+
                 columns.push_back(input->get()->column(fieldIndex));
             }
             else

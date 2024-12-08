@@ -26,6 +26,8 @@ class TaskOutputOperator:public Operator
 
     shared_ptr<DriverContext> driverContext;
 
+
+
 public:
     string getOperatorId() { return this->name; }
 
@@ -39,6 +41,7 @@ public:
     }
 
     void addInput(std::shared_ptr<DataPage> input) override {
+
 
         if(this->finished) {
             return;
