@@ -18,6 +18,7 @@ public:
     static TaskInfo createOrUpdateTask(string taskId,string request)
     {
 
+        spdlog::debug(taskId+"---"+request);
         return  TaskServer::taskResourceManager->updateTask(*TaskId::Deserialize(taskId),TaskUpdateRequest::Deserialize(request));
     }
 

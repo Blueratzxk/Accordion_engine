@@ -640,9 +640,13 @@ public:
 
         for (int i = 0; i < executions.size(); i++) {
             executions[i].getStageExecution()->beginScheduling();
+            spdlog::debug("Schedule "+executions[i].getStageScheduler()->getSchedulerType()+" stageId:"+ to_string(executions[i].getStageExecution()->getStageId().getId()));
             ScheduleResult result = executions[i].getStageScheduler()->schedule();
             vector<shared_ptr<HttpRemoteTask>> newTasks = result.getNewTasks();
+            spdlog::debug("Pre Schedule OK, process schedule results");
             executions[i].getStageLinkage()->processScheduleResults(newTasks);
+            spdlog::debug("Schedule "+executions[i].getStageScheduler()->getSchedulerType()+" stageId:"+ to_string(executions[i].getStageExecution()->getStageId().getId())+" OK!");
+
         }
 
 

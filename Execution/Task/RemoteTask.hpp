@@ -37,6 +37,7 @@ class HttpRemoteTask
 
     shared_ptr<Event> eventListener;
 
+    shared_ptr<RestfulClient> restfulClient;
 
 
 public:
@@ -50,7 +51,7 @@ public:
         this->fragment = fragment;
         this->session = session;
         this->taskInfoFetcher = make_shared<TaskInfoFetcher>(this->taskId,this->httpRequestLocation,this->eventListener);
-
+        this->restfulClient = make_shared<RestfulClient>();
     }
 
 
@@ -147,11 +148,12 @@ public:
 
     void sendUpdate(string location,string path,string updateString)
     {
+        spdlog::debug("Schedule string is :"+location+"|"+path+"|");
         string linkString = location+path;
         if(updateString != "")
-            http_Client::POST(linkString,{TaskId::Serialize(*(this->taskId)),updateString});
+            this->restfulClient->POST(linkString,{TaskId::Serialize(*(this->taskId)),updateString});
         else
-            http_Client::POST(linkString,{TaskId::Serialize(*(this->taskId))});
+            this->restfulClient->POST(linkString,{TaskId::Serialize(*(this->taskId))});
     }
 
     shared_ptr<TaskInfo> getTaskInfo()
@@ -191,6 +193,7 @@ public:
     void close()
     {
         scheduleUpdate("","/v1/task/closeTask");
+        this->restfulClient = NULL;
     }
 
     void abort()

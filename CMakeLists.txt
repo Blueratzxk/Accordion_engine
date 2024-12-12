@@ -488,6 +488,15 @@ add_executable(OLVP main.cpp
         Split/TpchAutoGenSplit.hpp
 
 
+        Web/Restful/restclient-cpp/connection.cc
+        Web/Restful/restclient-cpp/connection.h
+        Web/Restful/restclient-cpp/helpers.cc
+        Web/Restful/restclient-cpp/helpers.h
+        Web/Restful/restclient-cpp/restclient.cc
+        Web/Restful/restclient-cpp/restclient.h
+        Web/Restful/restclient-cpp/version.h
+
+
 )
 
 
@@ -495,7 +504,7 @@ add_executable(OLVP main.cpp
 include_directories(
         "/home/zxk/open-codes/json/include/"
         "/usr/local/include/"
-        "/usr/local/include/restclient-cpp"
+
         "/home/zxk/.local/include"
         "/home/zxk/open-codes/oneapi-tbb-2021.9.0/include"
 
@@ -505,7 +514,7 @@ target_link_libraries(
         OLVP
         pistache
         /usr/local/lib64/libpistache.so
-        /usr/local/lib/librestclient-cpp.so
+
         curl
         arrow
         arrow_acero

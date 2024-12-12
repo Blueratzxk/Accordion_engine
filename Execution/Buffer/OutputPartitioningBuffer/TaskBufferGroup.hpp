@@ -106,10 +106,15 @@ public:
     {
         map<int,int> tgMap;
 
+
+
         for(auto pt : this->partitionCount_taskGroupMap)
         {
+
             tgMap[pt.first] = pt.second->getPartitionCount();
         }
+
+
         return tgMap;
 
     }
@@ -422,7 +427,7 @@ public:
         for(auto group : this->partitionCount_taskGroupMap)
         {
             if(group.first != this->preSelectedGroupId) {
-                if (group.second->getGroupStatus() == true)
+                if (group.second != NULL && group.second->getGroupStatus() == true)
                     group.second->enqueuePages({page});
             }
         }
@@ -565,7 +570,7 @@ public:
 
         for(auto group : temp) {
 
-            if(group.second->getGroupStatus() == true && group.second->getGroupStorePagesSize() == 0) {
+            if(group.second != NULL && group.second->getGroupStatus() == true && group.second->getGroupStorePagesSize() == 0) {
                 this->taskGroupPagesLimits[group.first] += this->taskGroupChangeSize;
             }
         }
@@ -581,7 +586,8 @@ public:
         groupLock.unlock();
 
         for(auto group : temp) {
-            if (group.second->getGroupStatus() == true) {
+
+            if (group.second != NULL && group.second->getGroupStatus() == true) {
                 int cap = group.second->getTaskGroupTraffic();
                 if(cap < 1)
                     cap = 1;
@@ -668,7 +674,8 @@ public:
 
         for(auto group : temp) {
 
-            if(group.second->getGroupStatus() == true) {
+
+            if(group.second != NULL && group.second->getGroupStatus() == true) {
                 int ss = group.second->getGroupStorePagesSize();
 
                 if (ss < this->taskGroupPagesLimits[group.first] && group.second->getBlockQueueSize() == 0)
@@ -701,7 +708,9 @@ public:
 
         int total = 0;
         for(auto group : temp) {
-            total+=group.second->getGroupStorePagesSize();
+
+            if(group.second != NULL)
+                total+=group.second->getGroupStorePagesSize();
         }
 
         if(total == 0)

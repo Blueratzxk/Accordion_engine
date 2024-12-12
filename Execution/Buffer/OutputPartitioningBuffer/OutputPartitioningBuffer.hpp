@@ -52,6 +52,7 @@ class OutputPartitioningBuffer: public OutputBuffer
     atomic<int> outputOperatorCount = 0;
     atomic<int> endPageNum = 0;
 
+    mutex enqueueLock;
 
 
 public:
@@ -155,7 +156,7 @@ public:
 
     void enqueue(vector<shared_ptr<DataPage>> pages) {
 
-
+        enqueueLock.lock();
         vector<shared_ptr<DataPage>> pagesToEnqueue;
         for (int i = 0; i < pages.size(); i++) {
 
@@ -221,7 +222,7 @@ public:
         }
 
         this->tbg->tuneBufferCapacity("producer");
-
+        enqueueLock.unlock();
 
 
     }

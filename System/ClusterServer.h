@@ -18,6 +18,7 @@ class ClusterServer
     static bool useStorage;
     static shared_ptr<NetInfoCollector> netInfoCollector;
     static bool showInfos;
+    static shared_ptr<RestfulClient> restfulClient;
 public:
     ClusterServer();
 

@@ -107,6 +107,10 @@ public:
                     newTasks.push_back(task[i]);
             }
         }
+        else if(true)
+        {
+            mergeTableScanSources(nodes,taskSources,selector,newTasks);
+        }
         else {
             vector<shared_ptr<HttpRemoteTask>> task = stageExecutor->scheduleMulSourceSplits(nodes, taskSources);
             if (!task.empty()) {
@@ -116,6 +120,46 @@ public:
         }
 
         return newTasks;
+    }
+
+    void mergeTableScanSources(vector<shared_ptr<ClusterNode>> nodes,vector<shared_ptr<TaskSource>> taskSources,NodeSelector selector,vector<shared_ptr<HttpRemoteTask>> &newTasks) {
+        map<shared_ptr<ClusterNode>, std::set<std::shared_ptr<ScheduledSplit>>> groupedSplits;
+
+        for (int i = 0; i < taskSources.size(); i++) {
+            for (auto s: taskSources[i]->getSplits()) {
+                shared_ptr<ScheduledSplit> ssp = make_shared<ScheduledSplit>(s->getPlanNodeId(), s->getSplit());
+
+                if (!groupedSplits.contains(nodes[i])) {
+                    groupedSplits[nodes[i]] = {};
+                    groupedSplits[nodes[i]].insert(ssp);
+                } else
+                    groupedSplits[nodes[i]].insert(ssp);
+            }
+        }
+
+       // for (auto g: groupedSplits) {
+      //      spdlog::info(g.first->getNodeLocation());
+      //      for (auto ts: g.second) {
+      //          spdlog::info(ts->getSplit()->getConnectorSplit()->getId());
+      //      }
+      //  }
+
+        vector<shared_ptr<TaskSource>> mergedTaskSources;
+        vector<shared_ptr<ClusterNode>> groupedNodes;
+        for (auto gsplits: groupedSplits) {
+            shared_ptr<TaskSource> taskSource = make_shared<TaskSource>(taskSources[0]->getPlanNodeId(), gsplits.second);
+            mergedTaskSources.push_back(taskSource);
+            groupedNodes.push_back(gsplits.first);
+        }
+
+
+        vector<shared_ptr<HttpRemoteTask>> task = stageExecutor->scheduleMulSourceSplits(groupedNodes,mergedTaskSources);
+        if (!task.empty()) {
+            for (int i = 0; i < task.size(); i++)
+                newTasks.push_back(task[i]);
+        }
+
+
     }
 
 

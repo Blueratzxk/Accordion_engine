@@ -46,13 +46,18 @@ public:
         if(hasRead == true)
             return true;
         string strFileData = "execution.config";
-        std::ifstream in(strFileData, std::ios::in | std::ios::binary);
-        if (!in.is_open())
-        {
-            cout << "Cannot open the config file!"<<endl;
+        std::ifstream in;
+        in.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+        try {
+           in.open(strFileData, std::ios::in | std::ios::binary);
+        }
+        catch (std::system_error& e) {
+            std::cerr << e.code().message() << std::endl;
+            cout << "Cannot open the execution config file!"<<endl;
             exit(0);
             return false;
         }
+
         nlohmann::json jsonTree = nlohmann::json::parse(in);
         this->tableScanBatchSize = jsonTree["tableScanBatchSize"];
         this->initial_intra_task_concurrency = jsonTree["initial_intra_task_concurrency"];

@@ -41,7 +41,7 @@ public:
         std::ifstream in(strFileData, std::ios::in | std::ios::binary);
         if (!in.is_open())
         {
-            cout << "Cannot open the config file!"<<endl;
+            cout << "Cannot open the web config file!"<<endl;
             exit(0);
             return false;
         }

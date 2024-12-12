@@ -698,6 +698,7 @@ public:
     shared_ptr<HttpRemoteTask> scheduleTask(shared_ptr<ClusterNode> node)
     {
 
+        spdlog::debug("Stage "+to_string(this->stageId) + " starts scheduling task!");
         TaskId taskId = TaskId(this->queryId,this->stageExecutionId,this->stageId,getNextTaskId());
         shared_ptr<TaskSource> task_Sources = this->sourceTasksTo_taskSources(taskId);
 
@@ -711,7 +712,7 @@ public:
         addNodeTaskMap(node,remoteTask);
         addTask(node,remoteTask);
         remoteTask->start();
-
+        spdlog::debug(to_string(this->stageId) + "schedules task OK!");
         return remoteTask;
     }
 
@@ -807,7 +808,7 @@ public:
                 shared_ptr<TaskSource> task_Sources = this->sourceTasksTo_taskSources(taskId);
                 for (auto ts: task_Sources->getSplits())
                 {
-                    tss[0]->addSplit(ts);
+                    tss[i]->addSplit(ts);
                 }
                 /*if table stage also have remotesource,we should schedule remotesource too*/
 

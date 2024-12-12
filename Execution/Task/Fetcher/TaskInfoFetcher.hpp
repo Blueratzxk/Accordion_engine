@@ -381,6 +381,8 @@ class TaskInfoFetcher : public enable_shared_from_this<TaskInfoFetcher>
 
     int allThreadsNums = 0;
 
+    shared_ptr<RestfulClient> restfulClient = make_shared<RestfulClient>();
+
 public:
     TaskInfoFetcher(shared_ptr<TaskId> taskId,string remoteTaskLocation,shared_ptr<Event> eventListener)
     {
@@ -403,10 +405,10 @@ public:
         return result;
     }
 
-    void sendRequest(string location,string path)
+    void sendRequest(string location,string path,shared_ptr<RestfulClient> client)
     {
         string linkString = location+path;
-        string result = http_Client::POST_GetResult(linkString,{this->taskId->ToString()});
+        string result = client->POST_GetResult(linkString,{this->taskId->ToString()});
         requestCounter++;
         bufferInfoRequestCounter++;
         lock.lock();
@@ -591,7 +593,7 @@ public:
             while (true) {
 
                 try {
-                    fetcher->sendRequest(fetcher->remoteTaskLocation, "/v1/task/getTaskInfo");
+                    fetcher->sendRequest(fetcher->remoteTaskLocation, "/v1/task/getTaskInfo",fetcher->restfulClient);
 
                     if (fetcher->taskInfo->getStatus().compare("FINISHED") == 0) {
 
@@ -606,6 +608,7 @@ public:
                     break;
                 }
             }
+            fetcher->restfulClient = NULL;
             fetcher->finished = true;
             fetcher->eventListener->notify();
         },shared_from_this());
