@@ -42,6 +42,9 @@ class SqlTaskExecution {
 
     map<PlanNodeId,PipelineId> sourcePlanNodeId_To_LPipeline;
 
+    map<PlanNodeId,shared_ptr<Operator>> sourcePlanNodeId_To_JoinBuildOperator;
+
+
     map<PipelineId, pair<std::shared_ptr<LogicalPipeline>,int>> sourceLogicalPipelineRegister;//记录所有source logicalpipeline
     map<PipelineId, pair<std::shared_ptr<LogicalPipeline>, int>> tableScanLogicalPipelineRegister;//记录所有tablescan logical pipeline
     map<PipelineId, pair<std::shared_ptr<LogicalPipeline>, int>> remoteSourceLogicalPipelineRegister;
@@ -369,6 +372,10 @@ public:
         }
         this->taskExecutor->enqueueSplits(this->taskHandle,runners);
     }
+
+
+
+
 
     void scheduleRemoteSource(set<shared_ptr<ScheduledSplit>> splits)
     {

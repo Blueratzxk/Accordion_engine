@@ -495,6 +495,8 @@ add_executable(OLVP main.cpp
         Web/Restful/restclient-cpp/restclient.cc
         Web/Restful/restclient-cpp/restclient.h
         Web/Restful/restclient-cpp/version.h
+        Execution/Scheduler/QueryInfos/StageProcessingTimeCollector.hpp
+        Execution/Scheduler/QueryInfos/StageProcessingTimeDict.hpp
 
 
 )

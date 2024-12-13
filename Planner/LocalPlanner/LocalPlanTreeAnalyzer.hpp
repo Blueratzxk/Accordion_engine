@@ -202,7 +202,7 @@ public:
         ((LocalExecutionPlanContext*)context)->addJoinNum();
 
         PhysicalOperation *sourceBuild = (PhysicalOperation*)Visit(node->getBuild(),context);
-        auto build = make_shared<Logical_HashBuilderOperator>(lookupSourceFactory,node->getLookupJoinDescriptor().getBuildOutputChannels(),node->getLookupJoinDescriptor().getBuildHashChannels());
+        auto build = make_shared<Logical_HashBuilderOperator>(node->getId(),lookupSourceFactory,node->getLookupJoinDescriptor().getBuildOutputChannels(),node->getLookupJoinDescriptor().getBuildHashChannels());
         PhysicalOperation *buildPipeline = new PhysicalOperation(build,sourceBuild);
 
 
@@ -257,7 +257,7 @@ public:
         ((LocalExecutionPlanContext*)context)->setDownstreamProbeOrBuild("build");
         PhysicalOperation *sourceBuild = (PhysicalOperation*)Visit(node->getBuild(),context);
 
-        auto build = make_shared<Logical_NestedLoopBuildOperator>(supplier);
+        auto build = make_shared<Logical_NestedLoopBuildOperator>(node->getId(),supplier);
         PhysicalOperation *buildPipeline = new PhysicalOperation(build,sourceBuild);
 
         string id = ((LocalExecutionPlanContext*)context)->getNextId();

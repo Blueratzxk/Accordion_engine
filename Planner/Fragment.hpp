@@ -48,6 +48,23 @@ public:
         this->fragmentId = id;
     }
 
+    bool hasTableScanId(string tableScanId)
+    {
+        return findTableScanIdOnSubPlan(this->root,tableScanId);
+    }
+
+    bool findTableScanIdOnSubPlan(PlanNode *root,string tableScanId) {
+
+        if(root->getId() == tableScanId)
+            return true;
+
+        for (auto child: root->getSources()) {
+            if(findTableScanIdOnSubPlan(child,tableScanId))
+                return true;
+        }
+        return false;
+    }
+
     void findRemoteSourceNode(PlanNode *node,vector<PlanNode *> &builder)
     {
         for (PlanNode* source : node->getSources()) {

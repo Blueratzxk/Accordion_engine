@@ -61,13 +61,14 @@ private:
     shared_ptr<std::chrono::system_clock::time_point> lastBuildFinishedTime = NULL;
     shared_ptr<std::chrono::system_clock::time_point> buildComputingStartTime = NULL;
 
+    string joinId;
 public:
 
 
 
     string getOperatorId() { return this->name; }
 
-    HashBuilderOperator(shared_ptr<DriverContext> driverContext,int partitionIndex,std::shared_ptr<PartitionedLookupSourceFactory> lookupSourceFactory,
+    HashBuilderOperator(string joinId,shared_ptr<DriverContext> driverContext,int partitionIndex,std::shared_ptr<PartitionedLookupSourceFactory> lookupSourceFactory,
                         vector<int> outputChannels,vector<int> hashChannels) {
 
         this->finished = false;
@@ -78,6 +79,7 @@ public:
         this->outputChannels = outputChannels;
         this->hashChannels = hashChannels;
         this->driverContext = driverContext;
+        this->joinId = joinId;
 
     }
     State getState()
@@ -169,7 +171,7 @@ public:
 
 
 
-                this->driverContext->reportBuildTime(buildTime);
+                this->driverContext->reportBuildTime(joinId,buildTime);
                 this->driverContext->reportBuildComputingTime(buildComputingTime);
 
                 return;

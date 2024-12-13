@@ -82,7 +82,7 @@ TaskThroughputInfo TaskContext::getTaskThroughputInfo() {
 }
 
 JoinInfoDescriptor TaskContext::getJoinInfoDescriptor() {
-    return JoinInfoDescriptor(this->joinNum,this->buildNums,this->getBuildTime(),this->getBuildComputingTime());
+    return JoinInfoDescriptor(this->joinNum,this->buildNums,this->getBuildTime(),this->getBuildComputingTime(),this->joinIdToBuildTime);
 }
 
 void TaskContext::addTotalTupleCount(long increment) {
@@ -142,10 +142,15 @@ void TaskContext::reportBuildFinishedTime(std::chrono::system_clock::time_point 
 
 };
 
-void TaskContext::reportBuildTime(double time)
+void TaskContext::reportBuildTime(string joinId,double time)
 {
     if(time > maxBuildTime)
         maxBuildTime = time;
+
+
+    joinIdToBuildTimeLock.lock();
+    this->joinIdToBuildTime[joinId] = time;
+    joinIdToBuildTimeLock.unlock();
 }
 
 void TaskContext::reportBuildComputingTime(double time)

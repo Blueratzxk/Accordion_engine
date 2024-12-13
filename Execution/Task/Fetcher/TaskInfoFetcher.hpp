@@ -381,7 +381,11 @@ class TaskInfoFetcher : public enable_shared_from_this<TaskInfoFetcher>
 
     int allThreadsNums = 0;
 
+    bool hasThroughput = false;
+
     shared_ptr<RestfulClient> restfulClient = make_shared<RestfulClient>();
+
+    map<string,double> joinIdToBuildTime;
 
 public:
     TaskInfoFetcher(shared_ptr<TaskId> taskId,string remoteTaskLocation,shared_ptr<Event> eventListener)
@@ -415,11 +419,16 @@ public:
         this->taskInfo = TaskInfo::Deserialize(result);
         TaskThroughputInfo taskThroughputInfo1 = this->taskInfo->getTaskInfoDescriptor()->getTaskThroughputInfo();
 
-        double a = (taskThroughputInfo1.getCurrentTupleCount() - this->taskThroughputInfo->getCurrentTupleCount());
+        long a = (taskThroughputInfo1.getCurrentTupleCount() - this->taskThroughputInfo->getCurrentTupleCount());
         double b = (taskThroughputInfo1.getTimeStamp()-this->taskThroughputInfo->getTimeStamp());
         double c = (taskThroughputInfo1.getThroughputBytes() - this->taskThroughputInfo->getThroughputBytes());
 
-        this->throughput = a/b;
+        if(a > 0)
+            this->hasThroughput = true;
+        else
+            this->hasThroughput = false;
+
+        this->throughput = ((double)a)/b;
         this->throughputBytes = c/b;
         this->bufferInfoDescriptor = this->taskInfo->getTaskInfoDescriptor()->getBufferInfoDescriptor();
 
@@ -461,6 +470,7 @@ public:
                         this->buildRecord = to_string(TimeCommon::getCurrentTimeStamp());
                         this->buildTime = this->taskInfo->getTaskInfoDescriptor()->getJoinInfoDescriptor().getBuildTime();
                         this->buildComputingTime = this->taskInfo->getTaskInfoDescriptor()->getJoinInfoDescriptor().getBuildComputingTime();
+                        this->joinIdToBuildTime = this->taskInfo->getTaskInfoDescriptor()->getJoinInfoDescriptor().getJoinIdToBuildTime();
                     }
                 }
             }
@@ -479,6 +489,15 @@ public:
     double getBuildComputingTime()
     {
         return this->buildComputingTime;
+    }
+
+    bool taskHasThroughput()
+    {
+        return this->hasThroughput;
+    }
+
+    map<string,double> getJoinIdToBuildTime(){
+        return this->joinIdToBuildTime;
     }
 
     double getThroughput()
@@ -611,6 +630,7 @@ public:
             fetcher->restfulClient = NULL;
             fetcher->finished = true;
             fetcher->eventListener->notify();
+            fetcher->hasThroughput = false;
         },shared_from_this());
         process.detach();
     }

@@ -71,6 +71,9 @@ class TaskContext:public std::enable_shared_from_this<TaskContext>
     atomic<int> exchangeBufferSizeTurnDownCounter = 0;
     atomic<int> exchangeBufferSizeTurnUpCounter = 0;
 
+    map<string,double> joinIdToBuildTime;
+    mutex joinIdToBuildTimeLock;
+
 public:
     TaskContext(shared_ptr<TasksRuntimeStats> tasksRuntimeStats,weak_ptr<QueryContext> queryContext,shared_ptr<TaskId> taskId,shared_ptr<TaskStateMachine> stateMachine,shared_ptr<OutputBuffer> outputBuffer);
     shared_ptr<PipelineContext> addPipelineContext(PipelineId pipelineId);
@@ -223,7 +226,7 @@ public:
     void reportBuildFinishedTime(std::chrono::system_clock::time_point time);
 
 
-    void reportBuildTime(double time);
+    void reportBuildTime(string joinId,double time);
     void reportBuildComputingTime(double time);
 
     map<string,set<__pid_t>> getAllTaskTids();

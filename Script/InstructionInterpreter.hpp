@@ -53,6 +53,8 @@ class InstructionInterpreter
 
         funcMap.insert(make_pair("PREDICT_TIME", &InstructionInterpreter::PREDICT_TIME));
 
+        funcMap.insert(make_pair("START_AND_COLLECT", &InstructionInterpreter::START_AND_COLLECT));
+
 
     }
     bool RUNTIME_CONFIG(Instruction instruction)
@@ -116,6 +118,21 @@ class InstructionInterpreter
         if(parameters.size() != 1)
         {
             spdlog::error("Start_Query Instruction only need one parameter.");
+            return false;
+        }
+        else
+        {
+            spdlog::debug("Query "+parameters[0]+" start!");
+            return true;
+        }
+    }
+
+    bool START_AND_COLLECT(Instruction instruction)
+    {
+        vector<string> parameters = instruction.getParameters();
+        if(parameters.size() != 1)
+        {
+            spdlog::error("START_AND_COLLECT Instruction only need one parameter.");
             return false;
         }
         else

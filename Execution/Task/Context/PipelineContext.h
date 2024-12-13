@@ -71,7 +71,7 @@ public:
 
     void reportBuildFinishedTime(std::chrono::system_clock::time_point time);
 
-    void reportBuildTime(double time);
+    void reportBuildTime(string joinId,double time);
     void reportBuildComputingTime(double time);
 
 

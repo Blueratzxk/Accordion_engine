@@ -56,6 +56,7 @@ private:
     shared_ptr<std::chrono::system_clock::time_point> lastBuildFinishedTime = NULL;
     shared_ptr<std::chrono::system_clock::time_point> buildComputingStartTime = NULL;
 
+    string joinId;
 
     shared_ptr<DriverContext> driverContext;
 public:
@@ -64,12 +65,12 @@ public:
 
     string getOperatorId() { return this->name; }
 
-    NestedLoopBuildOperator(shared_ptr<DriverContext> driverContext, std::shared_ptr<NestedLoopJoinBridge> joinBridge) {
+    NestedLoopBuildOperator(string joinId,shared_ptr<DriverContext> driverContext, std::shared_ptr<NestedLoopJoinBridge> joinBridge) {
 
         this->finished = false;
         this->joinBridge = joinBridge;
 
-
+        this->joinId = joinId;
         this->outputChannels = outputChannels;
 
         this->driverContext = driverContext;
@@ -140,7 +141,7 @@ public:
 
 
 
-               this->driverContext->reportBuildTime(buildTime);
+               this->driverContext->reportBuildTime(joinId,buildTime);
                this->driverContext->reportBuildComputingTime(buildComputingTime);
 
                return;

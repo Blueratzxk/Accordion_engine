@@ -68,6 +68,8 @@ class SqlStageExecution:public enable_shared_from_this<SqlStageExecution>
 
     shared_ptr<Event> simpleEvent;
 
+    long throughputCounter = 0;
+
 public:
     SqlStageExecution(){}
     SqlStageExecution(shared_ptr<Session> session,string queryId,int stageExecutionId,int stageId,shared_ptr<PlanFragment> fragment){
@@ -116,6 +118,15 @@ public:
         return result;
     }
 
+    bool stageHasThroughput()
+    {
+        vector<shared_ptr<HttpRemoteTask>> allTasks = this->getAllTasks();
+        for(auto task : allTasks) {
+            if(task->hasThroughput())
+                return true;
+        }
+        return false;
+    }
 
     bool isBufferNeedPartitioning()
     {
@@ -637,6 +648,18 @@ public:
     }
 
 
+    vector<map<string,double>> getJoinIdToBuildTime()
+    {
+        auto allTasks = getAllTasks();
+        vector<map<string,double>> joinIdToBuildTimes;
+
+        for(auto task : allTasks)
+        {
+            auto times = task->getTaskInfoFetcher()->getJoinIdToBuildTime();
+            joinIdToBuildTimes.push_back(times);
+        }
+        return joinIdToBuildTimes;
+    }
 
     int getNextTaskId()
     {

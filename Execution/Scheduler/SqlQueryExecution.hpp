@@ -189,7 +189,7 @@ public:
         stateMachine->planned();
         PlanTreeAnalyzer analyzer(root);
         shared_ptr<SubPlan> tree = analyzer.analyzeToSubPlanTree();
-        this->scheduler = make_shared<SqlQueryScheduler>(tree,this->session,this->stateMachine);
+        this->scheduler = make_shared<SqlQueryScheduler>(root,tree,this->session,this->stateMachine);
         this->dyScheduler = make_shared<Dynamic_scheduler>(this->scheduler);
         this->dyMonitor = make_shared<DynamicTuningMonitor>(this->scheduler);
     }

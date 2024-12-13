@@ -22,11 +22,13 @@ private:
     bool sendEndPage = false;
 
 
+    string joinId;
+
     vector<int> outputChannels;
     vector<int> hashChannels;
 
 
-    int partitionIndex;
+
 
     std::shared_ptr<PartitionedLookupSourceFactory> lookupSourceFactory;
 
@@ -36,23 +38,24 @@ public:
 
     string getOperatorId() { return this->name; }
 
-    Logical_HashBuilderOperator(std::shared_ptr<PartitionedLookupSourceFactory> lookupSourceFactory,
+    Logical_HashBuilderOperator(string joinId,std::shared_ptr<PartitionedLookupSourceFactory> lookupSourceFactory,
                         vector<int> outputChannels,vector<int> hashChannels) {
 
 
-        this->partitionIndex = partitionIndex;
+
         this->lookupSourceFactory = lookupSourceFactory;
         this->outputChannels = outputChannels;
         this->hashChannels = hashChannels;
+        this->joinId = joinId;
 
     }
     std::shared_ptr<Operator> getOperator(shared_ptr<DriverContext> driverContext) {
 
-        return std::make_shared<HashBuilderOperator>(driverContext,this->lookupSourceFactory->getPartitionAssign(),this->lookupSourceFactory,this->outputChannels,this->hashChannels);
+        return std::make_shared<HashBuilderOperator>(joinId,driverContext,this->lookupSourceFactory->getPartitionAssign(),this->lookupSourceFactory,this->outputChannels,this->hashChannels);
     }
     std::shared_ptr<void> getOperatorNonType(shared_ptr<DriverContext> driverContext) {
 
-        return std::make_shared<HashBuilderOperator>(driverContext,this->lookupSourceFactory->getPartitionAssign(),this->lookupSourceFactory,this->outputChannels,this->hashChannels);
+        return std::make_shared<HashBuilderOperator>(joinId,driverContext,this->lookupSourceFactory->getPartitionAssign(),this->lookupSourceFactory,this->outputChannels,this->hashChannels);
     }
 
     string getTypeId(){return name;}

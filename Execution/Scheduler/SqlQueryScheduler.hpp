@@ -18,9 +18,12 @@
 
 
 #include "../../Query/QueryStateMachine.hpp"
+#include "QueryInfos/StageProcessingTimeCollector.hpp"
 
 
 class SqlQueryScheduler : public enable_shared_from_this<SqlQueryScheduler>{
+
+    PlanNode *rawTree;
     shared_ptr<SubPlan> root;
     atomic<bool> isStarted = false;
 
@@ -41,11 +44,13 @@ class SqlQueryScheduler : public enable_shared_from_this<SqlQueryScheduler>{
     double originTime = 0.0;
     double actualTime = 0.0;
     double executionTime = 0.0;
+    shared_ptr<StageProcessingTimeCollector> stageProcessingTimeCollector;
 
 public:
-    SqlQueryScheduler(shared_ptr<SubPlan> tree,shared_ptr<Session> session,shared_ptr<QueryStateMachine> stateMachine)
+    SqlQueryScheduler(PlanNode * rawTree,shared_ptr<SubPlan> tree,shared_ptr<Session> session,shared_ptr<QueryStateMachine> stateMachine)
     {
         this->root = tree;
+        this->rawTree = rawTree;
         this->session = session;
         this->stateMachine = stateMachine;
         this->executionFactory = make_shared<StageTreeExecutionFactory>(this->session);
@@ -57,7 +62,16 @@ public:
             stageExecutionsMap[stageExecution.getStageExecution()->getStageId().getId()] = make_shared<StageExecutionAndScheduler>(stageExecution.getStageExecution(),
                                                                                                                        stageExecution.getStageLinkage(),stageExecution.getStageScheduler());
         }
+
+        list<shared_ptr<SqlStageExecution>> stageExecutions;
+        for(auto exe : this->stageExeSchedulers)
+            stageExecutions.push_back(exe.getStageExecution());
+
+        this->stageProcessingTimeCollector = make_shared<StageProcessingTimeCollector>(stageExecutions);
+        this->stageProcessingTimeCollector->start();
     }
+
+
 
     double getOriginExecutionTime()
     {
@@ -121,6 +135,66 @@ public:
 
         return NULL;
     }
+
+
+    //------------------------------------------------------------------------------//
+
+    shared_ptr<SqlStageExecution> findStageExecutionByTableScanId(string tableScanId){
+
+        for(auto stageScheduler : this->stageExeSchedulers)
+        {
+            if(stageScheduler.getStageExecution()->getFragment()->hasTableScanId(tableScanId))
+                return stageScheduler.getStageExecution();
+        }
+        return NULL;
+    }
+
+    string traversePlanToFindJoinBuildSideTableScanId(PlanNode *node) {
+
+        if(node->getType() == "TableScanNode") {
+            return node->getId();
+        }
+
+        auto childs = node->getSources();
+        if(!childs.empty())
+            return traversePlanToFindJoinBuildSideTableScanId(childs[0]);
+
+        return "0";
+    }
+
+    void traversePlanToFindJoin(PlanNode *root)
+    {
+        if(root->getType() == "LookupJoinNode" || root->getType() == "CrossJoinNode") {
+
+            string tablescanId;
+            if(root->getType() == "LookupJoinNode")
+            {
+                tablescanId = traversePlanToFindJoinBuildSideTableScanId(((LookupJoinNode*)root)->getBuild());
+            }
+            else if (root->getType() == "CrossJoinNode") {
+                tablescanId = traversePlanToFindJoinBuildSideTableScanId(((CrossJoinNode *) root)->getBuild());
+            }
+            spdlog::info(root->getId()+"----"+ to_string(findStageExecutionByTableScanId(tablescanId)->getStageId().getId()));
+
+        }
+
+        auto childs = root->getSources();
+
+        for(auto child : childs)
+            traversePlanToFindJoin(child);
+
+    }
+
+    map<string,shared_ptr<SqlStageExecution>> getJoinIdToTableScanStage()
+    {
+        map<string,shared_ptr<SqlStageExecution>> result;
+        auto planRoot = this->rawTree;
+        traversePlanToFindJoin(planRoot);
+
+        return result;
+    }
+
+    //------------------------------------------------------------------------------//
 
     shared_ptr<StageExecutionAndScheduler> findRootTableScanStageForStage(string stageId)
     {
@@ -795,6 +869,11 @@ public:
             }
 
             spdlog::info( to_string(exe.getStageExecution()->getMaxHashTableBuildTimeofTasks()));
+
+            auto jbs = exe.getStageExecution()->getJoinIdToBuildTime();
+            nlohmann::json json;
+            json["joinToBuildTime"] = jbs;
+            spdlog::info(json.dump());
         }
 
         scheduler->originTime = originTime;
@@ -806,6 +885,14 @@ public:
         {
             spdlog::info(re);
         }
+
+        auto processingTimes = scheduler->stageProcessingTimeCollector->getStageProcessingTimes();
+        for(auto pt : processingTimes)
+            spdlog::info("Stage "+to_string(pt.first->getStageId().getId())+": "+ to_string(pt.second)+" ms");
+
+
+
+        scheduler->getJoinIdToTableScanStage();
 
         if(originTime > actualTime)
             spdlog::info("Origin:"+to_string(originTime)+" Actual:"+to_string(actualTime)+" Saved "+ to_string((originTime-actualTime)/originTime) +"% percent of time!");

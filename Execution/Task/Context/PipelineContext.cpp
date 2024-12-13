@@ -182,8 +182,8 @@ void PipelineContext::reportBuildStartTime(std::chrono::system_clock::time_point
 void PipelineContext::reportBuildFinishedTime(std::chrono::system_clock::time_point time){
     this->taskContext.lock()->reportBuildFinishedTime(time);
 }
-void PipelineContext::reportBuildTime(double time){
-    this->taskContext.lock()->reportBuildTime(time);
+void PipelineContext::reportBuildTime(string joinId,double time){
+    this->taskContext.lock()->reportBuildTime(joinId,time);
 }
 
 void PipelineContext::reportBuildComputingTime(double time){

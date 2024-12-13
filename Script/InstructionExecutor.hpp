@@ -42,6 +42,8 @@ public:
         funcMap.insert(make_pair("LISTEN", &InstructionExecutor::LISTEN));
         funcMap.insert(make_pair("ECHO", &InstructionExecutor::ECHO_INFO));
         funcMap.insert(make_pair("PREDICT_TIME", &InstructionExecutor::PREDICT_TIME));
+
+        funcMap.insert(make_pair("START_AND_COLLECT", &InstructionExecutor::START_AND_COLLECT));
     }
 
 
@@ -127,6 +129,44 @@ public:
 
         return true;
     }
+
+
+    bool START_AND_COLLECT(Instruction instruction,ScriptExecutionContext &context) {
+
+        vector<string> parameters = instruction.getParameters();
+
+        string re;
+        if(context.getRuntimeConfigs().size() > 0)
+            re = queryManager->Give_Me_A_Query(parameters[0],context.getRuntimeConfigs());
+        else
+            re = queryManager->Give_Me_A_Query(parameters[0]);
+
+        if(re == "NULL") {
+            spdlog::error("Start query failed!");
+            return false;
+        }
+        spdlog::info("Query:"+re+" is started!");
+
+        this->monitor->addQuery(re);
+
+        nlohmann::json info;
+        info["Type"] = "QUERYINFO";
+        info["QueryId"] = re;
+
+        ExecutionConfig config;
+        info["Initial_intra_task_concurrency"] = config.getInitial_intra_task_concurrency();
+        info["Initial_hash_partition_concurrency"] = config.getInitial_hash_partition_concurrency();
+        info["Initial_intra_stage_concurrency"] = config.getInitial_intra_stage_concurrency();
+        info["TEST_system_add_intra_stage_concurrency"] = config.getTEST_system_add_intra_stage_concurrency();
+        info["TEST_system_add_intra_task_concurrency"] = config.getTEST_system_add_intra_task_concurrency();
+
+        monitor->addInfo(re,info.dump());
+
+        return context.setQueryId(re);
+    }
+
+
+
     bool START_QUERY(Instruction instruction,ScriptExecutionContext &context) {
         vector<string> parameters = instruction.getParameters();
 
@@ -159,16 +199,15 @@ public:
 
         return context.setQueryId(re);
     }
+
+
     bool WAIT_QUERY(Instruction instruction,ScriptExecutionContext &context) {
         vector<string> parameters = instruction.getParameters();
 
         int time = atoi(parameters[0].c_str());
         sleep_for(std::chrono::milliseconds(time));
         return true;
-
     }
-
-
 
     bool ADD_CONCURRENCY(Instruction instruction,ScriptExecutionContext &context)
     {

@@ -101,6 +101,13 @@ public:
         splitString(this->httpRequestLocation,tokens,":");
         return tokens[1];
     }
+    bool hasThroughput()
+    {
+        if(this->taskInfoFetcher->isDone())
+            return false;
+        else
+            return this->taskInfoFetcher->taskHasThroughput();
+    }
     string getRemoteTaskStatus()
     {
         return "";
