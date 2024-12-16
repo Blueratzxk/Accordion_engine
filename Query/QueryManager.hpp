@@ -96,8 +96,8 @@
 
 #include "../TpchTest/Querys/SimpleTest/Query_SupplierJoinSupplier.hpp"
 
-#include "../Prediction/PPM.hpp"
-#include "../Prediction/ClusterContext.hpp"
+#include "../Tuning/Prediction/PPM.hpp"
+#include "../Tuning/Prediction/ClusterContext.hpp"
 
 #include "../Utils/TimeCommon.hpp"
 class QueryManager
@@ -399,6 +399,7 @@ public:
             return true;
     }
 
+
     bool isQueryFinished(string queryId)
     {
         shared_ptr<SqlQueryExecution> queryExecution = NULL;
@@ -434,6 +435,34 @@ public:
         }
         else
             return "-1";
+    }
+
+    map<int,long> getQueryStageProcessingTimes(const string& queryId)
+    {
+        map<int,long> re;
+        shared_ptr<SqlQueryExecution> queryExecution = nullptr;
+        if((*this->querys).find(queryId) != (*this->querys).end()) {
+            queryExecution = (*this->querys)[queryId];
+
+            re = queryExecution->getStageProcessingTimes();
+            return re;
+        }
+        else
+            return re;
+    }
+
+    map<int,int> getQueryStageDOPs(const string& queryId)
+    {
+        map<int,int> re;
+        shared_ptr<SqlQueryExecution> queryExecution = nullptr;
+        if((*this->querys).find(queryId) != (*this->querys).end()) {
+            queryExecution = (*this->querys)[queryId];
+
+            re = queryExecution->getStageDOPs();
+            return re;
+        }
+        else
+            return re;
     }
 
     string getQueryInfo(string queryId)

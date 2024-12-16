@@ -292,9 +292,9 @@ add_executable(OLVP main.cpp
         Execution/Task/Statistics/CPU/TaskCpuUsageDescriptor.hpp
         Execution/Task/Statistics/NIC/NetInfoCollector.hpp
         Utils/TextColor.h
-        Prediction/PPM.hpp
+        Tuning/Prediction/PPM.hpp
         Execution/Buffer/BufferInfoDescriptor.hpp
-        Prediction/ClusterContext.hpp
+        Tuning/Prediction/ClusterContext.hpp
         Utils/StringUtils.hpp
         Web/HttpServer/mongoose.h
         Web/HttpServer/mongoose.c
@@ -497,6 +497,7 @@ add_executable(OLVP main.cpp
         Web/Restful/restclient-cpp/version.h
         Execution/Scheduler/QueryInfos/StageProcessingTimeCollector.hpp
         Execution/Scheduler/QueryInfos/StageProcessingTimeDict.hpp
+        Tuning/ProgressAndTuner.hpp
 
 
 )

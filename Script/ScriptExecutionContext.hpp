@@ -10,6 +10,7 @@ using namespace std;
 class ScriptExecutionContext
 {
     string queryId = "";
+    string queryName = "";
     multimap<string,vector<string>> runtimeConfigs;
 public:
     ScriptExecutionContext()
@@ -48,6 +49,28 @@ public:
             return true;
     }
 
+
+    bool setQueryName(string name)
+    {
+        if(this->queryName == "") {
+            this->queryName = name;
+            return true;
+        }
+        else {
+            spdlog::error("Trying to start multi-queries in a script.");
+            return false;
+        }
+    }
+
+    bool getQueryName(string &name)
+    {
+        name = this->queryName;
+        if(this->queryName == "") {
+            return false;
+        }
+        else
+            return true;
+    }
 
 
 };

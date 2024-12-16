@@ -97,6 +97,27 @@ public:
         this->findTableScanNode(this->root,tableScanNodes);
         return tableScanNodes;
     }
+
+    bool hasNodeType(string nodeType)
+    {
+        return findNodeType(this->root,nodeType);
+    }
+    bool findNodeType(PlanNode *node,string nodeType)
+    {
+        if(node->getType() == nodeType)
+            return true;
+
+        for(auto source : node->getSources()) {
+            if(findNodeType(source, nodeType))
+                return true;
+        }
+        return false;
+    }
+
+    bool hasTableScan()
+    {
+        return this->getTableScanNodes().size() > 0;
+    }
     shared_ptr<PartitioningScheme> getPartitionScheme()
     {
         return this->partitioning_Scheme;

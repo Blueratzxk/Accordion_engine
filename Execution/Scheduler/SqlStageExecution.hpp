@@ -70,6 +70,8 @@ class SqlStageExecution:public enable_shared_from_this<SqlStageExecution>
 
     long throughputCounter = 0;
 
+
+
 public:
     SqlStageExecution(){}
     SqlStageExecution(shared_ptr<Session> session,string queryId,int stageExecutionId,int stageId,shared_ptr<PlanFragment> fragment){

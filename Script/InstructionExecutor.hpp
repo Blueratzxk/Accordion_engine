@@ -11,6 +11,7 @@
 #include "../Query/QueryManager.hpp"
 #include "ScriptExecutionContext.hpp"
 #include "ScriptQueryMonitor.hpp"
+#include "../Execution/Scheduler/QueryInfos/StageProcessingTimeDict.hpp"
 using namespace std;
 
 
@@ -21,12 +22,16 @@ class InstructionExecutor
     map<string, Fun_ptr> funcMap;
     shared_ptr<QueryManager> queryManager;
     shared_ptr<ScriptQueryMonitor> monitor;
+    shared_ptr<StageProcessingTimeDict> stageProcessingTimeDict;
+
+    bool recordProcessingtime = false;
 
 public:
     InstructionExecutor(shared_ptr<QueryManager> queryManager,shared_ptr<ScriptQueryMonitor> monitor)
     {
         this->queryManager = queryManager;
         this->monitor = monitor;
+
         initInstructions();
     }
     void initInstructions()
@@ -121,6 +126,27 @@ public:
         }
         info["buildRecords"] = buildRecords;
 
+
+        if(this->recordProcessingtime)
+        {
+            this->recordProcessingtime = false;
+            string queryName;
+            context.getQueryName(queryName);
+            auto stageProcTimes = queryManager->getQueryStageProcessingTimes(queryId);
+            auto stageDOPs = queryManager->getQueryStageDOPs(queryId);
+
+            int maxDOP = 0;
+            for(auto stage : stageDOPs)
+                if(stage.second > maxDOP)
+                    maxDOP = stage.second;
+
+
+            for(auto pt : stageProcTimes)
+                this->stageProcessingTimeDict->addNewInfo(queryName,pt.first,maxDOP,pt.second);
+        }
+        if(this->recordProcessingtime)
+            this->stageProcessingTimeDict->save();
+
         this->monitor->addInfo(queryId,info.dump());
 
         this->monitor->deleteQuery(queryId);
@@ -135,11 +161,12 @@ public:
 
         vector<string> parameters = instruction.getParameters();
 
+        string queryName = parameters[0];
         string re;
         if(context.getRuntimeConfigs().size() > 0)
-            re = queryManager->Give_Me_A_Query(parameters[0],context.getRuntimeConfigs());
+            re = queryManager->Give_Me_A_Query(queryName,context.getRuntimeConfigs());
         else
-            re = queryManager->Give_Me_A_Query(parameters[0]);
+            re = queryManager->Give_Me_A_Query(queryName);
 
         if(re == "NULL") {
             spdlog::error("Start query failed!");
@@ -162,7 +189,12 @@ public:
 
         monitor->addInfo(re,info.dump());
 
-        return context.setQueryId(re);
+        if(this->stageProcessingTimeDict == NULL)
+            this->stageProcessingTimeDict = make_shared<StageProcessingTimeDict>();
+
+        this->recordProcessingtime = true;
+
+        return context.setQueryId(re) && context.setQueryName(queryName);
     }
 
 
@@ -171,10 +203,11 @@ public:
         vector<string> parameters = instruction.getParameters();
 
         string re;
+        string queryName = parameters[0];
         if(context.getRuntimeConfigs().size() > 0)
-            re = queryManager->Give_Me_A_Query(parameters[0],context.getRuntimeConfigs());
+            re = queryManager->Give_Me_A_Query(queryName,context.getRuntimeConfigs());
         else
-            re = queryManager->Give_Me_A_Query(parameters[0]);
+            re = queryManager->Give_Me_A_Query(queryName);
 
         if(re == "NULL") {
             spdlog::error("Start query failed!");
@@ -197,7 +230,7 @@ public:
 
         monitor->addInfo(re,info.dump());
 
-        return context.setQueryId(re);
+        return context.setQueryId(re) && context.setQueryName(queryName);
     }
 
 

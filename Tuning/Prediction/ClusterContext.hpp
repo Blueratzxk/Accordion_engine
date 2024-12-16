@@ -5,8 +5,8 @@
 #ifndef OLVP_CLUSTERCONTEXT_HPP
 #define OLVP_CLUSTERCONTEXT_HPP
 
-#include "../NodeCluster/NodesManager.h"
-#include "../Execution/Scheduler/SqlQueryExecution.hpp"
+#include "../../NodeCluster/NodesManager.h"
+#include "../../Execution/Scheduler/SqlQueryExecution.hpp"
 
 
 class QueryTasksMap{

@@ -11,7 +11,7 @@
 #include "SqlQueryScheduler.hpp"
 #include "../../Planner/PlanTreeAnalyzer.hpp"
 #include "../../Query/QueryStateMachine.hpp"
-
+#include "../Tuning/ProgressAndTuner.hpp"
 
 class Dynamic_scheduler
 {
@@ -153,6 +153,56 @@ class SqlQueryExecution
     shared_ptr<Dynamic_scheduler> dyScheduler;
     shared_ptr<DynamicTuningMonitor> dyMonitor;
 
+
+    bool isStageTuningKnob(shared_ptr<SqlStageExecution> stage)
+    {
+        if(stage->getFragment()->hasNodeType("FinalAggregationNode") ||
+        stage->getFragment()->hasNodeType("TaskOutputNode")||
+        stage->getFragment()->hasNodeType("TopKNode")||
+        stage->getFragment()->hasNodeType("TableScanNode"))
+            return false;
+        return true;
+    }
+
+
+    void extractProgressAndTuner(shared_ptr<SqlStageExecution> stage,shared_ptr<ProgressAndTuner> progressAndTuner)
+    {
+        shared_ptr<SqlStageExecution> tempStage = stage;
+        list<shared_ptr<ProgressAndTuner>> dependencies;
+
+        if(tempStage->getFragment()->hasTableScan())
+        {
+            progressAndTuner->setTableScanProgress(tempStage->getStageId().getId());
+            progressAndTuner->setExecutionDependencies(dependencies);
+            return;
+        }
+
+        do {
+            if(this->isStageTuningKnob(tempStage))
+                progressAndTuner->addTuningKnobStage(tempStage->getStageId().getId());
+
+            shared_ptr<StageExecutionAndScheduler> seas = this->scheduler->getStageExecutionAndSchedulerByStagId(
+                    tempStage->getStageId().getId());
+            auto childStages = seas->getStageLinkage()->getChildStages();
+            if(!childStages.empty())
+                tempStage = childStages[0];
+
+            if(childStages.size() > 1)
+            {
+
+                for(int i = 1 ; i < childStages.size() ; i++) {
+                    auto newProgressAndTuner = make_shared<ProgressAndTuner>();
+                    extractProgressAndTuner(childStages[i], newProgressAndTuner);
+                    dependencies.push_back(newProgressAndTuner);
+                }
+            }
+        }
+        while(!tempStage->getFragment()->hasTableScan());
+        progressAndTuner->setTableScanProgress(tempStage->getStageId().getId());
+        progressAndTuner->setExecutionDependencies(dependencies);
+    }
+
+
 public:
     SqlQueryExecution(shared_ptr<Session> session,PlanNode *root){
 
@@ -172,6 +222,17 @@ public:
 
         return this->scheduler->getStagesCpuUsages();
     }
+
+    map<int,long> getStageProcessingTimes()
+    {
+        return this->scheduler->getStageProcessingTimes();
+    }
+
+    map<int,int> getStageDOPs()
+    {
+        return this->scheduler->getStageDOPs();
+    }
+
     double getSingleTaskCpuUsageOfStage(int stageId)
     {
         return this->scheduler->getSingleTaskOfStageCpuUsage(stageId);
@@ -210,6 +271,13 @@ public:
     }
 
 
+
+    shared_ptr<ProgressAndTuner> getProgressAndTuner()
+    {
+        shared_ptr<ProgressAndTuner> result = make_shared<ProgressAndTuner>();
+        this->extractProgressAndTuner(this->scheduler->getRootStage(),result);
+        return result;
+    }
 
     bool isQueryFinished()
     {

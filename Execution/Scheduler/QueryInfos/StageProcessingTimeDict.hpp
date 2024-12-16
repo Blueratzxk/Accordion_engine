@@ -8,9 +8,11 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <fstream>
 #include "nlohmann/json.hpp"
 
 using namespace std;
+
 
 class SPTD_DOP_Time
 {
@@ -23,6 +25,11 @@ public:
         this->DOP = DOP;
         this->time = time;
     }
+
+    int getDOP(){return DOP;}
+    long getTime(){return time;}
+    void setTime(long newTime){this->time = newTime;}
+
     static nlohmann::json Serialize(SPTD_DOP_Time sptdDopTime)
     {
         nlohmann::json json;
@@ -40,6 +47,8 @@ class SPTD_Infolist
 {
     map<int,vector<SPTD_DOP_Time>> SPTD_DOP_Times;
 
+
+
 public:
     SPTD_Infolist(map<int,vector<SPTD_DOP_Time>> SPTD_DOP_Times){
 
@@ -48,8 +57,19 @@ public:
 
     void addInfo(int stageId,SPTD_DOP_Time sptdDopTime)
     {
-        if(SPTD_DOP_Times.contains(stageId))
-            SPTD_DOP_Times[stageId].push_back(sptdDopTime);
+        bool findItem = false;
+        if(SPTD_DOP_Times.contains(stageId)) {
+            for(int i = 0 ; i < SPTD_DOP_Times[stageId].size() ; i++){
+                if(SPTD_DOP_Times[stageId][i].getDOP() == sptdDopTime.getDOP()) {
+                    findItem = true;
+                    SPTD_DOP_Times[stageId][i].setTime(sptdDopTime.getTime());
+                }
+
+            }
+            if(!findItem)
+                SPTD_DOP_Times[stageId].push_back(sptdDopTime);
+
+        }
         else
         {
             SPTD_DOP_Times[stageId] = {};
@@ -66,7 +86,7 @@ public:
 
         for(auto stage : sptdInfolist.SPTD_DOP_Times) {
 
-            auto jsonArray = nlohmann::json::array();
+            nlohmann::json jsonArray = nlohmann::json::array();
 
             for(auto item : stage.second) {
                 jsonArray.push_back(SPTD_DOP_Time::Serialize(item));
@@ -103,9 +123,13 @@ public:
 class StageProcessingTimeDict
 {
     map<string,SPTD_Infolist> dicts;
+    string queryMetaPath = "meta.json";
 public:
     StageProcessingTimeDict(map<string,SPTD_Infolist> dicts){
         this->dicts = dicts;
+    }
+    StageProcessingTimeDict (){
+        initMetaFile();
     }
 
 
@@ -122,7 +146,52 @@ public:
             dicts[queryName].addInfo(stageId,sptdDopTime);
     }
 
-    static string Serialize(StageProcessingTimeDict stageProcessingTimeDict)
+    void initMetaFile()
+    {
+        fstream fs;
+        fs.open(queryMetaPath, ios::in);
+        if (!fs)
+        {
+            ofstream fout(queryMetaPath);
+            if (fout)
+                fout.close();
+        }
+        else if (fs.peek() == std::ifstream::traits_type::eof())
+            ;
+        else {
+
+            string j;
+            ifstream jfile(queryMetaPath);
+            jfile >> j;
+
+            auto re = this->Deserialize(j);
+            this->dicts = re.dicts;
+
+            fs.close();
+        }
+    }
+
+    void updateMetaFile(string data)
+    {
+        ofstream of(this->queryMetaPath);
+        if (of.is_open())
+            of << data;
+        of.close();
+    }
+
+    void save()
+    {
+        string re = this->Serialize(*this);
+        this->updateMetaFile(re);
+    }
+
+    string getJson(){
+        string re = this->Serialize(*this);
+        return re;
+    }
+
+
+    string Serialize(StageProcessingTimeDict stageProcessingTimeDict)
     {
         nlohmann::json json;
         for(auto stage : stageProcessingTimeDict.dicts) {
@@ -130,10 +199,10 @@ public:
             nlohmann::json sptd_Infolist = SPTD_Infolist::Serialize(stage.second);
             json[stage.first] = sptd_Infolist;
         }
-        return json.dump(1);
+        return json.dump();
     }
 
-    static StageProcessingTimeDict Deserialize(string json)
+    StageProcessingTimeDict Deserialize(string json)
     {
         auto jsonObj = nlohmann::json::parse(json);
 
@@ -148,6 +217,7 @@ public:
 
 
 };
+
 
 
 

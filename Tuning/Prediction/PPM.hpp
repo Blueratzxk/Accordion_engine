@@ -7,8 +7,8 @@
 
 //Performance prediction module
 
-#include "../NodeCluster/NodesManager.h"
-#include "../Execution/Scheduler/SqlQueryExecution.hpp"
+#include "../../NodeCluster/NodesManager.h"
+#include "../../Execution/Scheduler/SqlQueryExecution.hpp"
 #include "ClusterContext.hpp"
 
 class smallWindow
@@ -282,6 +282,10 @@ public:
         this->clusterContext->gatherInfos();
         for(auto query : (*this->queries)) {
             if (query.second->isQueryStart() && !query.second->isQueryFinished()) {
+
+                auto pAt = query.second->getProgressAndTuner();
+
+
                 this->queryToPredict = query.second;
                 this->updateCpuUsageSnap();
 
@@ -356,20 +360,20 @@ public:
                 for(auto stage : (*getstages))
                 {
                     spdlog::info(query.first+" StageId:" + to_string(stage.first));
-                    this->testStageImprovementPredictionExtern(query.first,stage.first,5);
+                    this->getStageImprovementPredictionExtern(query.first,stage.first,5);
                 }
                 spdlog::info("+++++++++++++++++++++++++++++++++++++++++++++++++++++");
 
                 for(auto stage : (*getstages))
                 {
                     spdlog::info(query.first+" StageId:" + to_string(stage.first));
-                    this->testStageImprovementPredictionExtern(query.first,stage.first,20);
+                    this->getStageImprovementPredictionExtern(query.first,stage.first,20);
                 }
                 spdlog::info("+++++++++++++++++++++++++++++++++++++++++++++++++++++");
                 for(auto stage : (*getstages))
                 {
                     spdlog::info(query.first+" StageId:" + to_string(stage.first));
-                    this->testStageImprovementPredictionExtern(query.first,stage.first,200);
+                    this->getStageImprovementPredictionExtern(query.first,stage.first,200);
                 }
 
             }
@@ -966,190 +970,6 @@ public:
         }
         else
             return "No bottlenecks have been identified for this query.";
-    }
-
-    void testStageImprovementPredictionExtern(string queryId,int stageId,int n)
-    {
-
-        double preTime = 0.0;
-        auto targetStage = (*this->queries)[queryId]->getScheduler();
-
-        //find the left tablescan stage to get the remaining time
-        auto tableScanStage = targetStage->findRootTableScanStageForStage(to_string(stageId));
-        double remainingTime = tableScanStage->getStageExecution()->getRemainingTime()/1000;
-
-        map<int,long> stageBytes = targetStage->getStageBuildChildsTotalBytes(to_string(stageId));
-        map<shared_ptr<ClusterNode>,double> timeConsumes;
-        double MaxRebuildTime = 0;
-        for(auto stage : stageBytes)
-        {
-            spdlog::info("Build stages "+to_string(stage.first) +" have "+to_string(stage.second)+" bytes to trans");
-            auto nodes = targetStage->getStageExecutionAndSchedulerByStagId(stage.first)->getStageExecution()->getCurrentStageNodes();
-
-            double eachNodeDataVolume = stage.second/nodes.size();
-
-            for(auto node : nodes)
-            {
-                if(timeConsumes.count(node) == 0)
-                {
-                    timeConsumes[node] = eachNodeDataVolume/1000/node->getMaxNetSpeed();
-                }
-                else
-                    timeConsumes[node] += eachNodeDataVolume/1000/node->getMaxNetSpeed();
-            }
-        }
-        for(auto time : timeConsumes)
-        {
-            spdlog::info("Stage rebuild data trans "+time.first->getNodeLocation() +" spend "+to_string(time.second)+"s");
-            if(time.second > MaxRebuildTime)
-                MaxRebuildTime = time.second;
-        }
-
-        spdlog::info("Min stage rebuild data transmission time is " + to_string(n*MaxRebuildTime));
-
-
-        auto targetStageObj = targetStage->getStageExecutionAndSchedulerByStagId(stageId)->getStageExecution();
-        //get the hashtable build time
-        double stageTaskMaxBuildTime = targetStageObj->getMaxHashTableBuildTimeofTasks();
-
-        preTime = remainingTime - stageTaskMaxBuildTime;
-        stageTaskMaxBuildTime = stageTaskMaxBuildTime/1000;
-
-        spdlog::info("Max stage task hash build time is " + to_string(stageTaskMaxBuildTime));
-
-        //first let we figure out is there enough cpu resources to create new tasks for this stage
-        int maxCpuGet = 0;
-        if(this->isStageCanImprove(queryId,stageId,n,maxCpuGet)) spdlog::info("have enough cpu resources to add task for this stage !");
-
-        vector<shared_ptr<CpuBottleneckResult>> cpu;
-        vector<shared_ptr<NetBottleneckResult>> nettrans;
-        vector<shared_ptr<NetBottleneckResult>> netrec;
-        findBottlenecksForStageExtern(queryId,stageId,cpu,nettrans,netrec);
-
-        //then we figure out is there net rec bottleneck on this stage
-        for(auto rec : netrec)
-        {
-            if(rec->getStageId() == stageId)
-            {
-                //preTime = remainingTime;
-                spdlog::info("this stage have net rec bottleneck! Cur:"+ to_string(rec->getCurValue())+" Max:" +
-                             to_string(rec->getMaxValue()));
-            }
-        }
-
-        //then we figure out if the left upstream stage's net and cpu usage can be boosted by n
-
-        auto childStages = targetStage->getStageExecutionAndSchedulerByStagId(stageId)->getStageLinkage();
-        if(!childStages->getChildStages().empty()) {
-            auto leftChild = childStages->getChildStages()[0];
-
-            if(!leftChild->isBufferNeedPartitioning())
-            {
-                stageTaskMaxBuildTime = targetStageObj->getMaxHashTableBuildComputingTimeofTasks()/1000+MaxRebuildTime;
-            }
-
-            findBottlenecksForStageExtern(queryId,leftChild->getStageId().getId(),cpu,nettrans,netrec);
-
-            auto netIm = this->query_stage_node_net_improvement[queryId];
-            auto shuffleIm = this->query_stage_node_shuffle_improvement[queryId];
-            auto cpuIm = this->query_stage_node_cpu_improvement[queryId];
-
-            double netImprove = 0;
-            double shuffleImprove = 0;
-            double cpuImprove = 0;
-            double cpuImproveByThreads = 0;
-            if(netIm != NULL && shuffleIm != NULL && cpuIm.first != NULL) {
-                 netImprove = netIm->getStageMinImprovement(leftChild->getStageId().getId());
-                 shuffleImprove = shuffleIm->getStageMinImprovement(leftChild->getStageId().getId());
-                 cpuImprove = cpuIm.first->getStageMinImprovement(leftChild->getStageId().getId());
-                 cpuImproveByThreads = cpuIm.second->getStageAVGImprovement(leftChild->getStageId().getId());
-            }
-
-            for(auto trans : nettrans)
-            {
-                if(trans->getStageId() == leftChild->getStageId().getId())
-                {
-                    spdlog::info("this child stage have net trans bottleneck! Cur:"+ to_string(trans->getCurValue())+" Max:" +
-                                                                                                               to_string(trans->getMaxValue()));
-                }
-            }
-
-            if (netImprove + 1 > n)
-                spdlog::info("child stage network transmission bandwidth can be expanded by " + to_string(n) + ", max is " +
-                             to_string(netImprove + 1));
-            else
-                spdlog::info("child stage network transmission bandwidth cannot be expanded by " + to_string(n) + ", max is " +
-                             to_string(netImprove + 1));
-
-            if (cpuImprove + 1 > n)
-                spdlog::info(
-                        "child stage cpu rate can be expanded by " + to_string(n) + ", max is" + to_string(cpuImprove + 1));
-            else
-                spdlog::info("child stage cpu rate cannot be expanded by " + to_string(n) + ", max is" +
-                             to_string(cpuImprove + 1));
-
-            if (cpuImproveByThreads + 1 > n)
-                spdlog::info(
-                        "child stage cpu rate by DOP can be expanded by " + to_string(n) + ", max is" + to_string(cpuImproveByThreads + 1));
-            else
-                spdlog::info("child stage cpu rate by DOP cannot be expanded by " + to_string(n) + ", max is" +
-                             to_string(cpuImproveByThreads + 1));
-
-            if (shuffleImprove + 1 > n)
-                spdlog::info(
-                        "child stage shuffle rate can be expanded by " + to_string(n) + ", max is" + to_string(shuffleImprove + 1));
-            else
-                spdlog::info("child stage shuffle rate cannot be expanded by " + to_string(n) + ", max is" +
-                             to_string(shuffleImprove + 1));
-
-
-            double minFactor = 9999999.99;
-            if(netImprove + 1 < minFactor && netImprove + 1 > 1)
-                minFactor = netImprove+1;
-
-            if(leftChild->isHavingAdaptiveDOP()){
-                if(cpuImprove + 1 < minFactor && cpuImprove + 1 > 1)
-                    minFactor = cpuImprove+1;
-            }
-            else
-            {
-                double minCPUFactor = 9999999999;
-                if(cpuImprove + 1 > 1 && cpuImprove + 1 < minCPUFactor) {
-                    minCPUFactor = cpuImprove + 1;
-                }
-                if(cpuImproveByThreads + 1 > 1 && cpuImproveByThreads + 1 < minCPUFactor) {
-                    minCPUFactor = cpuImproveByThreads + 1;
-                }
-                if(minCPUFactor < minFactor)
-                    minFactor = minCPUFactor;
-            }
-
-            if(shuffleImprove + 1 < minFactor && shuffleImprove + 1 > 1)
-                minFactor = shuffleImprove+1;
-            if(n < minFactor)
-                minFactor = n;
-            if(minFactor == 9999999)
-                minFactor = 1;
-
-
-            preTime = (remainingTime-stageTaskMaxBuildTime)/minFactor;
-            preTime += stageTaskMaxBuildTime;
-            spdlog::info("The predicted remaining time is ("+ to_string(remainingTime)+"-"+to_string(stageTaskMaxBuildTime)+")/"+
-                                                                                                                            to_string(minFactor)+"+"+to_string(stageTaskMaxBuildTime)+"="+to_string(preTime));
-            if(n*MaxRebuildTime > preTime)
-            {
-                spdlog::info("Build data transmission time is greater than predicted time!");
-            }
-
-        }
-        else
-        {
-            preTime = remainingTime;
-            spdlog::info("cannot change table scan stage dop!");
-
-
-        }
-
     }
 
 
