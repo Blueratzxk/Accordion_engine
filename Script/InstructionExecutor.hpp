@@ -136,16 +136,19 @@ public:
             auto stageDOPs = queryManager->getQueryStageDOPs(queryId);
 
             int maxDOP = 0;
-            for(auto stage : stageDOPs)
-                if(stage.second > maxDOP)
+            for(auto stage : stageDOPs) {
+
+                if (queryManager->isStageOfQueryTuningKnob(queryId,stage.first) && stage.second > maxDOP)
                     maxDOP = stage.second;
+            }
 
 
             for(auto pt : stageProcTimes)
                 this->stageProcessingTimeDict->addNewInfo(queryName,pt.first,maxDOP,pt.second);
-        }
-        if(this->recordProcessingtime)
             this->stageProcessingTimeDict->save();
+        }
+
+
 
         this->monitor->addInfo(queryId,info.dump());
 

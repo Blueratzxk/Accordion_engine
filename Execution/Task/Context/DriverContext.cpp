@@ -146,4 +146,15 @@ void DriverContext::addExchangeBufferTurnUpCounter(){
 void DriverContext::addExchangeBufferTurnDownCounter(){
     this->pipelineContext.lock()->addExchangeBufferTurnDownCounter();
 }
+
+
+atomic<long> &DriverContext::getBuildAllCount()
+{
+return this->pipelineContext.lock()->getAllBuildCount();
+}
+atomic<long> &DriverContext::getBuildProgress()
+{
+return this->pipelineContext.lock()->getAllBuildProgress();
+}
+
 #endif //OLVP_DRIVERCONTEXT_CPP

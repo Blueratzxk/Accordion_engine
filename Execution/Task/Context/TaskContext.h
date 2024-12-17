@@ -74,6 +74,9 @@ class TaskContext:public std::enable_shared_from_this<TaskContext>
     map<string,double> joinIdToBuildTime;
     mutex joinIdToBuildTimeLock;
 
+    atomic<long> allBuildCount = 0;
+    atomic<long> allBuildProgress = 0;
+
 public:
     TaskContext(shared_ptr<TasksRuntimeStats> tasksRuntimeStats,weak_ptr<QueryContext> queryContext,shared_ptr<TaskId> taskId,shared_ptr<TaskStateMachine> stateMachine,shared_ptr<OutputBuffer> outputBuffer);
     shared_ptr<PipelineContext> addPipelineContext(PipelineId pipelineId);
@@ -94,6 +97,12 @@ public:
     {
         return this->totalInputBytes;
     }
+
+
+
+    atomic<long>& getAllBuildCount();
+    atomic<long>& getAllBuildProgress();
+
 
     void addBufferSizeTurnUpCounter()
     {

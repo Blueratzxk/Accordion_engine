@@ -127,6 +127,15 @@ public:
         result.append("\"buildTime\":");
         result.append("\""+to_string(this->joinInfoDescriptor.getBuildTime())+"\"");
         result.append(",");
+        result.append("\"buildProgress\":");
+
+        double progress;
+        if(this->joinInfoDescriptor.getAllBuildCount() > 0)
+            progress = ((double)this->joinInfoDescriptor.getAllBuildProgress()/(double)this->joinInfoDescriptor.getAllBuildCount())*100.0;
+        else
+            progress = 100.0;
+        result.append("\""+to_string(progress)+"\"");
+        result.append(",");
         result.append("\"buildComputingTime\":");
         result.append("\""+to_string(this->joinInfoDescriptor.getBuildComputingTime())+"\"");
         result.append(",");

@@ -51,6 +51,10 @@ public:
     void increaseThreadNums();
     void decreaseThreadNums();
 
+    atomic<long>& getAllBuildCount();
+    atomic<long>& getAllBuildProgress();
+
+
     void reportBuildComplete();
 
     void regRemoteSplit(set<shared_ptr<Split>>);

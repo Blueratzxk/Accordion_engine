@@ -277,13 +277,22 @@ public:
         this->showAllAnalyze();
     }
 
+    shared_ptr<SqlQueryExecution> getQueryExecution(string queryId) {
+        for (auto query: (*this->queries)) {
+            if (query.second->isQueryStart() && !query.second->isQueryFinished()) {
+                if(query.first == queryId)
+                    return query.second;
+            }
+        }
+        return NULL;
+    }
+
     void collect()
     {
         this->clusterContext->gatherInfos();
         for(auto query : (*this->queries)) {
             if (query.second->isQueryStart() && !query.second->isQueryFinished()) {
 
-                auto pAt = query.second->getProgressAndTuner();
 
 
                 this->queryToPredict = query.second;

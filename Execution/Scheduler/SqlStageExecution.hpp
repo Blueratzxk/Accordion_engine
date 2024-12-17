@@ -70,6 +70,7 @@ class SqlStageExecution:public enable_shared_from_this<SqlStageExecution>
 
     long throughputCounter = 0;
 
+    mutex taskGroupLock;
 
 
 public:
@@ -336,6 +337,17 @@ public:
         return buildRecords;
     }
 
+    bool isDependenciesSatisfied()
+    {
+        auto allTasks = this->getAllTasks();
+        for(auto task : allTasks)
+        {
+            if(!task->isTaskDependenciesSatisfied())
+                return false;
+        }
+        return true;
+    }
+
     double getMaxHashTableBuildTimeofTasks()
     {
         double max = -1;
@@ -590,6 +602,17 @@ public:
        }
     }
 
+    int getCurrentStageDOP()
+    {
+        auto allTasks = this->getAllTasks();
+        int activeTaskCount = 0;
+        for(auto task : allTasks)
+        {
+            if(!task->isDone())
+                activeTaskCount++;
+        }
+        return activeTaskCount;
+    }
     vector<shared_ptr<HttpRemoteTask>> getSourceTasks()
     {
         vector<shared_ptr<HttpRemoteTask>> remoteTasks;
@@ -873,11 +896,11 @@ public:
         }
 
         this->nextTaskGroupId++;
-
     }
 
     void closeATaskGroup()
     {
+
         vector<shared_ptr<HttpRemoteTask>> sourceStageTasks = this->getSourceTasks();
 
         int minTg = INT32_MAX;

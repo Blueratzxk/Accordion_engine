@@ -16,11 +16,11 @@ class JoinHashSupplier:public LookupSourceSupplier
     std::shared_ptr<PagesHashStrategy> hashStrategy = NULL ;
     std::shared_ptr<PositionLinksFactory> positionLinksFactory = NULL;
 public:
-    JoinHashSupplier(std::shared_ptr<PagesHashStrategy> hashStrategy,int positionCount,vector<Channel> channels): LookupSourceSupplier("JoinHashSupplier")
+    JoinHashSupplier(std::shared_ptr<PagesHashStrategy> hashStrategy,int positionCount,atomic<long> &buildProgress): LookupSourceSupplier("JoinHashSupplier")
     {
 
         std::shared_ptr<ArrayPositionLinksFactoryBuilder> positionLinksFactoryBuilder = std::make_shared<ArrayPositionLinksFactoryBuilder>(positionCount);
-        this->pagesHash = std::make_shared<PagesHash>(positionCount,hashStrategy,positionLinksFactoryBuilder);
+        this->pagesHash = std::make_shared<PagesHash>(positionCount,hashStrategy,positionLinksFactoryBuilder,buildProgress);
         this->positionLinksFactory = positionLinksFactoryBuilder->build();
     }
 

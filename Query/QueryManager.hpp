@@ -98,6 +98,7 @@
 
 #include "../Tuning/Prediction/PPM.hpp"
 #include "../Tuning/Prediction/ClusterContext.hpp"
+#include "../Tuning/ParallelismAutoTuner.hpp"
 
 #include "../Utils/TimeCommon.hpp"
 class QueryManager
@@ -110,6 +111,7 @@ class QueryManager
     NodesManager nodesManager;
 
     shared_ptr<PPM> ppm = NULL;
+    shared_ptr<ParallelismAutoTuner> parallelismAutoTuner;
 public:
 
     QueryManager(){
@@ -365,11 +367,17 @@ public:
     }
     string getStagePredictionInfos(string queryId,int stageId,int DOP)
     {
-        return  getPPM()->getStageImprovementPredictionExtern(queryId,stageId,DOP);
+        string result = getPPM()->getStageImprovementPredictionExtern(queryId,stageId,DOP);
+
+        return result;
     }
     string getQueryBottlenecks(string queryId)
     {
         string result = getPPM()->getQueryBottleneckStagesExtern(queryId);
+
+        this->parallelismAutoTuner = make_shared<ParallelismAutoTuner>(this->ppm);
+        this->parallelismAutoTuner->tune(queryId);
+
         return  result;
     }
     string getQueryBottleneckStagesAndAnalyzeExtern(string queryId,string factor)
@@ -380,9 +388,9 @@ public:
 
     shared_ptr<PPM> getPPM()
     {
-        if(this->ppm == NULL)
-            this->ppm = make_shared<PPM>(this->querys,ClusterServer::getNodesManager());
-
+        if(this->ppm == NULL) {
+            this->ppm = make_shared<PPM>(this->querys, ClusterServer::getNodesManager());
+        }
         return this->ppm;
     }
 
@@ -594,6 +602,18 @@ public:
         if((*this->querys).find(queryId) != (*this->querys).end()) {
             queryExecution = (*this->querys)[queryId];
             return queryExecution->isStageScalable(stageId);
+        }
+        else
+            return false;
+    }
+
+    bool isStageOfQueryTuningKnob(string queryId,int stageId)
+    {
+        shared_ptr<SqlQueryExecution> queryExecution = nullptr;
+
+        if((*this->querys).find(queryId) != (*this->querys).end()) {
+            queryExecution = (*this->querys)[queryId];
+            return queryExecution->isStageisTuningKnob(stageId);
         }
         else
             return false;

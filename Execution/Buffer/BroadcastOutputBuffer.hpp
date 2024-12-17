@@ -171,7 +171,7 @@ public:
     }
     bool isFull() {
 
-        return false;
+        //return false;
 
         for(auto buffer : buffers) {
             if(buffer.second->getPageNums() > pageNumsLimit)

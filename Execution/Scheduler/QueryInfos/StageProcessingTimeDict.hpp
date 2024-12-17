@@ -55,6 +55,21 @@ public:
         this->SPTD_DOP_Times = SPTD_DOP_Times;
     }
 
+    long getTime(int stageId,int DOP)
+    {
+        if(this->SPTD_DOP_Times.contains(stageId))
+        {
+            auto DOP_Times = SPTD_DOP_Times[stageId];
+            for(auto dop_time : DOP_Times)
+            {
+                if(dop_time.getDOP() == DOP)
+                    return dop_time.getTime();
+            }
+        }
+
+        return -1;
+    }
+
     void addInfo(int stageId,SPTD_DOP_Time sptdDopTime)
     {
         bool findItem = false;
@@ -144,6 +159,15 @@ public:
         }
         else
             dicts[queryName].addInfo(stageId,sptdDopTime);
+    }
+
+    long getProcessingTime(string queryName,int stageId,int dop)
+    {
+        if(!dicts.contains(queryName)) {
+            return  -1;
+        }
+        else
+            return dicts[queryName].getTime(stageId,dop);
     }
 
     void initMetaFile()

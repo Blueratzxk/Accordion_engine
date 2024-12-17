@@ -13,23 +13,34 @@ class JoinInfoDescriptor
     double buildTime = 0;
     double buildComputingTime = 0;
     map<string,double> joinIdToBuildTime;
+
+    long allBuildCount = 0;
+    long allBuildProgress = 0;
+
 public:
 
     JoinInfoDescriptor(){}
 
-    JoinInfoDescriptor( int joinNums,int buildNums,double buildTime,double buildComputingTime,map<string,double> joinIdToBuildTime)
+    JoinInfoDescriptor( int joinNums,int buildNums,double buildTime,double buildComputingTime,map<string,double> joinIdToBuildTime, long allBuildCount,long allBuildProgress)
     {
         this->joinNums = joinNums;
         this->buildNums = buildNums;
         this->buildTime = buildTime;
         this->buildComputingTime = buildComputingTime;
         this->joinIdToBuildTime = joinIdToBuildTime;
+        this->allBuildCount = allBuildCount;
+        this->allBuildProgress = allBuildProgress;
     }
 
     int getJoinNums(){return this->joinNums;}
     int getBuildNums(){return this->buildNums;}
     double getBuildTime(){return this->buildTime;}
     double getBuildComputingTime(){return this->buildComputingTime;}
+
+    long getAllBuildCount(){return this->allBuildCount;}
+    long getAllBuildProgress(){return this->allBuildProgress;}
+
+
     map<string,double> getJoinIdToBuildTime(){return this->joinIdToBuildTime;}
 
     static string Serialize(JoinInfoDescriptor joinInfoDescriptor)
@@ -41,6 +52,9 @@ public:
         json["buildTime"] = joinInfoDescriptor.buildTime;
         json["buildComputingTime"] = joinInfoDescriptor.buildComputingTime;
         json["joinIdToBuildTime"] = joinInfoDescriptor.joinIdToBuildTime;
+        json["allBuildCount"] = joinInfoDescriptor.allBuildCount;
+        json["allBuildProgress"] = joinInfoDescriptor.allBuildProgress;
+
 
         string result = json.dump();
         return result;
@@ -54,7 +68,9 @@ public:
                                                         json["buildNums"],
                                                         json["buildTime"],
                                                         json["buildComputingTime"],
-                                                        json["joinIdToBuildTime"]);
+                                                        json["joinIdToBuildTime"],
+                                                      json["allBuildCount"],
+                                                      json["allBuildProgress"]);
 
         return  result;
     }

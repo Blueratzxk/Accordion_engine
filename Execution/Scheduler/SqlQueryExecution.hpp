@@ -157,9 +157,9 @@ class SqlQueryExecution
     bool isStageTuningKnob(shared_ptr<SqlStageExecution> stage)
     {
         if(stage->getFragment()->hasNodeType("FinalAggregationNode") ||
-        stage->getFragment()->hasNodeType("TaskOutputNode")||
-        stage->getFragment()->hasNodeType("TopKNode")||
-        stage->getFragment()->hasNodeType("TableScanNode"))
+           stage->getFragment()->hasNodeType("TaskOutputNode")||
+           stage->getFragment()->hasNodeType("TopKNode")||
+           stage->getFragment()->hasNodeType("TableScanNode"))
             return false;
         return true;
     }
@@ -211,6 +211,8 @@ public:
         this->stateMachine = make_shared<QueryStateMachine>();
 
     }
+
+
 
     shared_ptr<map<int,shared_ptr<map<shared_ptr<ClusterNode>, set<shared_ptr<HttpRemoteTask>>>>>> getStagesNodeTaskMap()
     {
@@ -277,6 +279,20 @@ public:
         shared_ptr<ProgressAndTuner> result = make_shared<ProgressAndTuner>();
         this->extractProgressAndTuner(this->scheduler->getRootStage(),result);
         return result;
+    }
+
+    bool isQuerySilent()
+    {
+        if(this->stateMachine->isRunning()) {
+            auto allStages = this->scheduler->getStageExeSchedulers();
+            for (auto stage: allStages) {
+                if (!stage.getStageExecution()->getState()->isDone())
+                    if(stage.getStageExecution()->stageHasThroughput())
+                        return false;
+            }
+            return true;
+        }
+        return true;
     }
 
     bool isQueryFinished()
@@ -445,6 +461,15 @@ public:
     {
 
         return this->scheduler->getQueryStagesThroughputsInfo(this->scheduler);
+    }
+
+    bool isStageisTuningKnob(int stageId)
+    {
+        if(this->scheduler == NULL)
+            return false;
+
+        auto stage = this->scheduler->getStageExecutionAndSchedulerByStagId(stageId);
+        return this->isStageTuningKnob(stage->getStageExecution());
     }
 
     bool isStageScalable(int stageId)

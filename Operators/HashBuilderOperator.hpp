@@ -131,7 +131,9 @@ public:
 
     std::shared_ptr<LookupSourceSupplier> buildLookupSource()
     {
-        shared_ptr<LookupSourceSupplier> partition = pagesIndex->createLookupSourceSupplier(this->hashChannels,this->outputChannels);
+        this->driverContext->getBuildAllCount() += pagesIndex->getPositionCount();
+
+        shared_ptr<LookupSourceSupplier> partition = pagesIndex->createLookupSourceSupplier(this->hashChannels,this->outputChannels,this->driverContext->getBuildProgress());
         this->lookupSourceSupplier = partition;
         return partition;
     }

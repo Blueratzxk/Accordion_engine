@@ -50,7 +50,12 @@ public:
 
     }
 
-    std::shared_ptr<LookupSourceSupplier> createLookupSourceSupplier(vector<int> hashChannels,vector<int> outputChannels)
+    int getPositionCount()
+    {
+        return this->positionCount;
+    }
+
+    std::shared_ptr<LookupSourceSupplier> createLookupSourceSupplier(vector<int> hashChannels,vector<int> outputChannels,atomic<long> &buildProgress)
     {
         if(this->positionCount == 0)
             return NULL;
@@ -63,7 +68,7 @@ public:
 
         std::shared_ptr<PagesHashStrategy> hashStrategy = std::make_shared<SimplePagesHashStrategy>(types,this->channels,hashChannels,outputChannels);
 
-        return std::make_shared<JoinHashSupplier>(hashStrategy,this->positionCount,this->channels);
+        return std::make_shared<JoinHashSupplier>(hashStrategy,this->positionCount,buildProgress);
     }
 
 

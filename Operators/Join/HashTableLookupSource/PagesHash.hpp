@@ -27,16 +27,16 @@ class PagesHash
     std::shared_ptr<PositionLinksFactoryBuilder> positionLinks;
 
 public:
-    PagesHash(int positionCount,std::shared_ptr<PagesHashStrategy> pagesHashStrategy,std::shared_ptr<PositionLinksFactoryBuilder> positionLinks)
+    PagesHash(int positionCount,std::shared_ptr<PagesHashStrategy> pagesHashStrategy,std::shared_ptr<PositionLinksFactoryBuilder> positionLinks,atomic<long> &buildProgress)
     {
         this->positionCount = positionCount;
         this->pagesHashStrategy = pagesHashStrategy;
         this->positionLinks = positionLinks;
-        this->createHashTable();
+        this->createHashTable(buildProgress);
 
     }
 
-    void createHashTable()
+    void createHashTable(atomic<long> &buildProgress)
     {
         HashCommon common;
         this->hashSize = common.arraySize(this->positionCount,0.75f);
@@ -82,6 +82,7 @@ public:
 
 
             this->hashKeyArray.get()[pos] = positionTmp;
+            buildProgress++;
         }
 
 

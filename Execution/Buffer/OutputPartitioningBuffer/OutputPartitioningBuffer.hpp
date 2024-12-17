@@ -228,9 +228,9 @@ public:
     }
     bool isFull() {
 
-        if(this->bufferSchema->getParBufType() == this->bufferSchema->PAR_REPEATABLE)
-            return false;
-        else
+       // if(this->bufferSchema->getParBufType() == this->bufferSchema->PAR_REPEATABLE)
+        //    return false;
+       // else
             return this->tbg->isFull();
 
 

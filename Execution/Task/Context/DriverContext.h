@@ -32,6 +32,8 @@ class DriverContext : public enable_shared_from_this<DriverContext>
 
     string downStreamHaveJoin = "NONE";
 
+    long buildAllCount = -1;
+    long buildProgress = -1;
 
 public:
     DriverContext(weak_ptr<PipelineContext> pipelineContext);
@@ -45,6 +47,12 @@ public:
     string getDownStreamHaveJoin(){
         return this->downStreamHaveJoin;
     }
+
+    atomic<long> &getBuildAllCount();
+
+    atomic<long> &getBuildProgress();
+
+
 
     void setDriver(shared_ptr<vector<shared_ptr<Operator>>> physicalPipeline);
 

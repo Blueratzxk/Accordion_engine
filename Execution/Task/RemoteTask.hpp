@@ -168,6 +168,10 @@ public:
         return this->taskInfoFetcher->getTaskInfo();
     }
 
+    bool isTaskDependenciesSatisfied()
+    {
+        return this->taskInfoFetcher->isDependenciesSatisfied();
+    }
 
 
     bool isTaskOutputBufferExpandTrend()

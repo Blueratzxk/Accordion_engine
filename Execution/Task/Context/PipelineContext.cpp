@@ -108,6 +108,13 @@ void PipelineContext::decreaseThreadNums(){
     this->taskContext.lock()->decreaseThreadNums();
 }
 
+atomic<long> &PipelineContext::getAllBuildCount(){
+
+    return this->taskContext.lock()->getAllBuildCount();
+}
+atomic<long> &PipelineContext::getAllBuildProgress(){
+    return this->taskContext.lock()->getAllBuildProgress();
+}
 
 
 

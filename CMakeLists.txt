@@ -498,6 +498,7 @@ add_executable(OLVP main.cpp
         Execution/Scheduler/QueryInfos/StageProcessingTimeCollector.hpp
         Execution/Scheduler/QueryInfos/StageProcessingTimeDict.hpp
         Tuning/ProgressAndTuner.hpp
+        Tuning/ParallelismAutoTuner.hpp
 
 
 )

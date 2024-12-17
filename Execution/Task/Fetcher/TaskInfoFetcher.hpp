@@ -387,6 +387,10 @@ class TaskInfoFetcher : public enable_shared_from_this<TaskInfoFetcher>
 
     map<string,double> joinIdToBuildTime;
 
+    bool dependenciesSatisfied = false;
+
+    double buildProgress = 0.0;
+
 public:
     TaskInfoFetcher(shared_ptr<TaskId> taskId,string remoteTaskLocation,shared_ptr<Event> eventListener)
     {
@@ -465,7 +469,14 @@ public:
             if (joinNum > 0) {
                 int buildNum = this->taskInfo->getTaskInfoDescriptor()->getJoinInfoDescriptor().getBuildNums();
 
+                long buildProgressCount = this->taskInfo->getTaskInfoDescriptor()->getJoinInfoDescriptor().getAllBuildProgress();
+                long buildAllCount = this->taskInfo->getTaskInfoDescriptor()->getJoinInfoDescriptor().getAllBuildCount();
+                if(buildAllCount == 0)
+                    buildProgress = 100.0;
+                else
+                    buildProgress = ((double)buildProgressCount/(double)buildAllCount) *100.0;
                 if (joinNum == buildNum) {
+                    this->dependenciesSatisfied = true;
                     if (this->buildRecord == "-1") {
                         this->buildRecord = to_string(TimeCommon::getCurrentTimeStamp());
                         this->buildTime = this->taskInfo->getTaskInfoDescriptor()->getJoinInfoDescriptor().getBuildTime();
@@ -474,12 +485,19 @@ public:
                     }
                 }
             }
+            else
+                this->dependenciesSatisfied = true;
         }
         lock.unlock();
     }
     string getBuildRecord()
     {
         return this->buildRecord;
+    }
+
+    double getBuildProgress()
+    {
+        return this->buildProgress;
     }
 
     double getBuildTime()
@@ -489,6 +507,11 @@ public:
     double getBuildComputingTime()
     {
         return this->buildComputingTime;
+    }
+
+    bool isDependenciesSatisfied()
+    {
+        return this->dependenciesSatisfied;
     }
 
     bool taskHasThroughput()
