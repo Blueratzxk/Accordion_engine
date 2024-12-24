@@ -199,7 +199,7 @@ public:
         return result;
     }
 
-    map<int,long>  getStageProcessingTimes()
+    map<int,pair<long,long>>  getStageProcessingTimes()
     {
         auto joinIdToSqlStage = this->getJoinIdToTableScanStage();
         map<shared_ptr<SqlStageExecution>,long> stageToBuildTime;
@@ -228,16 +228,26 @@ public:
             }
         }
 
-        map<int,long> results;
+        map<int,pair<long,long>> results;
         auto processingTimes = this->stageProcessingTimeCollector->getStageProcessingTimes();
         for(auto pt : processingTimes) {
-            pt.second+=stageToBuildTime[pt.first];
+            auto buildTime = stageToBuildTime[pt.first];
+            auto procTime = pt.second;
+            pt.second+=buildTime;
             spdlog::info("Stage " + to_string(pt.first->getStageId().getId()) + ": " + to_string(pt.second)+"ms");
             if(pt.first->getFragment()->hasTableScan())
-                results[pt.first->getStageId().getId()] = pt.second;
+                results[pt.first->getStageId().getId()] = {procTime,buildTime};
         }
 
         return results;
+    }
+
+
+
+    long getCurProcessingTime(int stageId)
+    {
+        auto re = this->getStageProcessingTimes();
+        return re[stageId].first;
     }
 
     //------------------------------------------------------------------------------//
@@ -449,13 +459,14 @@ public:
     }
 
 
-    void decreaseParallelismForOneStage(vector<StageExecutionAndScheduler> executions, int stageId)
+    void decreaseParallelismForOneStage(vector<StageExecutionAndScheduler> executions, int stageId,int degree)
     {
         for (int i = 0; i < executions.size(); i++) {
 
             if (executions[i].getStageExecution()->getStageId().getId() == stageId) {
                 shared_ptr<SqlStageExecution> stageExe = executions[i].getStageExecution();
-                (static_pointer_cast<NormalStageScheduler>(executions[i].getStageScheduler()))->decreaseOneConcurrentBySourceStage();
+                for(int de = 0 ; de < degree ; de++)
+                    (static_pointer_cast<NormalStageScheduler>(executions[i].getStageScheduler()))->decreaseOneConcurrentBySourceStage();
             }
 
         }
@@ -516,12 +527,12 @@ public:
         scheduler->addMulConcurrencyForOneStageByNodesGroup(scheduler->stageExeSchedulers,stageId,taskNum);
     }
 
-    static void decreaseStageParallelism(shared_ptr<SqlQueryScheduler> scheduler,int stageId)
+    static void decreaseStageParallelism(shared_ptr<SqlQueryScheduler> scheduler,int stageId,int degree)
     {
         if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
             return;
 
-        scheduler->decreaseParallelismForOneStage(scheduler->stageExeSchedulers,stageId);
+        scheduler->decreaseParallelismForOneStage(scheduler->stageExeSchedulers,stageId,degree);
     }
 
     static void decreaseStageTaskGroupParallelism(shared_ptr<SqlQueryScheduler> scheduler,int stageId)

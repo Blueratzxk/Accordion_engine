@@ -30,9 +30,9 @@ public:
         return "OK";
     }
 
-    string decreaseStageParallelism(int stageId)
+    string decreaseStageParallelism(int stageId,int degree)
     {
-        thread(SqlQueryScheduler::decreaseStageParallelism,this->scheduler,stageId).detach();
+        thread(SqlQueryScheduler::decreaseStageParallelism,this->scheduler,stageId,degree).detach();
         return "OK";
     }
 
@@ -225,7 +225,7 @@ public:
         return this->scheduler->getStagesCpuUsages();
     }
 
-    map<int,long> getStageProcessingTimes()
+    map<int,pair<long,long>> getStageProcessingTimes()
     {
         return this->scheduler->getStageProcessingTimes();
     }
@@ -495,9 +495,9 @@ public:
             return "NO";
     }
 
-    string Dynamic_decreaseStageParallelism(int stageId)
+    string Dynamic_decreaseStageParallelism(int stageId, int degree)
     {
-        this->dyScheduler->decreaseStageParallelism(stageId);
+        this->dyScheduler->decreaseStageParallelism(stageId, degree);
         return "OK";
     }
 

@@ -29,29 +29,7 @@ public:
     }
     string extractStageConcurrentMode()
     {
-        if(this->planFragment->getPartitionHandle() == NULL)
-            return "UNSUPPORT";
-        if(this->planFragment->getPartitionHandle()->getConnectorHandle()->getHandleId().compare("SystemPartitioningHandle") == 0)
-        {
-            auto handle = this->planFragment->getPartitionHandle();
-            if(handle->equals(*SystemPartitioningHandle::get("FIXED_BROADCAST_DISTRIBUTION")))
-                return "FIXED_BROADCAST_DISTRIBUTION";
-            else if(handle->equals(*SystemPartitioningHandle::get("SCALED_SIMPLE_DISTRIBUTION_BUF")))
-                return "SCALED_SIMPLE_DISTRIBUTION_BUF";
-            else if(handle->equals(*SystemPartitioningHandle::get("SCALED_HASH_DISTRIBUTION_BUF")))
-                return "SCALED_HASH_DISTRIBUTION_BUF";
-            else if(handle->equals(*SystemPartitioningHandle::get("SCALED_HASH_REDISTRIBUTION_BUF")))
-                return "SCALED_HASH_REDISTRIBUTION_BUF";
-            else if(handle->equals(*SystemPartitioningHandle::get("SCALED_HASH_SHUFFLE_STAGE_BUF")))
-                return "SCALED_HASH_SHUFFLE_STAGE_BUF";
-            else if(handle->equals(*SystemPartitioningHandle::get("SCALED_SIMPLE_HASH_SHUFFLE_STAGE_BUF")))
-                return "SCALED_SIMPLE_HASH_SHUFFLE_STAGE_BUF";
-            else
-                return "UNSUPPORT";
-
-        }
-
-        return "UNSUPPORT";
+        return this->planFragment->extractStageConcurrentMode();
     }
 
     string ToString()

@@ -127,6 +127,42 @@ public:
         return this->handle;
     }
 
+    bool isDOPSwitchingType()
+    {
+        string type = extractStageConcurrentMode();
+        if(type.find("HASH") != type.npos)
+            return true;
+
+        return false;
+    }
+
+    string extractStageConcurrentMode()
+    {
+        if(this->getPartitionHandle() == NULL)
+            return "UNSUPPORT";
+        if(this->getPartitionHandle()->getConnectorHandle()->getHandleId().compare("SystemPartitioningHandle") == 0)
+        {
+            auto handle = this->getPartitionHandle();
+            if(handle->equals(*SystemPartitioningHandle::get("FIXED_BROADCAST_DISTRIBUTION")))
+                return "FIXED_BROADCAST_DISTRIBUTION";
+            else if(handle->equals(*SystemPartitioningHandle::get("SCALED_SIMPLE_DISTRIBUTION_BUF")))
+                return "SCALED_SIMPLE_DISTRIBUTION_BUF";
+            else if(handle->equals(*SystemPartitioningHandle::get("SCALED_HASH_DISTRIBUTION_BUF")))
+                return "SCALED_HASH_DISTRIBUTION_BUF";
+            else if(handle->equals(*SystemPartitioningHandle::get("SCALED_HASH_REDISTRIBUTION_BUF")))
+                return "SCALED_HASH_REDISTRIBUTION_BUF";
+            else if(handle->equals(*SystemPartitioningHandle::get("SCALED_HASH_SHUFFLE_STAGE_BUF")))
+                return "SCALED_HASH_SHUFFLE_STAGE_BUF";
+            else if(handle->equals(*SystemPartitioningHandle::get("SCALED_SIMPLE_HASH_SHUFFLE_STAGE_BUF")))
+                return "SCALED_SIMPLE_HASH_SHUFFLE_STAGE_BUF";
+            else
+                return "UNSUPPORT";
+
+        }
+
+        return "UNSUPPORT";
+    }
+
 
     static string Serialize(PlanFragment planFragment)
     {

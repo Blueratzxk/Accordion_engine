@@ -55,6 +55,8 @@ class InstructionInterpreter
 
         funcMap.insert(make_pair("START_AND_COLLECT", &InstructionInterpreter::START_AND_COLLECT));
 
+        funcMap.insert(make_pair("START_AUTO_TUNE", &InstructionInterpreter::START_AUTO_TUNE));
+
 
     }
     bool RUNTIME_CONFIG(Instruction instruction)
@@ -141,6 +143,22 @@ class InstructionInterpreter
             return true;
         }
     }
+
+    bool START_AUTO_TUNE(Instruction instruction)
+    {
+        vector<string> parameters = instruction.getParameters();
+        if(parameters.size() != 1)
+        {
+            spdlog::error("START_AUTO_TUNE Instruction only need one parameter.");
+            return false;
+        }
+        else
+        {
+            spdlog::debug("Query "+parameters[0]+" start!");
+            return true;
+        }
+    }
+
     bool WAIT_QUERY(Instruction instruction)
     {
         vector<string> parameters = instruction.getParameters();

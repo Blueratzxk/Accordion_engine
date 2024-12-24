@@ -53,6 +53,35 @@ public:
             index = index%(windowLength);
         }
     }
+
+    double getFluctuation()
+    {
+        double min = 99999999999.99999;
+        double max = -1;
+        for(auto value : values)
+        {
+            if(min > value)
+                min = value;
+            if(value > max)
+                max = value;
+        }
+
+        return max - min;
+    }
+    double getFluctuationRatio()
+    {
+        double min = 99999999999.99999;
+        double max = -1;
+        for(auto value : values)
+        {
+            if(min > value)
+                min = value;
+            if(value > max)
+                max = value;
+        }
+
+        return (max - min)/max;
+    }
 };
 class QueryRecorder
 {
@@ -109,6 +138,44 @@ public:
 
     }
 
+
+};
+
+class QueryStageRemainingTimeWindow
+{
+    int stageId;
+    shared_ptr<smallWindow> remainingTimes;
+public:
+    QueryStageRemainingTimeWindow(int stageId)
+    {
+        this->stageId = stageId;
+        this->remainingTimes = make_shared<smallWindow>(3);
+    }
+
+    int getStageId()
+    {
+        return this->stageId;
+    }
+
+    void putTime(double time)
+    {
+        remainingTimes->addValue(time);
+    }
+
+    double getFluctuation()
+    {
+        return remainingTimes->getFluctuation();
+    }
+
+    double getFluctuationRatio()
+    {
+        return remainingTimes->getFluctuationRatio();
+    }
+
+    double getAvgTime()
+    {
+        return remainingTimes->getAvg();
+    }
 
 };
 
@@ -241,6 +308,8 @@ class PPM
     map<string,vector<shared_ptr<QueryBottleneckResult>>> queryBottleneckResult;
     map<string,vector<shared_ptr<StageTaskMaxImproveRatioResult>>> stageTaskMaxImproveRatioResult;
 
+    map<string,vector<shared_ptr<QueryStageRemainingTimeWindow>>> queryStageRemainingTimeWindows;
+
 
 
     bool refresh = false;
@@ -316,6 +385,8 @@ public:
                 }
 
 
+
+
                 if(this->query_stage_node_cpu_improvement.count(query.first) > 0) {
                     auto rec = query_stage_node_cpu_improvement[query.first];
                     if( rec.first!= NULL && rec.second!=NULL)
@@ -344,6 +415,15 @@ public:
 
                 stageTaskMaxImproveRatioResult[query.first] = analyzeMaxStageCpuUsageImprovementOnCurrentCluster();
                 queryBottleneckResult[query.first] = analyzeQueryBottleneck();
+
+
+                if(!this->queryStageRemainingTimeWindows.contains(query.first))
+                {
+                    this->queryStageRemainingTimeWindows[query.first] = {};
+                    this->analyzeRemainingTimesForEachStage(this->queryStageRemainingTimeWindows[query.first]);
+                }
+                else
+                    this->analyzeRemainingTimesForEachStage(this->queryStageRemainingTimeWindows[query.first]);
             }
             else
             {
@@ -401,6 +481,63 @@ public:
 
 
     }
+
+    double getRemainingTimeFluctuationOfQueryStage(string queryId,int stageId)
+    {
+        if((*this->queries).count(queryId) > 0){
+            if ((*this->queries)[queryId]->isQueryStart() && !(*this->queries)[queryId]->isQueryFinished()) {
+                if(this->queryStageRemainingTimeWindows.contains(queryId))
+                {
+                    auto stages = this->queryStageRemainingTimeWindows[queryId];
+                    for(auto stage : stages)
+                        if(stage->getStageId() == stageId)
+                            return stage->getFluctuationRatio();
+                    return -1;
+                }
+                return -1;
+            }
+            return -1;
+        }
+        return -1;
+    }
+
+    double getAvgRemainingTimeOfQueryStage(string queryId,int stageId)
+    {
+        if((*this->queries).count(queryId) > 0){
+            if ((*this->queries)[queryId]->isQueryStart() && !(*this->queries)[queryId]->isQueryFinished()) {
+                if(this->queryStageRemainingTimeWindows.contains(queryId))
+                {
+                    auto stages = this->queryStageRemainingTimeWindows[queryId];
+                    for(auto stage : stages)
+                        if(stage->getStageId() == stageId)
+                            return stage->getAvgTime();
+                    return -1;
+                }
+                return -1;
+            }
+            return -1;
+        }
+        return -1;
+    }
+
+    void analyzeRemainingTimesForEachStage(vector<shared_ptr<QueryStageRemainingTimeWindow>> &records)
+    {
+        if(records.empty()) {
+            auto stages = this->queryToPredict->getScheduler()->getStageExeSchedulers();
+            for (int i = 0 ; i < stages.size(); i++) {
+                auto timeWindow = make_shared<QueryStageRemainingTimeWindow>(stages[i].getStageExecution()->getStageId().getId());
+                timeWindow->putTime(stages[i].getStageExecution()->getRemainingTime());
+                records.push_back(timeWindow);
+            }
+        }
+        else
+        {
+            auto stages = this->queryToPredict->getScheduler()->getStageExeSchedulers();
+            for (int i = 0 ; i < stages.size(); i++)
+                records[i]->putTime(stages[i].getStageExecution()->getRemainingTime());
+        }
+    }
+
     vector<shared_ptr<CpuBottleneckResult>> analyzeCpuBottleneckForStages()
     {
         vector<shared_ptr<CpuBottleneckResult>> results;
@@ -948,6 +1085,30 @@ public:
             return "No bottlenecks have been identified for this query.";
     }
 
+    vector<int> getQueryBottleneckStages(string queryId)
+    {
+        vector<int> result;
+        if(this->queries->count(queryId) == 0)
+            return result;
+        else
+        {
+            if((*this->queries)[queryId]->isQueryFinished())
+                return result;
+
+            if(!(*this->queries)[queryId]->isQueryStart())
+                return result;
+        }
+
+        if(this->queryBottleneckResult.count(queryId) > 0) {
+            auto re = this->queryBottleneckResult[queryId];
+            for(auto r : re)
+                result.push_back(r->getStageId());
+            return result;
+        }
+        return result;
+    }
+
+
     string getQueryBottleneckStagesAndAnalyzeExtern(string queryId,int factor)
     {
         string result;
@@ -1173,6 +1334,143 @@ public:
         return result;
 
     }
+
+    map<double,double> getStageImprovementPredictionInfosList(string queryId,int stageId,int curDOP, vector<double> factors)
+    {
+
+        map<double,double> predictions;
+        if((*this->queries).count(queryId) == 0)
+            return predictions;
+
+        if (!(*this->queries)[queryId]->isQueryStart()) {
+            return predictions;
+        }
+
+        double prediction = 0.0;
+        double preTime = 0.0;
+        auto targetStage = (*this->queries)[queryId]->getScheduler();
+
+        auto tableScanStage = targetStage->findRootTableScanStageForStage(to_string(stageId));
+        double remainingTime = tableScanStage->getStageExecution()->getRemainingTime()/1000;
+
+        map<int,long> stageBytes = targetStage->getStageBuildChildsTotalBytes(to_string(stageId));
+        map<shared_ptr<ClusterNode>,double> timeConsumes;
+        double MaxRebuildTime = 0;
+        for(auto stage : stageBytes)
+        {
+            auto nodes = targetStage->getStageExecutionAndSchedulerByStagId(stage.first)->getStageExecution()->getCurrentStageNodes();
+            double eachNodeDataVolume = stage.second/nodes.size();
+            for(auto node : nodes)
+            {
+                if(timeConsumes.count(node) == 0)
+                {
+                    timeConsumes[node] = eachNodeDataVolume/1000/node->getMaxNetSpeed();
+                }
+                else
+                    timeConsumes[node] += eachNodeDataVolume/1000/node->getMaxNetSpeed();
+            }
+        }
+
+        auto targetStageObj = targetStage->getStageExecutionAndSchedulerByStagId(stageId)->getStageExecution();
+        double stageTaskMaxBuildTime = targetStageObj->getMaxHashTableBuildTimeofTasks();
+
+        stageTaskMaxBuildTime = stageTaskMaxBuildTime/1000;
+
+
+        vector<shared_ptr<CpuBottleneckResult>> cpu;
+        vector<shared_ptr<NetBottleneckResult>> nettrans;
+        vector<shared_ptr<NetBottleneckResult>> netrec;
+        findBottlenecksForStageExtern(queryId,stageId,cpu,nettrans,netrec);
+
+
+        auto childStages = targetStage->getStageExecutionAndSchedulerByStagId(stageId)->getStageLinkage();
+        if(!childStages->getChildStages().empty()) {
+            auto leftChild = childStages->getChildStages()[0];
+
+
+            if(!leftChild->isBufferNeedPartitioning())
+            {
+                stageTaskMaxBuildTime = targetStageObj->getMaxHashTableBuildComputingTimeofTasks()/1000+MaxRebuildTime;
+            }
+
+
+            findBottlenecksForStageExtern(queryId,leftChild->getStageId().getId(),cpu,nettrans,netrec);
+
+            auto netIm = this->query_stage_node_net_improvement[queryId];
+            auto shuffleIm = this->query_stage_node_shuffle_improvement[queryId];
+            auto cpuIm = this->query_stage_node_cpu_improvement[queryId];
+
+            double netImprove = 0;
+            double shuffleImprove = 0;
+            double cpuImprove = 0;
+            double cpuImproveByThreads = 0;
+            if(netIm != NULL && shuffleIm != NULL && cpuIm.first != NULL) {
+                netImprove = netIm->getStageMinImprovement(leftChild->getStageId().getId());
+                shuffleImprove = shuffleIm->getStageMinImprovement(leftChild->getStageId().getId());
+                cpuImprove = cpuIm.first->getStageMinImprovement(leftChild->getStageId().getId());
+                cpuImproveByThreads = cpuIm.second->getStageAVGImprovement(leftChild->getStageId().getId());
+            }
+
+            for(auto factor : factors) {
+
+                double minFactor = 9999999.99;
+                if (netImprove + 1 < minFactor && netImprove + 1 > 1)
+                    minFactor = netImprove + 1;
+
+                if (leftChild->isHavingAdaptiveDOP()) {
+                    if (cpuImprove + 1 < minFactor && cpuImprove + 1 > 1)
+                        minFactor = cpuImprove + 1;
+                } else {
+                    double minCPUFactor = 9999999999;
+                    if (cpuImprove + 1 > 1 && cpuImprove + 1 < minCPUFactor) {
+                        minCPUFactor = cpuImprove + 1;
+                    }
+                    if (cpuImproveByThreads + 1 > 1 && cpuImproveByThreads + 1 < minCPUFactor) {
+                        minCPUFactor = cpuImproveByThreads + 1;
+                    }
+                    if (minCPUFactor < minFactor)
+                        minFactor = minCPUFactor;
+                }
+
+                if (shuffleImprove + 1 < minFactor && shuffleImprove + 1 > 1)
+                    minFactor = shuffleImprove + 1;
+
+
+                if (factor < minFactor)
+                    minFactor = factor;
+                if (minFactor == 9999999)
+                    minFactor = 1;
+
+                spdlog::info("min factor:" + to_string(minFactor));
+
+                if(factor < targetStage->getStageExecutionAndSchedulerByStagId(stageId)->getStageExecution()->getCurrentStageDOP()) {
+                    if (!targetStage->getStageExecutionAndSchedulerByStagId(
+                            stageId)->getStageExecution()->isDOPSwitchingType())
+                        preTime = (remainingTime) / minFactor;
+                    else
+                        preTime = (remainingTime - stageTaskMaxBuildTime) / minFactor;
+                }
+                else
+                    preTime = (remainingTime - stageTaskMaxBuildTime) / minFactor;
+                preTime += stageTaskMaxBuildTime;
+                prediction = preTime;
+
+                double targetDOP = factor*curDOP;
+                if(floor(targetDOP) == targetDOP)
+                    predictions[targetDOP] = (prediction);
+            }
+        }
+        else {
+            for(auto factor : factors) {
+                predictions[factor] = remainingTime;
+                return predictions;
+            }
+        }
+        return predictions;
+
+    }
+
+
     string getStageImprovementPredictionInfosExtern(string queryId,int stageId,double n)
     {
 

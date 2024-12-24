@@ -113,6 +113,7 @@ private:
         Routes::Get(router, "/v1/query/getQueryStagePredictionInfos/:queryId/:stageId/:DOP", Routes::bind(&StatsEndpoint::getQueryStagePredictionInfosExtern, this));
         Routes::Get(router, "/v1/query/getQueryBottleneckExtern/:queryId", Routes::bind(&StatsEndpoint::getQueryBottleneckExtern, this));
         Routes::Get(router, "/v1/query/getQueryBottleneckStagesAndAnalyzeExterns/:queryId/:factor", Routes::bind(&StatsEndpoint::getQueryBottleneckStagesAndAnalyzeExterns, this));
+        Routes::Get(router, "/v1/query/autoTuneByTimeConstraint/:queryId/:timeConstraint", Routes::bind(&StatsEndpoint::autoTuneByTimeConstraint, this));
 
 
 
@@ -573,6 +574,31 @@ private:
 
         QueryInterFace api;
         string taskResponse = api.getQueryBottlenecksAndAnalyze(queryId,factor);
+
+
+
+        response.headers().add<Http::Header::AccessControlAllowOrigin>("*");
+        response.send(Http::Code::Ok,taskResponse);
+
+    }
+
+    void  autoTuneByTimeConstraint(const Rest::Request& request, Http::ResponseWriter response) {
+
+        string queryId;
+        string timeConstraint;
+
+        if (request.hasParam(":queryId")) {
+            auto value = request.param(":queryId");
+            queryId = value.as<string>();
+        }
+        if (request.hasParam(":timeConstraint")) {
+            auto value = request.param(":timeConstraint");
+            timeConstraint = value.as<string>();
+        }
+
+
+        QueryInterFace api;
+        string taskResponse = api.autoTuneByTimeConstraint(queryId,timeConstraint);
 
 
 

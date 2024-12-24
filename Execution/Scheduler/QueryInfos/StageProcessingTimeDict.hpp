@@ -18,27 +18,36 @@ class SPTD_DOP_Time
 {
     int DOP;
     long time;
+    long procTime = 0;
+    long buildTime = 0;
 
 public:
-    SPTD_DOP_Time(int DOP, long time)
+
+    SPTD_DOP_Time(int DOP, long time,long procTime,long buildTime)
     {
         this->DOP = DOP;
         this->time = time;
+        this->procTime = procTime;
+        this->buildTime = buildTime;
     }
 
     int getDOP(){return DOP;}
     long getTime(){return time;}
-    void setTime(long newTime){this->time = newTime;}
+    long getProcTime(){return procTime;}
+    long getBuildTime(){return buildTime;}
+    void setTime(long newTime,long newProc,long newBuild){this->time = newTime;this->procTime = newProc;this->buildTime = newBuild;}
 
     static nlohmann::json Serialize(SPTD_DOP_Time sptdDopTime)
     {
         nlohmann::json json;
         json["DOP"] = sptdDopTime.DOP;
         json["time"] = sptdDopTime.time;
+        json["procTime"] = sptdDopTime.procTime;
+        json["buildTime"] = sptdDopTime.buildTime;
         return json;
     }
     static SPTD_DOP_Time Deserialize(nlohmann::json json){
-        return {json["DOP"],json["time"]};
+        return {json["DOP"],json["time"],json["procTime"],json["buildTime"]};
     }
 
 };
@@ -70,6 +79,35 @@ public:
         return -1;
     }
 
+    long getProcTime(int stageId,int DOP)
+    {
+        if(this->SPTD_DOP_Times.contains(stageId))
+        {
+            auto DOP_Times = SPTD_DOP_Times[stageId];
+            for(auto dop_time : DOP_Times)
+            {
+                if(dop_time.getDOP() == DOP)
+                    return dop_time.getProcTime();
+            }
+        }
+
+        return -1;
+    }
+
+    long getBuildTime(int stageId,int DOP)
+    {
+        if(this->SPTD_DOP_Times.contains(stageId))
+        {
+            auto DOP_Times = SPTD_DOP_Times[stageId];
+            for(auto dop_time : DOP_Times)
+            {
+                return dop_time.getBuildTime();
+            }
+        }
+
+        return -1;
+    }
+
     void addInfo(int stageId,SPTD_DOP_Time sptdDopTime)
     {
         bool findItem = false;
@@ -77,7 +115,7 @@ public:
             for(int i = 0 ; i < SPTD_DOP_Times[stageId].size() ; i++){
                 if(SPTD_DOP_Times[stageId][i].getDOP() == sptdDopTime.getDOP()) {
                     findItem = true;
-                    SPTD_DOP_Times[stageId][i].setTime(sptdDopTime.getTime());
+                    SPTD_DOP_Times[stageId][i].setTime(sptdDopTime.getTime(),sptdDopTime.getProcTime(),sptdDopTime.getBuildTime());
                 }
 
             }
@@ -148,9 +186,9 @@ public:
     }
 
 
-    void addNewInfo(string queryName,int stageId,int dop,long processingTime)
+    void addNewInfo(string queryName,int stageId,int dop,long processingTime,long procTime,long buildTime)
     {
-        SPTD_DOP_Time sptdDopTime(dop,processingTime);
+        SPTD_DOP_Time sptdDopTime(dop,processingTime,procTime,buildTime);
 
         if(!dicts.contains(queryName)) {
             SPTD_Infolist sptdInfolist;
@@ -168,6 +206,23 @@ public:
         }
         else
             return dicts[queryName].getTime(stageId,dop);
+    }
+    long getProcTime(string queryName,int stageId,int dop)
+    {
+        if(!dicts.contains(queryName)) {
+            return  -1;
+        }
+        else
+            return dicts[queryName].getProcTime(stageId,dop);
+    }
+
+    long getBuildTime(string queryName,int stageId,int dop)
+    {
+        if(!dicts.contains(queryName)) {
+            return  -1;
+        }
+        else
+            return dicts[queryName].getBuildTime(stageId,dop);
     }
 
     void initMetaFile()

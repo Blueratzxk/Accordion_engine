@@ -25,6 +25,7 @@ class InstructionExecutor
     shared_ptr<StageProcessingTimeDict> stageProcessingTimeDict;
 
     bool recordProcessingtime = false;
+    bool autoTuneDump = false;
 
 public:
     InstructionExecutor(shared_ptr<QueryManager> queryManager,shared_ptr<ScriptQueryMonitor> monitor)
@@ -48,7 +49,11 @@ public:
         funcMap.insert(make_pair("ECHO", &InstructionExecutor::ECHO_INFO));
         funcMap.insert(make_pair("PREDICT_TIME", &InstructionExecutor::PREDICT_TIME));
 
+
+
         funcMap.insert(make_pair("START_AND_COLLECT", &InstructionExecutor::START_AND_COLLECT));
+        funcMap.insert(make_pair("START_AUTO_TUNE", &InstructionExecutor::START_AUTO_TUNE));
+
     }
 
 
@@ -89,6 +94,30 @@ public:
 
         return true;
     }
+
+
+    void processAutoTuneDump(string queryId, shared_ptr<ScriptQueryMonitor> monitor)
+    {
+
+        auto logs = this->queryManager->getAutoTuneManager()->getAutoTuneInfos(queryId);
+
+        for(auto log : logs)
+        {
+            nlohmann::json info;
+            info["Type"] = "IQRS";
+            if(log->type == AutoTuneInfo::ADD)
+                info["Operation"] = "ADD_PARALLELISM-STAGE," + to_string(log->getStageId());
+            else
+                info["Operation"] = "SUB_PARALLELISM-STAGE," + to_string(log->getStageId());;
+
+            info["Value"] = to_string(log->getDegree());
+            info["TimeStamp"] = log->getTimeStamp();
+            monitor->addInfo(queryId,info.dump());
+        }
+
+    }
+
+
     bool END(Instruction instruction,ScriptExecutionContext &context)
     {
         string queryId;
@@ -144,10 +173,13 @@ public:
 
 
             for(auto pt : stageProcTimes)
-                this->stageProcessingTimeDict->addNewInfo(queryName,pt.first,maxDOP,pt.second);
+                this->stageProcessingTimeDict->addNewInfo(queryName,pt.first,maxDOP,pt.second.first+pt.second.second,pt.second.first,pt.second.second);
             this->stageProcessingTimeDict->save();
         }
 
+
+        if(this->autoTuneDump)
+            this->processAutoTuneDump(queryId,this->monitor);
 
 
         this->monitor->addInfo(queryId,info.dump());
@@ -234,6 +266,21 @@ public:
         monitor->addInfo(re,info.dump());
 
         return context.setQueryId(re) && context.setQueryName(queryName);
+    }
+
+
+    bool START_AUTO_TUNE(Instruction instruction,ScriptExecutionContext &context) {
+
+        vector<string> parameters = instruction.getParameters();
+
+        string timeConstraint = parameters[0];
+
+        string queryId;
+        context.getQueryId(queryId);
+
+        this->autoTuneDump = true;
+        queryManager->autoTuneForScriptExecutor(queryId,timeConstraint);
+        return true;
     }
 
 

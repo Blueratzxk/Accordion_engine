@@ -98,7 +98,8 @@
 
 #include "../Tuning/Prediction/PPM.hpp"
 #include "../Tuning/Prediction/ClusterContext.hpp"
-#include "../Tuning/ParallelismAutoTuner.hpp"
+
+#include "../Tuning/AutoTunerManager.hpp"
 
 #include "../Utils/TimeCommon.hpp"
 class QueryManager
@@ -111,14 +112,16 @@ class QueryManager
     NodesManager nodesManager;
 
     shared_ptr<PPM> ppm = NULL;
-    shared_ptr<ParallelismAutoTuner> parallelismAutoTuner;
+
+
+    shared_ptr<AutoTunerManager> autoTunerManager;
 public:
 
     QueryManager(){
         spdlog::info("QueryServer Start!");
         regQuerys();
         this->querys = make_shared<map<string,shared_ptr<SqlQueryExecution>>>();
-
+        this->autoTunerManager = make_shared<AutoTunerManager>();
     }
 
 
@@ -371,15 +374,36 @@ public:
 
         return result;
     }
+
+    string autoTuneByTimeConstraint(string queryId,string timeConstraintBySeconds)
+    {
+        return this->autoTunerManager->autoTuneByTimeConstraint(queryId,this->getPPM(),timeConstraintBySeconds);
+    }
+
+    shared_ptr<AutoTunerManager> getAutoTuneManager()
+    {
+        return this->autoTunerManager;
+    }
+
+    void autoTuneForScriptExecutor(string queryId,string timeConstraintBySeconds)
+    {
+        this->autoTunerManager->autoTuneByTimeConstraint(queryId,this->getPPM(),timeConstraintBySeconds);
+    }
+
     string getQueryBottlenecks(string queryId)
     {
         string result = getPPM()->getQueryBottleneckStagesExtern(queryId);
 
-        this->parallelismAutoTuner = make_shared<ParallelismAutoTuner>(this->ppm);
-        this->parallelismAutoTuner->tune(queryId);
-
+        //this->parallelismAutoTuner = make_shared<ParallelismAutoTuner>(this->ppm);
+        //this->parallelismAutoTuner->tune(queryId);
+       // if(!this->autoTunerWorking) {
+      //      this->autoTunerWorking = true;
+       //     thread th(autoTuneOnce, this, queryId, this->ppm);
+       //     th.detach();
+       // }
         return  result;
     }
+
     string getQueryBottleneckStagesAndAnalyzeExtern(string queryId,string factor)
     {
         string result = getPPM()->getQueryBottleneckStagesAndAnalyzeExtern(queryId,atoi(factor.c_str()));
@@ -445,9 +469,9 @@ public:
             return "-1";
     }
 
-    map<int,long> getQueryStageProcessingTimes(const string& queryId)
+    map<int,pair<long,long>> getQueryStageProcessingTimes(const string& queryId)
     {
-        map<int,long> re;
+        map<int,pair<long,long>> re;
         shared_ptr<SqlQueryExecution> queryExecution = nullptr;
         if((*this->querys).find(queryId) != (*this->querys).end()) {
             queryExecution = (*this->querys)[queryId];
@@ -753,7 +777,7 @@ public:
         shared_ptr<SqlQueryExecution> queryExecution = nullptr;
         if((*this->querys).find(queryId) != (*this->querys).end()) {
             queryExecution = (*this->querys)[queryId];
-            return queryExecution->Dynamic_decreaseStageParallelism(stageId);
+            return queryExecution->Dynamic_decreaseStageParallelism(stageId,1);
         }
         else
             return "NULL";

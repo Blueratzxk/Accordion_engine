@@ -85,6 +85,13 @@ public:
     {
         return QueryServer::queryServer->getQueryBottlenecks(queryId);
     }
+
+    static string autoTuneByTimeConstraint(string queryId,string timeConstraintBySeconds)
+    {
+        return QueryServer::queryServer->autoTuneByTimeConstraint(queryId,timeConstraintBySeconds);
+    }
+
+
     static string getQueryBottlenecksAndAnalyze(string queryId,string factor)
     {
         return QueryServer::queryServer->getQueryBottleneckStagesAndAnalyzeExtern(queryId,factor);

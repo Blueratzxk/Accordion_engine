@@ -153,21 +153,23 @@ void TaskContext::reportBuildFinishedTime(std::chrono::system_clock::time_point 
 
 };
 
-void TaskContext::reportBuildTime(string joinId,double time)
+void TaskContext::reportBuildTime(double time)
 {
     if(time > maxBuildTime)
         maxBuildTime = time;
 
 
-    joinIdToBuildTimeLock.lock();
-    this->joinIdToBuildTime[joinId] = time;
-    joinIdToBuildTimeLock.unlock();
+
 }
 
-void TaskContext::reportBuildComputingTime(double time)
+void TaskContext::reportBuildComputingTime(string joinId,double time)
 {
     if(time > maxBuildComputingTime)
         maxBuildComputingTime = time;
+
+    joinIdToBuildTimeLock.lock();
+    this->joinIdToBuildTime[joinId] = time;
+    joinIdToBuildTimeLock.unlock();
 }
 
 map<string,set<__pid_t>> TaskContext::getAllTaskTids() {

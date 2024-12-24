@@ -122,12 +122,12 @@ void DriverContext::reportBuildStartTime(std::chrono::system_clock::time_point t
 void DriverContext::reportBuildFinishedTime(std::chrono::system_clock::time_point time){
     this->pipelineContext.lock()->reportBuildFinishedTime(time);
 }
-void DriverContext::reportBuildTime(string joinId,double time){
-    this->pipelineContext.lock()->reportBuildTime(joinId,time);
+void DriverContext::reportBuildTime(double time){
+    this->pipelineContext.lock()->reportBuildTime(time);
 };
 
-void DriverContext::reportBuildComputingTime(double time){
-    this->pipelineContext.lock()->reportBuildComputingTime(time);
+void DriverContext::reportBuildComputingTime(string joinId,double time){
+    this->pipelineContext.lock()->reportBuildComputingTime(joinId,time);
 };
 
 

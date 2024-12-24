@@ -35,6 +35,7 @@ class ExecutionConfig
     string intial_plan_used_nodes;
     string intra_task_hash_build_concurrency;
     string tpch_AutoGen_ScaleFactor;
+    string autoTuneByPlan;
 
 public:
     ExecutionConfig(){
@@ -83,6 +84,11 @@ public:
             this->tpch_AutoGen_ScaleFactor = jsonTree["tpch_AutoGen_ScaleFactor"];
         else
             this->tpch_AutoGen_ScaleFactor = "0";
+
+        if(jsonTree.contains("autoTuneByPlan"))
+            this->autoTuneByPlan = jsonTree["autoTuneByPlan"];
+        else
+            this->autoTuneByPlan = "false";
 
         in.close();
         this->hasRead = true;
@@ -219,6 +225,14 @@ public:
             return this->tpch_AutoGen_ScaleFactor;
         else
             return "0";
+    }
+
+    string getAutoTuneByPlan()
+    {
+        if(readConfigFile())
+            return this->autoTuneByPlan;
+        else
+            return "false";
     }
 
 

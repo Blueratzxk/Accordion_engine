@@ -391,6 +391,7 @@ class TaskInfoFetcher : public enable_shared_from_this<TaskInfoFetcher>
 
     double buildProgress = 0.0;
 
+    long long stateMigratingFinishTimeStamp = -1;
 public:
     TaskInfoFetcher(shared_ptr<TaskId> taskId,string remoteTaskLocation,shared_ptr<Event> eventListener)
     {
@@ -477,6 +478,7 @@ public:
                     buildProgress = ((double)buildProgressCount/(double)buildAllCount) *100.0;
                 if (joinNum == buildNum) {
                     this->dependenciesSatisfied = true;
+                    this->stateMigratingFinishTimeStamp = TimeCommon::getCurrentTimeStamp();
                     if (this->buildRecord == "-1") {
                         this->buildRecord = to_string(TimeCommon::getCurrentTimeStamp());
                         this->buildTime = this->taskInfo->getTaskInfoDescriptor()->getJoinInfoDescriptor().getBuildTime();
@@ -498,6 +500,10 @@ public:
     double getBuildProgress()
     {
         return this->buildProgress;
+    }
+
+    long long getStateMigratingFinishTimeStamp(){
+        return this->stateMigratingFinishTimeStamp;
     }
 
     double getBuildTime()

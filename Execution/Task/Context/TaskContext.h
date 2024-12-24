@@ -235,8 +235,8 @@ public:
     void reportBuildFinishedTime(std::chrono::system_clock::time_point time);
 
 
-    void reportBuildTime(string joinId,double time);
-    void reportBuildComputingTime(double time);
+    void reportBuildTime(double time);
+    void reportBuildComputingTime(string joinId,double time);
 
     map<string,set<__pid_t>> getAllTaskTids();
 

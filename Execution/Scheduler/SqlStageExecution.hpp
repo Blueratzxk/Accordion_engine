@@ -68,9 +68,10 @@ class SqlStageExecution:public enable_shared_from_this<SqlStageExecution>
 
     shared_ptr<Event> simpleEvent;
 
-    long throughputCounter = 0;
 
     mutex taskGroupLock;
+
+
 
 
 public:
@@ -97,6 +98,8 @@ public:
         }
 
     }
+
+
 
     shared_ptr<map<shared_ptr<ClusterNode>, set<shared_ptr<HttpRemoteTask>>>> getActiveTaskNodeMap()
     {
@@ -305,6 +308,11 @@ public:
         return nodes;
    }
 
+   bool isDOPSwitchingType()
+   {
+        return this->getFragment()->isDOPSwitchingType();
+   }
+
     double getAvgStageThroughput() {
         vector<shared_ptr<TaskInfo>> taskInfos;
 
@@ -504,22 +512,7 @@ public:
         return remainingTime;
     }
 
-    SqlStageExecution(string queryId,int stageExecutionId,int stageId,shared_ptr<PlanFragment> fragment,shared_ptr<OutputBufferSchema> schema){
-        this->stageExecutionId = stageExecutionId;
-        this->fragment = fragment;
 
-        this->outputBufferSchema = schema;
-
-        vector<PlanNode*> remoteSources = fragment->getRemoteSourceNodes();
-
-        for(int i = 0 ; i < remoteSources.size() ; i++)
-        {
-            string fragmentId = ((RemoteSourceNode*)remoteSources[i])->getSourceFragmentId();
-            exchangeSources[fragmentId] = remoteSources[i];
-        }
-        this->state = make_shared<StageExecutionStateMachine>();
-        this->state->start();
-    }
 
     map<int,int> getTaskGroupMap()
     {
@@ -670,6 +663,24 @@ public:
         tasksLock.unlock();
 
 
+
+    }
+
+    bool dopStateMigrating()
+    {
+        return !this->isDependenciesSatisfied();
+    }
+
+    long long getLastStageMigratingTimeStamp()
+    {
+        long long max = 0;
+        for(auto task : this->getAllTasks())
+        {
+            auto ts = task->getTaskInfoFetcher()->getStateMigratingFinishTimeStamp();
+            if(ts > max)
+                max = ts;
+        }
+        return max;
     }
 
 
@@ -718,7 +729,10 @@ public:
             allTasks.push_back(*remote->getTaskId());
         }
         tasksLock.unlock();
+
     }
+
+
 
     void updateTasksIntraPara(shared_ptr<TaskIntraParaUpdateRequest> request)
     {

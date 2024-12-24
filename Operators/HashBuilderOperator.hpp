@@ -173,8 +173,8 @@ public:
 
 
 
-                this->driverContext->reportBuildTime(joinId,buildTime);
-                this->driverContext->reportBuildComputingTime(buildComputingTime);
+                this->driverContext->reportBuildTime(buildTime);
+                this->driverContext->reportBuildComputingTime(joinId,buildComputingTime);
 
                 return;
         }

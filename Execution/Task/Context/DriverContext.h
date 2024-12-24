@@ -91,9 +91,9 @@ public:
 
     void reportBuildFinishedTime(std::chrono::system_clock::time_point time);
 
-    void reportBuildTime(string joinId,double time);
+    void reportBuildTime(double time);
 
-    void reportBuildComputingTime(double time);
+    void reportBuildComputingTime(string joinId,double time);
 
     void addTids(set<__pid_t> ids);
     void removeTids(set<__pid_t> ids);

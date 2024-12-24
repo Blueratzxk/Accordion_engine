@@ -189,12 +189,12 @@ void PipelineContext::reportBuildStartTime(std::chrono::system_clock::time_point
 void PipelineContext::reportBuildFinishedTime(std::chrono::system_clock::time_point time){
     this->taskContext.lock()->reportBuildFinishedTime(time);
 }
-void PipelineContext::reportBuildTime(string joinId,double time){
-    this->taskContext.lock()->reportBuildTime(joinId,time);
+void PipelineContext::reportBuildTime(double time){
+    this->taskContext.lock()->reportBuildTime(time);
 }
 
-void PipelineContext::reportBuildComputingTime(double time){
-    this->taskContext.lock()->reportBuildComputingTime(time);
+void PipelineContext::reportBuildComputingTime(string joinId,double time){
+    this->taskContext.lock()->reportBuildComputingTime(joinId,time);
 };
 
 #endif //OLVP_PIPELINECONTEXT_CPP
