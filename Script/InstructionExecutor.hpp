@@ -443,6 +443,9 @@ public:
 
         if(!context.getQueryId(queryId)) return false;
 
+        auto re = this->queryManager->getQueryStageDOPs(queryId);
+        int curDop = re[stageId];
+
         string preTime = this->queryManager->getPPM()->getStagePredictedTime(queryId,stageId,degree);
 
 

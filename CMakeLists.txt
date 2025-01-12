@@ -501,6 +501,8 @@ add_executable(OLVP main.cpp
         Tuning/ParallelismAutoTuner.hpp
         Tuning/AutoTunePlanConfig.hpp
         Tuning/AutoTunerManager.hpp
+        TpchTest/Querys/Query2Join_OC.hpp
+        TpchTest/Querys/Query2Join_OC_ProbeShuffle.hpp
 
 
 )

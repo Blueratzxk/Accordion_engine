@@ -19,6 +19,8 @@ class ClusterServer
     static shared_ptr<NetInfoCollector> netInfoCollector;
     static bool showInfos;
     static shared_ptr<RestfulClient> restfulClient;
+
+    static shared_ptr<mutex> clientLock;
 public:
     ClusterServer();
 
@@ -28,6 +30,10 @@ public:
     static void sendHeartbeat();
     static void heartbeatSender();
     static void startHeartbeat();
+
+    static void post_sync(string handle,string addrDest,vector<string> data);
+    static string post_getResult_sync(string handle,string addrDest,vector<string> data);
+
     static shared_ptr<NetInfoCollector> getNetInfoCollector();
 
     static void openClusterInfoDisplay()

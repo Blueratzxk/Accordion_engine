@@ -82,7 +82,8 @@
 #include "../TpchTest/Querys/Query2Join_NL.hpp"
 #include "../TpchTest/Querys/Query2Join_NL_SmallOrders.hpp"
 #include "../TpchTest/Querys/Query2Join_NL_SmallOrders_ProbeShuffle.hpp"
-
+#include "../TpchTest/Querys/Query2Join_OC.hpp"
+#include "../TpchTest/Querys/Query2Join_OC_ProbeShuffle.hpp"
 
 #include "../TpchTest/Querys/Query2Join_single.hpp"
 #include "../TpchTest/Querys/Query2SJoin.hpp"
@@ -217,9 +218,13 @@ public:
         regQueryList["Q2_J2_2SS"] = make_shared<Query2_Join2_TwoShuffleStage>();
         regQueryList["Q2_J2_SS"] = make_shared<Query2_Join2_ShuffleStage>();
         regQueryList["Q2_J_NL"] = make_shared<Query2_Join_NL>();
-        regQueryList["Q2_J_NL_SO"] = make_shared<Query2_Join_NL_SmallOrders>();
 
+        regQueryList["Q2_J_NL_SO"] = make_shared<Query2_Join_NL_SmallOrders>();
         regQueryList["Q2_J_NL_SOPS"] = make_shared<Query2_Join_NL_SmallOrders_ProbeShuffle>();
+
+        regQueryList["Q2_J_OC_SC"] = make_shared<Query2_Join_OC>();
+        regQueryList["Q2_J_OC_SCPS"] = make_shared<Query2_Join_OC_ProbeShuffle>();
+
 
         regQueryList["Q2_SJ"] = make_shared<Query2_SJoin>();
 

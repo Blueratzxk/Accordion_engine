@@ -21,17 +21,26 @@ class RestfulClient
 {
     map<string,RestClient::Connection*> connections;
 
+    map<string,shared_ptr<mutex>> mutexes;
+
+    mutex lock;
+
     bool debug = false;
 
     RestClient::Connection* getConnection(string ip)
     {
+        lock.lock();
         if(!this->connections.contains(ip)) {
             connections[ip] = new RestClient::Connection("");
+            mutexes[ip] = make_shared<mutex>();
+
             if(this->debug)
                 connections[ip]->setDebug();
         }
+        lock.unlock();
         return connections[ip];
     }
+
 public:
     RestfulClient()
     {
@@ -41,30 +50,47 @@ public:
             this->debug = true;
     }
 
-    void POST(string addrDest,vector<string> data)
-    {
+    void POST(string addrDest,vector<string> data) {
         RestClient::Response r;
         //do {
-            Base64 base64;
-            for (int i = 0; i < data.size(); i++) {
-                char *encode_out = (char *) malloc(BASE64_ENCODE_OUT_SIZE(data[i].size()));
-                base64.base64_encode(reinterpret_cast<const unsigned char *>(data[i].c_str()), data[i].size(),
-                                     encode_out);
-                string out(encode_out);
-                addrDest += "/" + to_string(data[i].size()) + "/" + out;
-                free(encode_out);
-            }
+        Base64 base64;
+        for (int i = 0; i < data.size(); i++) {
+            char *encode_out = (char *) malloc(BASE64_ENCODE_OUT_SIZE(data[i].size()));
+            base64.base64_encode(reinterpret_cast<const unsigned char *>(data[i].c_str()), data[i].size(),
+                                 encode_out);
+            string out(encode_out);
+            addrDest += "/" + to_string(data[i].size()) + "/" + out;
+            free(encode_out);
+        }
 
-            auto conn = getConnection(addrDest);
-            string uuid = UUID::create_uuid();
+        auto conn = getConnection(addrDest);
+        string uuid = UUID::create_uuid();
 
 
-            conn->AppendHeader("Content-Type", "application/json");
-            conn->AppendHeader("Connection", "keep-alive");
-           // conn->SetTimeoutMS(500);
+        conn->AppendHeader("Content-Type", "application/json");
+        conn->AppendHeader("Connection", "keep-alive");
+        conn->SetTimeout(1);
+
+        int curlCode = 0;
+        int tryCount = 5;
+        do {
             r = conn->post(addrDest, "");
-       // } while(r.code != 200);
-       // spdlog::debug(r.code);
+            curlCode = r.curlCode;
+            tryCount --;
+            if(tryCount < 0) {
+                //spdlog::critical("Connection failed");
+                break;
+            }
+            if (curlCode != 0) {
+                //spdlog::warn("Connection time out! Reconnect!");
+            }
+        } while (r.curlCode != 0);
+
+
+
+        //r = conn->post(addrDest, "");
+        // } while(r.code != 200);
+        // spdlog::debug(r.code);
         //spdlog::info(uuid+"#RESPONSE---"+r.body);
 
 
@@ -88,7 +114,79 @@ public:
 
         conn->AppendHeader("Content-Type", "application/json");
         conn->AppendHeader("Connection","keep-alive");
-        RestClient::Response r = conn->post(addrDest,"");
+
+
+        conn->SetTimeout(1);
+
+        RestClient::Response r;
+        int curlCode = 0;
+        int tryCount = 5;
+        do {
+            r = conn->post(addrDest, "");
+            curlCode = r.curlCode;
+            tryCount --;
+            if(tryCount < 0) {
+                //spdlog::critical("Connection failed");
+                break;
+            }
+            if (curlCode != 0) {
+                //spdlog::warn("Connection time out! Reconnect!");
+            }
+        } while (r.curlCode != 0);
+
+
+        return r.body;
+
+    }
+
+    string POST_GetResult(string addrDest,vector<string> data,bool &success)
+    {
+
+        string raw = addrDest;
+        Base64 base64;
+        for(int i = 0 ; i < data.size() ; i++) {
+            char *encode_out = (char *) malloc(BASE64_ENCODE_OUT_SIZE(data[i].size()));
+            base64.base64_encode(reinterpret_cast<const unsigned char *>(data[i].c_str()), data[i].size(), encode_out);
+            string out(encode_out);
+            addrDest += "/"+to_string(data[i].size()) + "/" + out;
+            free(encode_out);
+        }
+
+        RestClient::Connection *conn = getConnection(addrDest);
+
+        string uuid = UUID::create_uuid();
+
+
+
+        conn->AppendHeader("Content-Type", "application/json");
+        conn->AppendHeader("Connection","keep-alive");
+        conn->SetTimeout(1);
+
+        RestClient::Response r;
+        int curlCode = 0;
+        int tryCount = 5;
+        do {
+
+            conn->AppendHeader("Content-Type", "application/json");
+            conn->AppendHeader("Connection","keep-alive");
+            conn->SetTimeout(1);
+
+            r = conn->post(addrDest, "");
+            curlCode = r.curlCode;
+
+            tryCount --;
+            if(tryCount < 0) {
+                //spdlog::critical("Connection failed");
+                success = false;
+                break;
+            }
+            if (curlCode != 0) {
+                //spdlog::warn("Connection time out! Reconnect!");
+                spdlog::debug("curl code is" + to_string(curlCode) + "|"+ raw);
+                sleep(2);
+            }
+        } while (r.curlCode != 0);
+
 
         return r.body;
 
@@ -112,9 +210,110 @@ public:
 
         conn->AppendHeader("Content-Type", "application/json");
         conn->AppendHeader("Connection","keep-alive");
-        RestClient::Response r = conn->post(addrDest,"");
+
+        conn->SetTimeout(1);
+
+        RestClient::Response r;
+        int curlCode = 0;
+        int tryCount = 5;
+        do {
+            r = conn->post(addrDest, "");
+            curlCode = r.curlCode;
+            tryCount --;
+            if(tryCount < 0) {
+                //spdlog::critical("Connection failed");
+                break;
+            }
+            if (curlCode != 0) {
+                //spdlog::warn("Connection time out! Reconnect!");
+            }
+        } while (r.curlCode != 0);
+
+
+
 
         return r.body;
+
+    }
+
+    string POST_GetResult_Sync(string handle,string addrDest,vector<string> data) {
+
+        Base64 base64;
+        for (int i = 0; i < data.size(); i++) {
+            char *encode_out = (char *) malloc(BASE64_ENCODE_OUT_SIZE(data[i].size()));
+            base64.base64_encode(reinterpret_cast<const unsigned char *>(data[i].c_str()), data[i].size(), encode_out);
+            string out(encode_out);
+            addrDest += "/" + to_string(data[i].size()) + "/" + out;
+            free(encode_out);
+        }
+
+        auto conn = getConnection(handle);
+
+        this->mutexes[handle]->lock();
+
+        string uuid = UUID::create_uuid();
+
+        conn->AppendHeader("Content-Type", "application/json");
+        conn->AppendHeader("Connection", "keep-alive");
+
+        conn->SetTimeout(1);
+
+        RestClient::Response r;
+        int curlCode = 0;
+
+        r = conn->post(addrDest, "");
+        curlCode = r.curlCode;
+
+        if (curlCode != 0) {
+            //spdlog::warn("Connection time out! Reconnect!");
+            this->mutexes[handle]->unlock();
+            return "NULL";
+        }
+
+        this->mutexes[handle]->unlock();
+        return r.body;
+
+    }
+
+    void POST_Sync(string handle, string addrDest,vector<string> data) {
+        RestClient::Response r;
+        //do {
+        Base64 base64;
+        for (int i = 0; i < data.size(); i++) {
+            char *encode_out = (char *) malloc(BASE64_ENCODE_OUT_SIZE(data[i].size()));
+            base64.base64_encode(reinterpret_cast<const unsigned char *>(data[i].c_str()), data[i].size(),
+                                 encode_out);
+            string out(encode_out);
+            addrDest += "/" + to_string(data[i].size()) + "/" + out;
+            free(encode_out);
+        }
+
+        auto conn = getConnection(handle);
+
+
+        string uuid = UUID::create_uuid();
+
+        this->mutexes[handle]->lock();
+        conn->AppendHeader("Content-Type", "application/json");
+        conn->AppendHeader("Connection", "keep-alive");
+        conn->SetTimeout(1);
+
+        int curlCode = 0;
+        int tryCount = 5;
+        do {
+            r = conn->post(addrDest, "");
+            curlCode = r.curlCode;
+            tryCount --;
+            if(tryCount < 0) {
+                //spdlog::critical("Connection failed");
+                break;
+            }
+            if (curlCode != 0) {
+                //spdlog::warn("Connection time out! Reconnect!");
+            }
+        } while (r.curlCode != 0);
+
+        this->mutexes[handle]->unlock();
 
     }
 

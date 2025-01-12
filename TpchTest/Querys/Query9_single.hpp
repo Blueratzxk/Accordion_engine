@@ -249,7 +249,7 @@ public:
 
 
         PlanNode *LJFPJSJPS = createLineitemJoinFilteredPartJoinSupplierJoinPartSupp();
-        TableScanNode *tableScanOrders = createTablescanOrders();
+        ProjectNode *tableScanOrders = createTablescanOrders();
 
 
 
@@ -264,14 +264,7 @@ public:
 
 
         vector<FieldDesc> ordersBuildSchema = {FieldDesc("o_orderkey","int64"),
-                                               FieldDesc("o_custkey","int64"),
-                                               FieldDesc("o_orderstatus","string"),
-                                               FieldDesc("o_totalprice","double"),
-                                               FieldDesc("o_orderdate","date32"),
-                                               FieldDesc("o_orderpriority","string"),
-                                               FieldDesc("o_clerk","string"),
-                                               FieldDesc("o_shippriority","int64"),
-                                               FieldDesc("o_comment","string")};
+                                               FieldDesc("o_orderdate","date32")};
 
 
 
@@ -279,7 +272,7 @@ public:
         vector<FieldDesc> ordersBuildOutputSchema = {FieldDesc("o_orderdate","date32")};
         vector<int> LJFPJSJPSprobeOutputChannels = {1,2,3,4,5};
         vector<int> LJFPJSJPSprobeHashChannels = {0};
-        vector<int> ordersbuildOutputChannels = {4};
+        vector<int> ordersbuildOutputChannels = {1};
         vector<int> ordersbuildHashChannels = {0};
         LookupJoinDescriptor lookupJoinDescriptor(LJFPJSJPSProbeSchema,LJFPJSJPSprobeHashChannels,LJFPJSJPSprobeOutputChannels,ordersBuildSchema,ordersbuildHashChannels,ordersbuildOutputChannels,ordersBuildOutputSchema);
         LookupJoinNode *Join = new LookupJoinNode(UUID::create_uuid(),lookupJoinDescriptor);
@@ -304,8 +297,6 @@ public:
 
         LocalExchangeNode *LocalExchangeJoin = new LocalExchangeNode("LocalExchangeJoin");
         LocalExchangeJoin->addSource(Join);
-
-
 
 
         return Join;
@@ -595,10 +586,26 @@ public:
 
     }
 
-    TableScanNode *createTablescanOrders()
+    ProjectNode *createTablescanOrders()
     {
         TableScanNode *tableScanOrders = new TableScanNode(UUID::create_uuid(),TableScanDescriptor("tpch_test","tpch_1","orders"));
-        return tableScanOrders;
+
+        ProjectAssignments assignments;
+        assignments.addAssignment(FieldDesc("o_orderkey","int64"),FieldDesc("o_orderkey","int64"),NULL);
+        assignments.addAssignment(FieldDesc("o_custkey","int64"),FieldDesc::getEmptyDesc(),NULL);
+        assignments.addAssignment(FieldDesc("o_orderstatus","string"),FieldDesc::getEmptyDesc(),NULL);
+        assignments.addAssignment(FieldDesc("o_totalprice","double"),FieldDesc::getEmptyDesc(),NULL);
+        assignments.addAssignment(FieldDesc("o_orderdate","date32"),FieldDesc("o_orderdate","date32"),NULL);
+        assignments.addAssignment(FieldDesc("o_orderpriority","string"),FieldDesc::getEmptyDesc(),NULL);
+        assignments.addAssignment(FieldDesc("o_clerk","string"),FieldDesc::getEmptyDesc(),NULL);
+        assignments.addAssignment(FieldDesc("o_shippriority","int64"),FieldDesc::getEmptyDesc(),NULL);
+        assignments.addAssignment(FieldDesc("o_comment","string"),FieldDesc::getEmptyDesc(),NULL);
+        ProjectNode *projectNode = new ProjectNode(UUID::create_uuid(),assignments);
+
+
+        projectNode->addSource(tableScanOrders);
+
+        return projectNode;
 
     }
     TableScanNode *createTableScanLineitem()

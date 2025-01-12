@@ -451,6 +451,32 @@ public:
         return (totalAllRemainingTuples-totalRemainingTuples)/ (maxRequestCount * 100);
     }
 
+    double getConsumingTupleRate()
+    {
+        vector<shared_ptr<TaskInfo>> taskInfos;
+
+        vector<shared_ptr<HttpRemoteTask>> allTasks = this->getAllTasks();
+
+        double totalAllRemainingTuples = 0;
+        double totalRemainingTuples = 0;
+        double maxRequestCount = 0;
+        for(auto task : allTasks) {
+            if(!task->isDone()) {
+                totalAllRemainingTuples += task->getTaskInfoFetcher()->getMaxRemainingTuple();
+                totalRemainingTuples += task->getTaskInfoFetcher()->getRemainingTuples();
+                int count = task->getTaskInfoFetcher()->getRemainingTupleRequestTimeGap();
+                if(count > maxRequestCount)
+                    maxRequestCount = count;
+
+            }
+        }
+
+        if(maxRequestCount == 0 || totalRemainingTuples == 0 || totalAllRemainingTuples == 0)
+            return 0;
+
+        return (totalAllRemainingTuples-totalRemainingTuples)/ (maxRequestCount);
+    }
+
     double getNonTableScanRemainingTupleRate()
     {
         vector<shared_ptr<TaskInfo>> taskInfos;
@@ -496,7 +522,7 @@ public:
     double getRemainingTime()
     {
         double remainingTuple = this->getRemainingTupleCount();
-        double avgThroughput = this->getRemainingTupleRate();
+        double avgThroughput = this->getConsumingTupleRate();
         double lastTuples = this->getLastEnqueuedTupleCounts();
 
 
@@ -509,6 +535,7 @@ public:
      //   if(lastTuples != 0 && avgThroughput != 0)
       //      remainingTime = lastTuples / avgThroughput;
 
+     // spdlog::info(to_string(remainingTuple) + "/" +to_string(avgThroughput) + "="+ to_string(remainingTime));
         return remainingTime;
     }
 
@@ -864,6 +891,7 @@ public:
 
                 TaskId taskId = TaskId(this->queryId,this->stageExecutionId,this->stageId,getNextTaskId());
                 auto newTaskId = make_shared<TaskId>(taskId.getQueryId().getId(),taskId.getStageExecutionId().getId(),taskId.getStageId().getId(),taskId.getId());
+
 
 
                 /*if table stage also have remotesource,we should schedule remotesource too*/

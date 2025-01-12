@@ -158,9 +158,9 @@ public:
         spdlog::debug("Schedule string is :"+location+"|"+path+"|");
         string linkString = location+path;
         if(updateString != "")
-            this->restfulClient->POST(linkString,{TaskId::Serialize(*(this->taskId)),updateString});
+            restfulClient->POST_GetResult(location,linkString,{TaskId::Serialize(*(this->taskId)),updateString});
         else
-            this->restfulClient->POST(linkString,{TaskId::Serialize(*(this->taskId))});
+            restfulClient->POST_GetResult(location,linkString,{TaskId::Serialize(*(this->taskId))});
     }
 
     shared_ptr<TaskInfo> getTaskInfo()

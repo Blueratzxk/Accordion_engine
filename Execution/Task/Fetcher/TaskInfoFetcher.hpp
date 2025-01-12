@@ -294,11 +294,27 @@ public:
 };
 
 
+class RemainingTuplesWindowStruct
+{
+public:
+    long tuples;
+    long long timepoint;
+    RemainingTuplesWindowStruct(long tuples,long long timepoint)
+    {
+        this->tuples = tuples;
+        this->timepoint = timepoint;
+    }
+
+};
+
 class RemainingTuplesWindow
 {
-    list<long> window;
+    list<RemainingTuplesWindowStruct> window;
+
     int windowLength = 20;
     int index = 0;
+
+
 
     mutex lock;
 
@@ -307,13 +323,41 @@ public:
     {
         this->windowLength = windowLength;
     }
-    void put(long remainingTuples)
+    void put(long remainingTuples,long long timeStamp)
     {
         lock.lock();
-        window.push_back(remainingTuples);
-        if(window.size() > windowLength)
+
+        RemainingTuplesWindowStruct rtws(remainingTuples,timeStamp);
+
+        window.push_back(rtws);
+
+
+        if(window.size() > windowLength){
             window.pop_front();
+        }
         lock.unlock();
+    }
+
+    long getTimeGap()
+    {
+        long long maxTs = 0;
+        long long minTs = 9999999999999999;
+        for(auto item : this->window)
+        {
+            if(item.timepoint > maxTs)
+                maxTs = item.timepoint;
+            if(item.timepoint < minTs)
+                minTs = item.timepoint;
+        }
+        return maxTs-minTs;
+    }
+
+    double getTupleConsumingRate()
+    {
+        if(this->window.size() == 0)
+            return 0;
+
+        return (getMaxRemainingTuples() - getMinRemainingTuples())/(this->window.size()*100);
     }
 
     long getMaxRemainingTuples()
@@ -323,16 +367,31 @@ public:
         long max = 0;
         for(auto tupleCount : this->window)
         {
-            if(tupleCount > max)
-                max = tupleCount;
+            if(tupleCount.tuples > max)
+                max = tupleCount.tuples;
         }
         lock.unlock();
         return max;
     }
 
+    long getMinRemainingTuples()
+    {
+
+        lock.lock();
+        long min = 999999999999999999;
+        for(auto tupleCount : this->window)
+        {
+            if(tupleCount.tuples < min)
+                min = tupleCount.tuples;
+        }
+        lock.unlock();
+        return min;
+    }
+
+
     int getRequestCount()
     {
-        return this->windowLength;
+        return this->window.size();
     }
 
 
@@ -379,6 +438,7 @@ class TaskInfoFetcher : public enable_shared_from_this<TaskInfoFetcher>
 
     shared_ptr<RemainingTuplesWindow> remainingTuplesWindow;
 
+
     int allThreadsNums = 0;
 
     bool hasThroughput = false;
@@ -392,6 +452,8 @@ class TaskInfoFetcher : public enable_shared_from_this<TaskInfoFetcher>
     double buildProgress = 0.0;
 
     long long stateMigratingFinishTimeStamp = -1;
+
+
 public:
     TaskInfoFetcher(shared_ptr<TaskId> taskId,string remoteTaskLocation,shared_ptr<Event> eventListener)
     {
@@ -401,7 +463,14 @@ public:
         tw = make_shared<throughputWindow>(20);
         cw = make_shared<CpuUsageWindow>(3);
         bufferDescWindow = make_shared<BufferInfoWindow>(50);
-        remainingTuplesWindow = make_shared<RemainingTuplesWindow>(50);
+
+        ExecutionConfig config;
+        int configSize = 50;
+        if(config.getRemainingTupleWindowSize() != "NULL")
+            configSize = atoi(config.getRemainingTupleWindowSize().c_str());
+
+        remainingTuplesWindow = make_shared<RemainingTuplesWindow>(configSize);
+
 
         this->eventListener = eventListener;
     }
@@ -414,10 +483,13 @@ public:
         return result;
     }
 
-    void sendRequest(string location,string path,shared_ptr<RestfulClient> client)
+    bool sendRequest(string location,string path,shared_ptr<RestfulClient> client)
     {
+        bool success = true;
         string linkString = location+path;
-        string result = client->POST_GetResult(linkString,{this->taskId->ToString()});
+        string result = client->POST_GetResult(location,linkString,{this->taskId->ToString()});
+        if(result == "NULL")
+            return false;
         requestCounter++;
         bufferInfoRequestCounter++;
         lock.lock();
@@ -445,7 +517,8 @@ public:
 
         this->remainingTuples =  taskThroughputInfo1.getRemainingTuples();
         this->lastEnqueuedTuples = taskThroughputInfo1.getLastEnqueuedTuples();
-        this->remainingTuplesWindow->put(this->remainingTuples);
+        this->remainingTuplesWindow->put(this->remainingTuples,TimeCommon::getCurrentTimeStamp());
+
 
         if(taskThroughputInfo1.getRemainingBufferTuples() != this->remainingBufferTuples)
             this->bufferInfoRequestCounter = 1;
@@ -491,11 +564,15 @@ public:
                 this->dependenciesSatisfied = true;
         }
         lock.unlock();
+
+        return success;
     }
     string getBuildRecord()
     {
         return this->buildRecord;
     }
+
+
 
     double getBuildProgress()
     {
@@ -568,6 +645,19 @@ public:
         return this->remainingTuplesWindow->getMaxRemainingTuples();
     }
 
+
+    double getRemainingTupleRequestTimeGap()
+    {
+        return this->remainingTuplesWindow->getTimeGap();
+    }
+
+
+
+
+    double getMinRemainingTuple()
+    {
+        return this->remainingTuplesWindow->getMinRemainingTuples();
+    }
     double getLastEnqueuedTuples()
     {
         return this->lastEnqueuedTuples;
@@ -592,6 +682,13 @@ public:
     {
         return this->remainingTuplesWindow->getRequestCount();
     }
+
+
+    double getConsumingRate()
+    {
+        return this->remainingTuplesWindow->getTupleConsumingRate();
+    }
+
     double getBufferRequestCounter()
     {
         return this->bufferInfoRequestCounter;
@@ -640,21 +737,23 @@ public:
         thread process([](shared_ptr<TaskInfoFetcher> fetcher) {
             while (true) {
 
-                try {
-                    fetcher->sendRequest(fetcher->remoteTaskLocation, "/v1/task/getTaskInfo",fetcher->restfulClient);
+                bool success = true;
 
-                    if (fetcher->taskInfo->getStatus().compare("FINISHED") == 0) {
+                success = fetcher->sendRequest(fetcher->remoteTaskLocation, "/v1/task/getTaskInfo",
+                                               fetcher->restfulClient);
 
-                        break;
-                    }
-                    sleep_for(std::chrono::milliseconds(fetcher->delay));
-                }
-                catch (exception e)
-                {
-                    string error = "TaskInfoFetcher Error! ";
-                    spdlog::critical(error);
+
+                if (fetcher->taskInfo != NULL && fetcher->taskInfo->getStatus().compare("FINISHED") == 0) {
                     break;
                 }
+                sleep_for(std::chrono::milliseconds(fetcher->delay));
+
+                if(!success) {
+                    string error = "TaskInfoFetcher Error! ";
+                    spdlog::critical(error);
+                    //break;
+                }
+
             }
             fetcher->restfulClient = NULL;
             fetcher->finished = true;

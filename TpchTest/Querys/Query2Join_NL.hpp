@@ -31,9 +31,6 @@ public:
         PartialAggregationNode *pagg = createPartialAgg();
         pagg->addSource(join);
 
-        LocalExchangeNode *joinLocalExchange = new LocalExchangeNode("joinLocalExchange");
-        joinLocalExchange->addSource(pagg);
-
 
         shared_ptr<PartitioningScheme> scheme2 = make_shared<PartitioningScheme>(Partitioning::create(SystemPartitioningHandle::get("SINGLE_DISTRIBUTION"),{}));
 
@@ -88,8 +85,7 @@ public:
         shared_ptr<PartitioningScheme> schemeProbe = make_shared<PartitioningScheme>(Partitioning::create(SystemPartitioningHandle::get("SCALED_HASH_DISTRIBUTION_BUF"),{}),outputLayout,hashColumnProbe,bucketToPartition);
         ExchangeNode *probeExchange= new ExchangeNode("probeExchange",ExchangeNode::REPARTITION,schemeProbe,tableScanLineitem);
 
-        LocalExchangeNode *taleScanLocalExchange = new LocalExchangeNode("taleScanLocalExchange");
-        taleScanLocalExchange->addSource(probeExchange);
+
 
         LOJoin->addProbe(probeExchange);
         LOJoin->addBuild(buildExchange);
@@ -102,12 +98,29 @@ public:
 
 
 
-    TableScanNode *createOrdersTableScan()
+    ProjectNode *createOrdersTableScan()
     {
         //and o_orderdate < date '[DATE]'
 
         TableScanNode *tableScanOrders = new TableScanNode(UUID::create_uuid(),TableScanDescriptor("tpch_test","tpch_1","orders"));
-        return tableScanOrders;
+
+        ProjectAssignments assignments;
+        assignments.addAssignment(FieldDesc("o_orderkey","int64"),FieldDesc("o_orderkey","int64"),NULL);
+        assignments.addAssignment(FieldDesc("o_custkey","int64"),FieldDesc::getEmptyDesc(),NULL);
+        assignments.addAssignment(FieldDesc("o_orderstatus","string"),FieldDesc::getEmptyDesc(),NULL);
+        assignments.addAssignment(FieldDesc("o_totalprice","double"),FieldDesc::getEmptyDesc(),NULL);
+        assignments.addAssignment(FieldDesc("o_orderdate","date32"),FieldDesc::getEmptyDesc(),NULL);
+        assignments.addAssignment(FieldDesc("o_orderpriority","string"),FieldDesc::getEmptyDesc(),NULL);
+        assignments.addAssignment(FieldDesc("o_clerk","string"),FieldDesc::getEmptyDesc(),NULL);
+        assignments.addAssignment(FieldDesc("o_shippriority","int64"),FieldDesc::getEmptyDesc(),NULL);
+        assignments.addAssignment(FieldDesc("o_comment","string"),FieldDesc::getEmptyDesc(),NULL);
+        ProjectNode *projectNode = new ProjectNode(UUID::create_uuid(),assignments);
+
+
+        projectNode->addSource(tableScanOrders);
+
+
+        return projectNode;
 
     }
 
@@ -115,11 +128,33 @@ public:
 
 
 
-    TableScanNode *createLineitemTableScan()
+    ProjectNode *createLineitemTableScan()
     {
         //l_commitdate < l_receiptdate
         TableScanNode *tableScanLineitem = new TableScanNode(UUID::create_uuid(),TableScanDescriptor("tpch_test","tpch_1","lineitem"));
-        return tableScanLineitem;
+
+        ProjectAssignments assignments;
+        assignments.addAssignment(FieldDesc("l_orderkey","int64"),FieldDesc("l_orderkey","int64"),NULL);
+        assignments.addAssignment(FieldDesc("l_partkey","int64"),FieldDesc::getEmptyDesc(),NULL);
+        assignments.addAssignment(FieldDesc("l_suppkey","int64"),FieldDesc::getEmptyDesc(),NULL);
+        assignments.addAssignment(FieldDesc("l_linenumber","int64"),FieldDesc::getEmptyDesc(),NULL);
+        assignments.addAssignment(FieldDesc("l_quantity","int64"),FieldDesc::getEmptyDesc(),NULL);
+        assignments.addAssignment(FieldDesc("l_extendedprice","double"),FieldDesc::getEmptyDesc(),NULL);
+        assignments.addAssignment(FieldDesc("l_discount","double"),FieldDesc::getEmptyDesc(),NULL);
+        assignments.addAssignment(FieldDesc("l_tax","double"),FieldDesc::getEmptyDesc(),NULL);
+        assignments.addAssignment(FieldDesc("l_returnflag","string"),FieldDesc::getEmptyDesc(),NULL);
+        assignments.addAssignment(FieldDesc("l_linestatus","string"),FieldDesc::getEmptyDesc(),NULL);
+        assignments.addAssignment(FieldDesc("l_shipdate","date32"),FieldDesc::getEmptyDesc(),NULL);
+        assignments.addAssignment(FieldDesc("l_commitdate","date32"),FieldDesc::getEmptyDesc(),NULL);
+        assignments.addAssignment(FieldDesc("l_receiptdate","date32"),FieldDesc::getEmptyDesc(),NULL);
+        assignments.addAssignment(FieldDesc("l_shipinstruct","string"),FieldDesc::getEmptyDesc(),NULL);
+        assignments.addAssignment(FieldDesc("l_shipmode","string"),FieldDesc::getEmptyDesc(),NULL);
+        assignments.addAssignment( FieldDesc("l_comment","string"),FieldDesc::getEmptyDesc(),NULL);
+        ProjectNode *projectNode = new ProjectNode(UUID::create_uuid(),assignments);
+
+        projectNode->addSource(tableScanLineitem);
+
+        return projectNode;
     }
 
 

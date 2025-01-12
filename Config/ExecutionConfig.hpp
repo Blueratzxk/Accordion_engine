@@ -37,6 +37,8 @@ class ExecutionConfig
     string tpch_AutoGen_ScaleFactor;
     string autoTuneByPlan;
 
+    string remainingTupleWindowSize;
+
 public:
     ExecutionConfig(){
 
@@ -89,6 +91,11 @@ public:
             this->autoTuneByPlan = jsonTree["autoTuneByPlan"];
         else
             this->autoTuneByPlan = "false";
+
+        if(jsonTree.contains("remainingTuplesWindowSize"))
+            this->remainingTupleWindowSize = jsonTree["remainingTuplesWindowSize"];
+        else
+            this->remainingTupleWindowSize = "NULL";
 
         in.close();
         this->hasRead = true;
@@ -184,6 +191,14 @@ public:
             return this->script_path;
         else
             return "script";
+    }
+
+    string getRemainingTupleWindowSize()
+    {
+        if(readConfigFile())
+            return this->remainingTupleWindowSize;
+        else
+            return "NULL";
     }
 
 

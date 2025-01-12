@@ -32,9 +32,6 @@ void ClusterServer::sendHeartbeat() {
     string localIp = nodesManager->getLocalIp();
     string coordinatorIp = nodesManager->getCoordinatorAddr();
 
-    if(ClusterServer::restfulClient == NULL)
-        ClusterServer::restfulClient = make_shared<RestfulClient>();
-
 
 
     Heartbeat heartbeat(localIp,TaskServer::getTaskServer()->getAllActiveTaskNums(),
@@ -44,7 +41,7 @@ void ClusterServer::sendHeartbeat() {
                         nodesManager->hasStorage(),ClusterServer::netInfoCollector->getReceivedRate(),
                         ClusterServer::netInfoCollector->getTransmittedRate(),
                         ClusterServer::netInfoCollector->getNICSpeed());
-    ClusterServer::restfulClient->POST_GetResult(coordinatorIp,coordinatorIp+"/v1/cluster/reportHeartbeat",{Heartbeat::Serialize(heartbeat)});
+    ClusterServer::post_getResult_sync(coordinatorIp,coordinatorIp+"/v1/cluster/reportHeartbeat",{Heartbeat::Serialize(heartbeat)});
 
 }
 
@@ -84,9 +81,20 @@ void ClusterServer::heartbeatSender() {
 
     }
 }
+void ClusterServer::post_sync(string handle, string addrDest, vector<string> data){
+
+    ClusterServer::restfulClient->POST_Sync(handle,addrDest,data);
+}
+string ClusterServer::post_getResult_sync(string handle, string addrDest, vector<string> data) {
+
+    return ClusterServer::restfulClient->POST_GetResult_Sync(handle,addrDest,data);
+}
 
 shared_ptr<NodesManager> ClusterServer::nodesManager = NULL;
 int ClusterServer::heartbeatFreq = 2000;
 shared_ptr<NetInfoCollector> ClusterServer::netInfoCollector = NULL;
 bool ClusterServer::showInfos = false;
-shared_ptr<RestfulClient> ClusterServer::restfulClient = NULL;
+shared_ptr<RestfulClient> ClusterServer::restfulClient = make_shared<RestfulClient>();
+shared_ptr<mutex> ClusterServer::clientLock = make_shared<mutex>();
+
+
