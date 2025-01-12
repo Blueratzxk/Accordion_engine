@@ -216,7 +216,7 @@ public:
                 FrontEnd frontend;
                 try {
                     auto root = frontend.gogogo("select count(*) from lineitem");
-                    QueryServer::getQueryServer()->ExecuteQuery("test",root);
+                    QueryServer::getQueryServer()->ExecuteQuery("select count(*) from lineitem","test",root);
                 }
                 catch (exception &e)
                 {
@@ -316,7 +316,7 @@ public:
                 feedback.append(info+"\n");
 
             if(root != NULL) {
-                QueryServer::getQueryServer()->ExecuteQuery("test", root);
+                QueryServer::getQueryServer()->ExecuteQuery(cmd,"QUERY", root);
 
                 if(feedback != "")
                     return feedback+"Query Submitted!";

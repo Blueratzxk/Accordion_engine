@@ -102,21 +102,24 @@ public:
             sqlQueryExecution->Dynamic_addStageTaskGroupConcurrent(stageId,degree);
     }
 
-    double estimateQueryExecutionTimeByHistory(string queryId,bool &success)
+    double estimateQueryExecutionTimeByHistory(string queryId,bool &success,string &returnInfo)
     {
         double queryTime = 0.0;
 
 
         if(!sqlQueryExecution->isQuerySilent()) {
             queryTime = computeQueryExecutionTime(queryId,this->pAt,success);
-            if(!success)
+            if(!success) {
                 spdlog::info("Cannot get steady stage prediction execution time!");
+                returnInfo.append("Cannot get steady stage prediction execution time!\n");
+            }
             else
                 spdlog::info(queryTime);
         }
         else {
             success = false;
             spdlog::info("Query is silent, cannot give prediction!");
+            returnInfo.append("Query is silent, cannot give prediction!\n");
         }
         return queryTime;
     }
@@ -193,7 +196,9 @@ public:
 
         this->pAt = sqlQueryExecution->getProgressAndTuner();
         bool success = true;
-        double time = estimateQueryExecutionTimeByHistory(queryId,success);
+
+        string returnInfo = "";
+        double time = estimateQueryExecutionTimeByHistory(queryId,success,returnInfo);
         map<int,int> stageToTunings;
 
         if(success) {
@@ -276,7 +281,7 @@ public:
         return !stageToTunings.empty();
     }
 
-    void tune(string queryId,string timeConstraint)
+    string tune(string queryId,string timeConstraint)
     {
         vector<string> results;
         StringUtils::Stringsplit(queryId,'-',results);
@@ -284,10 +289,11 @@ public:
 
         sqlQueryExecution = this->ppm->getQueryExecution(queryId);
         if(sqlQueryExecution == NULL)
-            return;
+            return "Cannot find this query!";
         this->pAt = sqlQueryExecution->getProgressAndTuner();
         bool success = true;
-        double time = estimateQueryExecutionTimeByHistory(queryId,success);
+        string returnInfo = "";
+        double time = estimateQueryExecutionTimeByHistory(queryId,success,returnInfo);
 
 
         if(success) {
@@ -311,12 +317,19 @@ public:
 
 
                 int dopFound = findDopByTimeConstraint(res,timeConstraint);
-                if(dopFound == -1)
+                if(dopFound == -1) {
                     spdlog::info("Cannot find appropriate DOP!");
+
+                    if(!this->sqlQueryExecution->getScheduler()->getStageExecutionAndSchedulerByStagId(bottleneck)->getStageExecution()->getFragment()->hasTableScan())
+                        returnInfo.append("Stage "+to_string(bottleneck) + ": Cannot find appropriate DOP!\n");
+                }
                 else {
                     spdlog::info(
                             "DOP" + to_string(dopFound) + " can satisfy the time constraint! " + "Current DOP is " +
                             to_string(curDOP));
+
+                    returnInfo.append("Stage "+to_string(bottleneck)+": DOP" + to_string(dopFound) + " can satisfy the time constraint! " + "Current DOP is " +
+                                      to_string(curDOP)+"\n");
 
                     if(!this->sqlQueryExecution->getScheduler()->getStageExecutionAndSchedulerByStagId(bottleneck)->getStageExecution()->getFragment()->hasTableScan()) {
                         int tableScanId = this->findTableScanIdByBottleneck(this->pAt, bottleneck);
@@ -336,6 +349,10 @@ public:
                 this->tuneToTargetDOP(sqlQueryExecution,stage.first,stage.second);
             //tuneEachKnob(this->pAt);
         }
+
+        if(returnInfo == "")
+            returnInfo = "No auto-Tuning information yet.";
+        return returnInfo;
     }
 
     int findTableScanIdByBottleneck(shared_ptr<ProgressAndTuner> pAt, int bottleneck)

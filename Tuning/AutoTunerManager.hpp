@@ -83,9 +83,9 @@ public:
                 this->autoTuners[queryId]->haltTuner();
             }
             lock.unlock();
-            return "No!";
+            return "Auto tuner already running!";
         }
-        lock.unlock();
+
 
         ExecutionConfig config;
         string autoTuneByPlan = config.getAutoTuneByPlan();
@@ -93,18 +93,25 @@ public:
         if (autoTuneByPlan == "true" && atoi(timeConstraintBySeconds.c_str()) > 0) {
             thread th(autoTuneOnce, shared_from_this(), queryId, ppm, timeConstraintBySeconds, true);
             th.detach();
+            lock.unlock();
+            return "DOP monitor activated!";
         }
         else {
-            thread th(autoTuneOnce, shared_from_this(), queryId, ppm, timeConstraintBySeconds, false);
-            th.detach();
+            //thread th(autoTuneOnce, shared_from_this(), queryId, ppm, timeConstraintBySeconds, false);
+            //th.detach();
+            lock.unlock();
+            return autoTuneOnce(shared_from_this(),queryId,ppm,timeConstraintBySeconds, false);
         }
+
+        lock.unlock();
         return "yes!";
     }
 
 
 
-    static void autoTuneOnce(shared_ptr<AutoTunerManager> autoTunerManager, string queryId,shared_ptr<PPM> ppm,string timeConstraint,bool forceTuneOnce = false)
+    static string autoTuneOnce(shared_ptr<AutoTunerManager> autoTunerManager, string queryId,shared_ptr<PPM> ppm,string timeConstraint,bool forceTuneOnce = false)
     {
+        string info = "ok!";
         std::string name = "autoTuner";
         pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
 
@@ -119,10 +126,12 @@ public:
         if(autoTuneByPlan == "true" && !forceTuneOnce)
             autoTuner->dopMonitor(queryId);
         else
-            autoTuner->tune(queryId,timeConstraint);
+            info = autoTuner->tune(queryId,timeConstraint);
 
         autoTunerManager->removeAutoTuner(queryId);
         spdlog::info("Tuning finished!");
+
+        return info;
     }
 
 

@@ -266,17 +266,17 @@ public:
         string queryId = TimeCommon::getCurrentTimeString()+"TPCH-QUERY-"+id+"-"+UUID::create_uuid();
         shared_ptr<Session> session = make_shared<Session>(queryId,-1);
        // session->setRumtimeConfigs({{"SET_TABLE_SCAN_SIZE",{"tpch_test_tpch_1_lineitem","123"}}});
-        shared_ptr<SqlQueryExecution> queryExecution = make_shared<SqlQueryExecution>(session,this->tree);
+        shared_ptr<SqlQueryExecution> queryExecution = make_shared<SqlQueryExecution>(this->getQuerySql(id),session,this->tree);
         startQuery(queryId,queryExecution);
         return queryId;
     }
 
-    string ExecuteQuery(string id,PlanNode *root)
+    string ExecuteQuery(string sql,string id,PlanNode *root)
     {
-        string queryId = TimeCommon::getCurrentTimeString()+"TPCH-QUERY-"+id+"-"+UUID::create_uuid();
+        string queryId = TimeCommon::getCurrentTimeString()+id+"-"+UUID::create_uuid();
         shared_ptr<Session> session = make_shared<Session>(queryId,-1);
 
-        shared_ptr<SqlQueryExecution> queryExecution = make_shared<SqlQueryExecution>(session,root);
+        shared_ptr<SqlQueryExecution> queryExecution = make_shared<SqlQueryExecution>(sql,session,root);
         startQuery(queryId,queryExecution);
         return queryId;
     }
@@ -293,7 +293,7 @@ public:
         shared_ptr<Session> session = make_shared<Session>(queryId,-1);
         // session->setRumtimeConfigs({{"SET_TABLE_SCAN_SIZE",{"tpch_test_tpch_1_lineitem","123"}}});
         session->setRumtimeConfigs(rconfigs);
-        shared_ptr<SqlQueryExecution> queryExecution = make_shared<SqlQueryExecution>(session,this->tree);
+        shared_ptr<SqlQueryExecution> queryExecution = make_shared<SqlQueryExecution>(this->getQuerySql(id),session,this->tree);
         if(!startQuery(queryId,queryExecution))
             return "NULL";
         return queryId;
@@ -382,7 +382,8 @@ public:
 
     string autoTuneByTimeConstraint(string queryId,string timeConstraintBySeconds)
     {
-        return this->autoTunerManager->autoTuneByTimeConstraint(queryId,this->getPPM(),timeConstraintBySeconds);
+        string result = this->autoTunerManager->autoTuneByTimeConstraint(queryId,this->getPPM(),timeConstraintBySeconds);
+        return result;
     }
 
     shared_ptr<AutoTunerManager> getAutoTuneManager()
@@ -515,6 +516,7 @@ public:
             queryJson["planTree"] = queryExecution->planTreeToJsonObj();
             queryJson["queryContext"] = json;
 
+
             if(queryExecution->isQueryFinished())
             {
                 queryJson["originTime"] = queryExecution->getScheduler()->getOriginExecutionTime();
@@ -593,6 +595,7 @@ public:
             nlohmann::json queryJson;
             queryJson["queryId"] = query.first;
             queryJson["queryContext"] = json;
+            queryJson["rawSql"] = query.second->getRawSql();
 
             if(query.second->isQueryFinished())
             {

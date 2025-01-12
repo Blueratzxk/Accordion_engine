@@ -89,7 +89,7 @@ public:
 
     void process() {
 
-        if(this->inputPage->getElementsCount() == 0) {
+        if(this->inputPage->getElementsCount() == 0 || this->inputPage->getElementsCount() == -1) {
             this->inputPage = NULL;
             return;
         }

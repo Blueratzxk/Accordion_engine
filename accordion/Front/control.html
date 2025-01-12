@@ -25,7 +25,7 @@
 	<!-- FONTS -->
 	<link href='http://fonts.useso.com/css?family=Open+Sans:300,400,600,700' rel='stylesheet' type='text/css'>
 	
-	<script src="js/d3.v3.min.js"></script>
+	<script src="./js/d3.v3.min.js"></script>
 </head>
 <body>
 
@@ -377,13 +377,16 @@
 							<label class="control-label" style="width:10%;font-size:120%;display: inline-block;">Assistant</label>
 							
 							<textarea id="assistant"class="form-control" style="resize:none;width:70%;margin:4px 1px;display: inline-block;cursor:default;" rows="6" readonly></textarea>
-							
-						    
-							<button style="resize:none;width:15%;margin:1px 1px;display: inline-block;position: absolute;top: 50%;transform: translate(5%, 20%);" onclick="getQueryBottlenecks()" >Get Hints</button>
-							
-							<input id="DOPFactor" value="1" min="1" max="20" type="number" style="width:6%;margin:1px 1px;display: inline-block;position: absolute;top: 50%;transform: translate(86%, -100%);" ></input>
-							
-							
+
+
+								<button style="resize:none;width:15%;margin:1px 1px;display: inline-block;position: absolute;top: 25%;transform: translate(5%, 20%);" onclick="getQueryBottlenecks()" >Get Hints</button>
+
+								<input id="DOPFactor" value="1" min="1" max="20" type="number" style="width:6%;margin:1px 1px;display: inline-block;position: absolute;top: 25%;transform: translate(86%, -100%);" ></input>
+
+								<button style="resize:none;width:15%;margin:1px 1px;display: inline-block;position: absolute;top: 25%;transform: translate(5%, 300%);" onclick="autoTune()" >Auto Tune</button>
+
+								<input id="timeConstraint" value="0" min="1" max="200" type="number" style="width:6%;margin:1px 1px;display: inline-block;position: absolute;top: 25%;transform: translate(86%, 180%);" ></input>
+
 							</div>
 							 
                                 <button onclick="foldall()">Fold All</button>
@@ -1215,7 +1218,37 @@ function drawTree(jsonStr){
         });
 	
 	}
-	
+		function autoTune(){
+
+
+	timeConstraintOb = document.getElementById("timeConstraint");
+	timeConstraint = timeConstraintOb.value;
+
+
+	$.ajax({
+            // 设置ajax的参数
+            // 请求数据的url地址：接口地址
+            url: 'http://'+serverIp+'/v1/query/autoTuneByTimeConstraint/'+queryId+'/'+timeConstraint,
+            // 请求数据方式：get  post
+            type: 'get',
+            // 返回的数据格式  json
+            dataType: 'text',
+            // data:发送给接口的数据
+            data:{},
+            // 请求成功之后要执行的回调函数
+            success: function (dat) {
+                //dat:服务端返回的数据
+                console.log(dat)
+			let x = document.getElementById("assistant");
+                x.value = dat;
+            },
+            // 请求失败
+            error: function (e) {
+                //alert('请求失败')
+            }
+        });
+
+	}
 	
 	function getThroughputs(){
 	$.ajax({

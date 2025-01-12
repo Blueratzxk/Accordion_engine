@@ -152,6 +152,7 @@ class SqlQueryExecution
     shared_ptr<QueryStateMachine> stateMachine;
     shared_ptr<Dynamic_scheduler> dyScheduler;
     shared_ptr<DynamicTuningMonitor> dyMonitor;
+    string rawSql;
 
 
     bool isStageTuningKnob(shared_ptr<SqlStageExecution> stage)
@@ -204,12 +205,12 @@ class SqlQueryExecution
 
 
 public:
-    SqlQueryExecution(shared_ptr<Session> session,PlanNode *root){
+    SqlQueryExecution(string rawSql,shared_ptr<Session> session,PlanNode *root){
 
         this->PlanNodeRoot = root;
         this->session = session;
         this->stateMachine = make_shared<QueryStateMachine>();
-
+        this->rawSql = rawSql;
     }
 
 
@@ -348,6 +349,10 @@ public:
 
         return jsonResult;
     }
+    string getRawSql()
+    {
+        return this->rawSql;
+    }
 
     nlohmann::json getQueryExecutionInfoObj()
     {
@@ -374,6 +379,7 @@ public:
 
 
         nlohmann::json json = nlohmann::json::parse(result);
+
 
 
         return json;

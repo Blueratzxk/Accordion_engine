@@ -43,10 +43,6 @@ public:
         QueryServer::queryServer->Give_Me_A_Query(id);
     }
 
-    static void submitQuery(string id, PlanNode *node) {
-        QueryServer::queryServer->ExecuteQuery(id,node);
-    }
-
 
     static string addStageTask(string queryId,int stageId)
     {
