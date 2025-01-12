@@ -1,6 +1,6 @@
 
 
-<img src="https://raw.github.com/Blueratzxk/Accordion_engine/blob/main/imgs/icon.png?raw=true" width="20%" />
+<img src="https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/icon.png?raw=true" width="20%" />
 
 # Accordion: cloud-native data analysis in accordance with your mind
 
