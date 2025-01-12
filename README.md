@@ -13,7 +13,7 @@ The first IQRE (Intra-Query Runtime Elasticity) SQL query engine (prototype).
 
 **Here is a demo:**
 
-![image](https://raw.githubusercontent.com/Blueratzxk/Accordion_engine/blob/main/imgs/UII.gif)  
+![image](https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/UII.gif?raw=true)  
 
 # Prerequisites
 
@@ -32,7 +32,6 @@ Accordion has the following third-party dependencies
 * [@apache arrow](https://github.com/apache/arrow) : Data format exchanging between operators and tasks.
 
 * [@pistache](https://github.com/pistacheio/pistache) : Restful HTTP server.
-
 
 * [@nlnohamn json](https://github.com/nlohmann/json) : Json library.
 
@@ -210,19 +209,19 @@ $ bash run.sh
 ```
 * The WEB UI of Accordion can be accessed through IP:9082 (for example, 192.168.226.137:9082). Here is an example.
  
-![image](https://raw.githubusercontent.com/Blueratzxk/Accordion_engine/blob/main/imgs/UI1.png)
+![image](https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/UI1.png?raw=true)
 
 * Enter "run Q1S" in the left input box to run TPC-H Q1 (stand-alone version). There are 12 TPC-H queries in Accordion (Q1S ~ Q12S).
 
-![image](https://raw.githubusercontent.com/Blueratzxk/Accordion_engine/blob/main/imgs/UI2.png)
+![image](https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/UI2.png?raw=true)
 
 * Click the `Controller` button to enter the query control panel, you can adjust the query stage parallelism and task parallelism.
 
-![image](https://raw.githubusercontent.com/Blueratzxk/Accordion_engine/blob/main/imgs/UI31.png) 
+![image](https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/UI31.png?raw=true) 
 
 * Click the `Complete` button to get the results of the query execution. 
 
-![image](https://raw.githubusercontent.com/Blueratzxk/Accordion_engine/blob/main/imgs/UI4.png)  
+![image](https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/UI4.png?raw=true)  
 
 
 # Deploying Accordion on the cloud (or in a distributed environment)
