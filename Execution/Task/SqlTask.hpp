@@ -172,6 +172,7 @@ public:
     {
         if(this->stateMachine->isFinished())
             return;
+
         else if(!this->stateMachine->isRunning())
         {
             thread(updateTaskIntraParallelismWaiter,this,taskIntraParaUpdateRequest).detach();
