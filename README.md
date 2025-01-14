@@ -7,13 +7,13 @@
 The first IQRE (Intra-Query Runtime Elasticity) SQL query engine (prototype).
 
 * Accordion can tune the parallelism of a query at any time during its execution, and the tuning process will not affect the query execution.
-* Its what-if service facilitates parallelism tuning and can predict DOP-tuned remaining query execution times for users. 
+* The auto-tuner facilitates parallelism tuning. It can guide users to tune DOP manually or automatically tune DOP for users.
 * Accordion can be used to solve the problem of cost-performance tradeoffs when analyzing data on the cloud. 
 * It also can be used to build a fully serverless cloud-native database or data warehouse.
 
 **Here is a demo:**
 
-![image](https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/UII.gif?raw=true)  
+![image](https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/demo.gif?raw=true)  
 
 # Prerequisites
 
@@ -29,17 +29,17 @@ The first IQRE (Intra-Query Runtime Elasticity) SQL query engine (prototype).
 
 Accordion has the following third-party dependencies
 
-* [@apache arrow](https://github.com/apache/arrow) : Data format exchanging between operators and tasks.
+* [@apache arrow](https://github.com/apache/arrow): Data format exchanging between operators and tasks.
 
-* [@pistache](https://github.com/pistacheio/pistache) : Restful HTTP server.
+* [@pistache](https://github.com/pistacheio/pistache): Restful HTTP server.
 
-* [@nlnohamn json](https://github.com/nlohmann/json) : Json library.
+* [@nlnohamn json](https://github.com/nlohmann/json): Json library.
 
-* [@nlnohamn json fifomap](https://github.com/nlohmann/fifo_map) : Json library.
+* [@nlnohamn json fifomap](https://github.com/nlohmann/fifo_map): Json library.
 
-* [@tbb](https://github.com/oneapi-src/oneTBB) : TBB library.
+* [@tbb](https://github.com/oneapi-src/oneTBB): TBB library.
 
-* [@spdlog](https://github.com/gabime/spdlog) : Log library.
+* [@spdlog](https://github.com/gabime/spdlog): Log library.
 
 
 
@@ -207,17 +207,17 @@ $ bash makeDFS.sh
 $ cd ..
 $ bash run.sh
 ```
-* The WEB UI of Accordion can be accessed through IP:9082 (for example, 192.168.226.137:9082). Here is an example.
+* The WEB UI of Accordion can be accessed through IP:9082 (for example, 192.168.226.129:9082). Here is an example.
  
 ![image](https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/UI1.png?raw=true)
 
-* Enter "run Q1S" in the left input box to run TPC-H Q1 (stand-alone version). There are 12 TPC-H queries in Accordion (Q1S ~ Q12S).
+* Enter "run Q3" in the left input box to run TPC-H Q3. There are 12 TPC-H queries in Accordion (Q1 ~ Q12).
 
 ![image](https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/UI2.png?raw=true)
 
-* Click the `Controller` button to enter the query control panel, you can adjust the query stage parallelism and task parallelism.
+* Click the `Controller` button to enter the query control panel, you can adjust the query stage parallelism and task parallelism (manual adjustment or system auto-adjustment).
 
-![image](https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/UI31.png?raw=true) 
+![image](https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/UI3.png?raw=true) 
 
 * Click the `Complete` button to get the results of the query execution. 
 
