@@ -15,6 +15,8 @@ The first IQRE (Intra-Query Runtime Elasticity) SQL query engine (prototype).
 
 ![image](https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/demo.gif?raw=true)  
 
+Click on this link to view a more detailed demo video: [@demo video]https://youtu.be/AaD839ZA7is)
+
 # Prerequisites
 
 * Linux Ubuntu version v20.04, v22.04, v24.04.
