@@ -207,17 +207,17 @@ $ bash makeDFS.sh
 $ cd ..
 $ bash run.sh
 ```
-* The WEB UI of Accordion can be accessed through IP:9082 (for example, 192.168.226.137:9082). Here is an example.
+* The WEB UI of Accordion can be accessed through IP:9082 (for example, 192.168.226.129:9082). Here is an example.
  
 ![image](https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/UI1.png?raw=true)
 
-* Enter "run Q1S" in the left input box to run TPC-H Q1 (stand-alone version). There are 12 TPC-H queries in Accordion (Q1S ~ Q12S).
+* Enter "run Q3" in the left input box to run TPC-H Q3. There are 12 TPC-H queries in Accordion (Q1 ~ Q12).
 
 ![image](https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/UI2.png?raw=true)
 
 * Click the `Controller` button to enter the query control panel, you can adjust the query stage parallelism and task parallelism.
 
-![image](https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/UI31.png?raw=true) 
+![image](https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/UI3.png?raw=true) 
 
 * Click the `Complete` button to get the results of the query execution. 
 
