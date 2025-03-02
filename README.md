@@ -3,7 +3,7 @@
 <img src="https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/icon.png?raw=true" width="20%" />
 
 # Accordion: cloud-native data analysis in accordance with your mind
-SIGMOD2025 Paper Access: https://arxiv.org/pdf/2502.18184
+**SIGMOD 2025 Paper Access**: https://arxiv.org/pdf/2502.18184
 
 The first IQRE (Intra-Query Runtime Elasticity) SQL query engine (prototype).
 
