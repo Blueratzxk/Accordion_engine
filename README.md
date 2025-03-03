@@ -5,7 +5,7 @@
 # Accordion: cloud-native data analysis in accordance with your mind
 **SIGMOD 2025 Paper Access**: https://arxiv.org/pdf/2502.18184
 
-Goal: Give users the **freedom** to **trade off the performance and cost** of cloud data analytics at **query granularity**
+Goal: Give users the **freedom** to **trade off the performance and cost** of cloud data analytics at **query granularity**.
 
 The first IQRE (Intra-Query Runtime Elasticity) SQL query engine (prototype).
 
