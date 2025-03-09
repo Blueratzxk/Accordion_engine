@@ -352,5 +352,5 @@ $ bash stopcluster.sh
 
 # Next Work
 
-* **IQRE Computing Extension**. Using GPUs to accelerate computation during query execution: moving forward, initial progress has been made.
+* **IQRE Computing Extension**. Using GPUs to accelerate computation during query execution. Stay tuned...
 
