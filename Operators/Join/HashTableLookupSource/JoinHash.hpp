@@ -21,6 +21,9 @@ public:
         this->positionLinks = positionLinks;
     }
 
+    vector<std::shared_ptr<arrow::ChunkedArray>> getChunkedArrayVector() override{
+        return pagesHash->getChunkedArrayVector();
+    }
 
     inline bool isEmpty()
     {

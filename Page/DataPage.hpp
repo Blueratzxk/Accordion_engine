@@ -13,7 +13,12 @@ using namespace std;
 
 class DataPage
 {
+public:
+    enum ExtensionToken{CPU,GPU};
+private:
+    ExtensionToken loc = CPU;
     std::shared_ptr<arrow::RecordBatch> page = NULL;
+    void *extensionPage = NULL;
     int64_t elementsCount = -1;
 public:
     DataPage(){}
@@ -23,10 +28,31 @@ public:
         this->elementsCount = elementsCount;
     }
 
+    ExtensionToken getExtensionToken()
+    {
+        return this->loc;
+    }
+
+    bool isExtension()
+    {
+        return getExtensionToken() != CPU;
+    }
+
     DataPage(std::shared_ptr<arrow::RecordBatch> dataPage)
     {
             this->page = dataPage;
             this->elementsCount = page->num_rows();
+    }
+
+    DataPage(void *dataPage,int rows,ExtensionToken token)
+    {
+        this->extensionPage = dataPage;
+        this->elementsCount = rows;
+        this->loc = token;
+    }
+    void *getExtensionPage()
+    {
+        return this->extensionPage;
     }
 
     std::shared_ptr<arrow::RecordBatch> get()

@@ -9,6 +9,7 @@
 #include "../NodeCluster/NodesManager.h"
 #include "../Web/Restful/Client.hpp"
 #include "../Execution/Task/Statistics/NIC/NetInfoCollector.hpp"
+#include "../FunctionExtension/GPU/GPUFunctions.h"
 
 using namespace  std;
 class ClusterServer
@@ -21,6 +22,8 @@ class ClusterServer
     static shared_ptr<RestfulClient> restfulClient;
 
     static shared_ptr<mutex> clientLock;
+
+    static set<string> extensions;
 public:
     ClusterServer();
 
@@ -35,6 +38,8 @@ public:
     static string post_getResult_sync(string handle,string addrDest,vector<string> data);
 
     static shared_ptr<NetInfoCollector> getNetInfoCollector();
+
+    static void checkExtensions();
 
     static void openClusterInfoDisplay()
     {

@@ -6,6 +6,7 @@
 #define OLVP_HEARTBEAT_HPP
 
 #include "nlohmann/json.hpp"
+#include <set>
 using namespace std;
 class Heartbeat
 {
@@ -18,9 +19,11 @@ class Heartbeat
     double net_receiveRate;
     double net_transRate;
     int net_speed;
+    set<string> extensions;
 
 public:
-    Heartbeat(string nodeHttpURL,int activeTaskNums,int activeThreadNums, int nodeCpuCoreNums,float nodeCpuUsage,bool hasStorage,double net_receiveRate,double net_transRate,int net_speed)
+    Heartbeat(string nodeHttpURL,int activeTaskNums,int activeThreadNums, int nodeCpuCoreNums,float nodeCpuUsage,bool hasStorage,
+              double net_receiveRate,double net_transRate,int net_speed,set<string> extensions)
     {
         this->nodeHttpURL = nodeHttpURL;
 
@@ -32,6 +35,7 @@ public:
         this->net_receiveRate = net_receiveRate;
         this->net_transRate = net_transRate;
         this->net_speed = net_speed;
+        this->extensions = extensions;
     }
 
     string getNodeHttpURL(){return this->nodeHttpURL;}
@@ -45,6 +49,7 @@ public:
     int getNet_speed(){return this->net_speed;}
 
     bool ifHasStorgae(){return this->hasStorage;}
+    set<string> getExtensions(){return this->extensions;}
     static string Serialize(Heartbeat heartbeat)
     {
         nlohmann::json json;
@@ -59,13 +64,14 @@ public:
         json["net_receiveRate"] = heartbeat.net_receiveRate;
         json["net_transRate"] = heartbeat.net_transRate;
         json["net_speed"] = heartbeat.net_speed;
+        json["extensions"] = heartbeat.extensions;
         return json.dump();
     }
     static Heartbeat Deserialize(string heartbeat)
     {
         nlohmann::json json = nlohmann::json::parse(heartbeat);
         return Heartbeat(json["nodeHttpURL"],json["activeTaskNums"],json["activeThreadNums"],json["nodeCpuCoreNums"],
-                         json["nodeCpuUsage"],json["hasStorage"],json["net_receiveRate"],json["net_transRate"],json["net_speed"]);
+                         json["nodeCpuUsage"],json["hasStorage"],json["net_receiveRate"],json["net_transRate"],json["net_speed"],json["extensions"]);
     }
 
 

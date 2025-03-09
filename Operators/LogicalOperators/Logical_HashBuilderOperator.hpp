@@ -47,8 +47,12 @@ public:
         this->outputChannels = outputChannels;
         this->hashChannels = hashChannels;
         this->joinId = joinId;
-
     }
+
+    vector<int> getOutputChannels(){return outputChannels;}
+    vector<int> getHashChannels(){return hashChannels;}
+
+
     std::shared_ptr<Operator> getOperator(shared_ptr<DriverContext> driverContext) {
 
         return std::make_shared<HashBuilderOperator>(joinId,driverContext,this->lookupSourceFactory->getPartitionAssign(),this->lookupSourceFactory,this->outputChannels,this->hashChannels);

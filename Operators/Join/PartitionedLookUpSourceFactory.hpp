@@ -89,6 +89,19 @@ public:
         }
     }
 
+    shared_ptr<arrow::Table> getSourceData()
+    {
+        vector<shared_ptr<arrow::RecordBatch>> batchs;
+        for(auto source : this->partitions) {
+            auto temp = source->get()->getChunkedArrayVector();
+            auto tempTable = arrow::Table::Make(inputSchema,temp,temp[0]->length());
+            auto batch = tempTable->CombineChunksToBatch().ValueOrDie();
+            batchs.push_back(batch);
+        }
+        auto table = arrow::Table::FromRecordBatches(batchs);
+        return table.ValueOrDie();
+    }
+
     int getPartitionAssign()
     {
         return this->partitionAssign++;
@@ -172,6 +185,14 @@ public:
         bool isLookupSourceExist()
         {
             return this->sourceFactory->getLookupSource() != NULL?true:false;
+        }
+
+        shared_ptr<arrow::Table> getSourceData()
+        {
+            if(this->sourceFactory->lookupSourceCompleted)
+                return this->sourceFactory->getSourceData();
+            else
+                return NULL;
         }
 
 

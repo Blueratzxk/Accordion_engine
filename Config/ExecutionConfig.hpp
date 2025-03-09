@@ -39,6 +39,7 @@ class ExecutionConfig
 
     string remainingTupleWindowSize;
 
+    string extensionTest;
 public:
     ExecutionConfig(){
 
@@ -96,6 +97,11 @@ public:
             this->remainingTupleWindowSize = jsonTree["remainingTuplesWindowSize"];
         else
             this->remainingTupleWindowSize = "NULL";
+
+        if(jsonTree.contains("extensionTest"))
+            this->extensionTest = jsonTree["extensionTest"];
+        else
+            this->extensionTest = "false";
 
         in.close();
         this->hasRead = true;
@@ -249,7 +255,13 @@ public:
         else
             return "false";
     }
-
+    string getExtensionTest()
+    {
+        if(readConfigFile())
+            return this->extensionTest;
+        else
+            return "false";
+    }
 
 };
 

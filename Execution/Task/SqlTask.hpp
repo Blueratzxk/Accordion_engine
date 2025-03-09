@@ -184,8 +184,13 @@ public:
 
         if(taskIntraParaUpdateRequest->getUpdateType() == "incre") {
             if (pipelineId != "-1") {
-                for (int i = 0; i < atoi(taskIntraParaUpdateRequest->getUpdateParaCount().c_str()); i++)
-                    this->taskHolder->getTaskExecution()->increasePipelineDriver(PipelineId(pipelineId));
+                for (int i = 0; i < atoi(taskIntraParaUpdateRequest->getUpdateParaCount().c_str()); i++) {
+
+                    if(taskIntraParaUpdateRequest->isExtension())
+                        this->taskHolder->getTaskExecution()->increasePipelineExtensionDriver(taskIntraParaUpdateRequest->getExtension(),PipelineId(pipelineId));
+                    else
+                        this->taskHolder->getTaskExecution()->increasePipelineDriver(PipelineId(pipelineId));
+                }
             } else {
                 string updateCount = taskIntraParaUpdateRequest->getUpdateParaCount();
                 this->taskHolder->getTaskExecution()->increaseAllScalablePipelineForTask(atoi(updateCount.c_str()));

@@ -131,6 +131,9 @@ public:
     }
 
 
+    vector<std::shared_ptr<arrow::ChunkedArray>> getChunkedArrayVector() override{
+        return this->arrays;
+    }
 };
 
 

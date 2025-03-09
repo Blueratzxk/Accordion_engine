@@ -500,7 +500,23 @@ public:
             }
         }
     }
+    void updateIntraTaskParallelismByTaskId(vector<StageExecutionAndScheduler> executions, int stageId,int taskId,shared_ptr<TaskIntraParaUpdateRequest> request)
+    {
+        for (int i = 0; i < executions.size(); i++) {
 
+            if (executions[i].getStageExecution()->getStageId().getId() == (stageId)) {
+
+
+
+                executions[i].getStageExecution()->updateTasksIntraParaByTaskId(taskId,request);
+
+
+                this->setStageFirstExecutionTimePrediction(make_shared<StageExecutionAndScheduler>(executions[i].getStageExecution(),
+                                                                                                   executions[i].getStageLinkage(),executions[i].getStageScheduler()));
+
+            }
+        }
+    }
 
 
     static void addStageConcurrent(shared_ptr<SqlQueryScheduler> scheduler,int stageId)
@@ -701,6 +717,29 @@ public:
 
         shared_ptr<TaskIntraParaUpdateRequest> intraRequest  = make_shared<TaskIntraParaUpdateRequest>(pipelineId,"incre","1");
         scheduler->updateIntraTaskParallelism(scheduler->stageExeSchedulers,atoi(stageId.c_str()),intraRequest);
+    }
+
+    static void addStageTaskIntraPipelineConcurrentByTaskId(shared_ptr<SqlQueryScheduler> scheduler,string stageId,int taskId,string pipelineId)
+    {
+        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
+            return;
+
+        shared_ptr<TaskIntraParaUpdateRequest> intraRequest  = make_shared<TaskIntraParaUpdateRequest>(pipelineId,"incre","1");
+        scheduler->updateIntraTaskParallelismByTaskId(scheduler->stageExeSchedulers,atoi(stageId.c_str()),taskId,intraRequest);
+
+    }
+
+
+    static void addStageTaskIntraExtensionPipelineConcurrentByTaskId(shared_ptr<SqlQueryScheduler> scheduler,string extensionType,string stageId,int taskId,string pipelineId)
+    {
+        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
+            return;
+
+
+
+        shared_ptr<TaskIntraParaUpdateRequest> intraRequest  = make_shared<TaskIntraParaUpdateRequest>(pipelineId,"incre","1",extensionType);
+        scheduler->updateIntraTaskParallelismByTaskId(scheduler->stageExeSchedulers,atoi(stageId.c_str()),taskId,intraRequest);
+
     }
 
     static void closeStageAllTaskIntraPipelineConcurrent(shared_ptr<SqlQueryScheduler> scheduler,string stageId,string pipelineId)

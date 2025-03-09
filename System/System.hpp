@@ -17,7 +17,6 @@
 #include "../Utils/WebCommon.hpp"
 
 
-
 #include <signal.h>
 
 class System
@@ -29,6 +28,7 @@ class System
 public:
 
 
+
     static void start()
     {
         signal(SIGINT, sigint_handler);
@@ -38,12 +38,16 @@ public:
         ClusterServer::start();
         spdlog::info("Initializing...");
         while(!(checkStaticStructures() && checkServers()))sleep(100);
+
+
         spdlog::info("Initializing finished!");
 
 
         ClusterServer::startHeartbeat();
         System::stat->setShell(getShell());
+
         System::shell->start();
+
     }
 
     static void sigint_handler(int sig){

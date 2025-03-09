@@ -73,8 +73,26 @@ public:
                     if (operatorVectors[i + 1]->needsInput()) {
                         std::shared_ptr<DataPage> outputPage = operatorVectors[i]->getOutput();
 
-                        if (outputPage != NULL)
+
+
+                        if (outputPage != NULL) {
+
+                            if(outputPage->isExtension()) {
+                                if (!operatorVectors[i + 1]->isExtension()) {
+
+                                    spdlog::info("Page in GPU."+operatorVectors[i]->getOperatorId()+" download to CPU for"+ operatorVectors[i+1]->getOperatorId());
+                                    outputPage = operatorVectors[i]->downloadToCPU(outputPage);
+                                }
+                                else
+                                    ;
+                            }
+                            else if(operatorVectors[i+1]->isExtension()) {
+
+                                spdlog::info("Page in CPU. Operator in GPU."+operatorVectors[i+1]->getOperatorId()+" upload to GPU");
+                                outputPage = operatorVectors[i + 1]->uploadToExtension(outputPage);
+                            }
                             operatorVectors[i + 1]->addInput(outputPage);
+                        }
                     }
 
                 }

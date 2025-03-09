@@ -28,11 +28,24 @@ void ClusterServer::resolveHeartbeat(std::string heartbeat) {
 
 }
 
+void ClusterServer::checkExtensions() {
+    GPUFunctions gpuFunctions;
+    if(gpuFunctions.extensionUsable())
+        extensions.insert("GPU");
+    else
+        extensions.erase("GPU");
+
+    ExecutionConfig executionConfig;
+    if(executionConfig.getExtensionTest() == "true")
+        extensions.insert("TEST");
+
+
+}
+
 void ClusterServer::sendHeartbeat() {
     string localIp = nodesManager->getLocalIp();
     string coordinatorIp = nodesManager->getCoordinatorAddr();
-
-
+    checkExtensions();
 
     Heartbeat heartbeat(localIp,TaskServer::getTaskServer()->getAllActiveTaskNums(),
                         TaskServer::getTaskServer()->getAllActiveThreadNums(),
@@ -40,7 +53,8 @@ void ClusterServer::sendHeartbeat() {
                         TaskServer::getCpuInfoCollector()->getNodeCpuUsage(),
                         nodesManager->hasStorage(),ClusterServer::netInfoCollector->getReceivedRate(),
                         ClusterServer::netInfoCollector->getTransmittedRate(),
-                        ClusterServer::netInfoCollector->getNICSpeed());
+                        ClusterServer::netInfoCollector->getNICSpeed(),
+                        extensions);
     ClusterServer::post_getResult_sync(coordinatorIp,coordinatorIp+"/v1/cluster/reportHeartbeat",{Heartbeat::Serialize(heartbeat)});
 
 }
@@ -96,5 +110,5 @@ shared_ptr<NetInfoCollector> ClusterServer::netInfoCollector = NULL;
 bool ClusterServer::showInfos = false;
 shared_ptr<RestfulClient> ClusterServer::restfulClient = make_shared<RestfulClient>();
 shared_ptr<mutex> ClusterServer::clientLock = make_shared<mutex>();
-
+set<string> ClusterServer::extensions = {};
 

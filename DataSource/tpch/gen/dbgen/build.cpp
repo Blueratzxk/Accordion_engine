@@ -315,18 +315,18 @@ struct {
 } months[] =
 
     {{NULL, 0, 0},
-     {"JAN", 31, 31},
-     {"FEB", 28, 59},
-     {"MAR", 31, 90},
-     {"APR", 30, 120},
-     {"MAY", 31, 151},
-     {"JUN", 30, 181},
-     {"JUL", 31, 212},
-     {"AUG", 31, 243},
-     {"SEP", 30, 273},
-     {"OCT", 31, 304},
-     {"NOV", 30, 334},
-     {"DEC", 31, 365}};
+     {(char*)"JAN", 31, 31},
+     {(char*)"FEB", 28, 59},
+     {(char*)"MAR", 31, 90},
+     {(char*)"APR", 30, 120},
+     {(char*)"MAY", 31, 151},
+     {(char*)"JUN", 30, 181},
+     {(char*)"JUL", 31, 212},
+     {(char*)"AUG", 31, 243},
+     {(char*)"SEP", 30, 273},
+     {(char*)"OCT", 31, 304},
+     {(char*)"NOV", 30, 334},
+     {(char*)"DEC", 31, 365}};
 
 long mk_time(DSS_HUGE index, dss_time_t* t) {
   long m = 0;

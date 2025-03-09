@@ -80,6 +80,9 @@ public:
         this->probeJoinChannels = probeJoinChannels;
     }
 
+    vector<int> getProbeOutputChannels(){return probeOutputChannels;}
+    vector<int> getProbeJoinChannels(){return probeJoinChannels;}
+
     std::shared_ptr<JoinProbe> createJoinProbe(std::shared_ptr<DataPage> page)
     {
         return std::make_shared<JoinProbe>(probeOutputChannels,page,page->getLoadedPage(probeJoinChannels));

@@ -12,6 +12,9 @@ public:
     PagesHashStrategy(){
 
     }
+
+    virtual vector<std::shared_ptr<arrow::ChunkedArray>> getChunkedArrayVector()  {return {};}
+
     virtual int32_t getChannelCount(){return 0;}
 
     virtual int64_t getSizeInBytes(){return 0;}

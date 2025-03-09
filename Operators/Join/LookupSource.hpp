@@ -37,7 +37,7 @@ public:
 
     virtual bool isEmpty() = 0;
 
-
+    virtual vector<std::shared_ptr<arrow::ChunkedArray>>  getChunkedArrayVector() {return {};}
 };
 
 

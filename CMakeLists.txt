@@ -4,6 +4,7 @@ project(OLVP)
 set(CMAKE_CXX_STANDARD 20)
 
 SET(CMAKE_CXX_FLAGS -pthread)
+
 #SET(CMAKE_CXX_FLAGS "-fno-stack-protector")
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 
@@ -504,6 +505,12 @@ add_executable(OLVP main.cpp
         Tuning/AutoTunerManager.hpp
         TpchTest/Querys/Query2Join_OC.hpp
         TpchTest/Querys/Query2Join_OC_ProbeShuffle.hpp
+        FunctionExtension/GPU/GPUFunctions.h
+        FunctionExtension/GPU/GPULogicalOperators.hpp
+        FunctionExtension/FuncExt.h
+        FunctionExtension/GPU/GPUHashJoinOperator.hpp
+        FunctionExtension/GPU/Logical_GPUHashJoinOperator.hpp
+        FunctionExtension/OperatorExtension.h
 
 
 )
@@ -524,6 +531,7 @@ target_link_libraries(
         pistache
         /usr/local/lib64/libpistache.so
 
+        dl
         curl
         arrow
         arrow_acero

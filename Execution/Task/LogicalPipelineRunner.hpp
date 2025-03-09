@@ -118,6 +118,12 @@ public:
         return std::make_shared<LogicalPipelineRunner>(this->session,driverContext,this->logicalPipeline,Splits);
     }
 
+    std::shared_ptr<LogicalPipelineRunner> createLogicalPipelineRunnerWithExtendedLogicalPipeline(std::shared_ptr<LogicalPipeline> extendedLogicalPipeline, set<std::shared_ptr<Split>> Splits)
+    {
+        shared_ptr<DriverContext> driverContext = this->pipelineContext->addDriverContext();
+        return std::make_shared<LogicalPipelineRunner>(this->session,driverContext,extendedLogicalPipeline,Splits);
+    }
+
 
 };
 

@@ -17,7 +17,10 @@ public:
     virtual std::shared_ptr<DataPage> getOutput() { return NULL; }
     virtual bool isFinished() { return true; }
     virtual bool needsInput() { return true; }
-
+    virtual int extensionToken() {return 0;}
+    virtual int isExtension() {return false;}
+    virtual shared_ptr<DataPage> uploadToExtension(shared_ptr<DataPage> page) {return page;};
+    virtual shared_ptr<DataPage> downloadToCPU(shared_ptr<DataPage> page){return page;};
 };
 
 

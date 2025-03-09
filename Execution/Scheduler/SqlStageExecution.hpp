@@ -286,6 +286,8 @@ public:
 
         for(auto task : allTasks) {
             shared_ptr<TaskInfo> taskInfo = task->getTaskInfo();
+            taskInfo->setHost(task->getTaskLocation());
+            taskInfo->setExtensions(task->getExtensions());
             if(taskInfo != NULL)
                 taskInfos.push_back(taskInfo);
         }
@@ -778,6 +780,26 @@ public:
     }
 
 
+    void updateTasksIntraParaByTaskId(int taskId, shared_ptr<TaskIntraParaUpdateRequest> request)
+    {
+        bool tasksEmpty = false;
+        tasksLock.lock();
+        tasksEmpty = tasks.empty();
+        tasksLock.unlock();
+        if(!tasksEmpty) {
+            vector<shared_ptr<HttpRemoteTask>> tasks = getAllTasks();
+            for(auto task : tasks)
+            {
+                if(task->getTaskId()->getId() == taskId) {
+                    task->updateTaskIntraParallelism(request);
+                    return;
+                }
+            }
+        }
+
+    }
+
+
     bool isRemoteSourceAndTableScanMixedOfStage()
     {
         return this->fragment->getRemoteSourceNodes().size() > 0 && this->fragment->getTableScanNodes().size() > 0;
@@ -796,7 +818,7 @@ public:
 
 
         shared_ptr<HttpRemoteTask> remoteTask = taskFactory.createRemoteTask(this->simpleEvent,newTaskId,fragment,node->getNodeLocation(),this->outputBufferSchema,
-                                                                             task_Sources==NULL?TaskSource::getEmptyTaskSource():task_Sources,this->session);
+                                                                             task_Sources==NULL?TaskSource::getEmptyTaskSource():task_Sources,this->session,node->getExtensions());
 
         addNodeTaskMap(node,remoteTask);
         addTask(node,remoteTask);
@@ -817,7 +839,7 @@ public:
 
 
             string location;
-            remoteTask = taskFactory.createRemoteTask(this->simpleEvent,newTaskId, fragment, node->getNodeLocation(),this->outputBufferSchema,TaskSource::getEmptyTaskSource(),this->session);
+            remoteTask = taskFactory.createRemoteTask(this->simpleEvent,newTaskId, fragment, node->getNodeLocation(),this->outputBufferSchema,TaskSource::getEmptyTaskSource(),this->session,node->getExtensions());
             addNodeTaskMap(node, remoteTask);
             addTask(node, remoteTask);
             remoteTask->start();
@@ -862,7 +884,7 @@ public:
 
 
                 string location;
-                remoteTask = taskFactory.createRemoteTask(this->simpleEvent,newTaskId, fragment, node[i]->getNodeLocation(),this->outputBufferSchema,tss,this->session);
+                remoteTask = taskFactory.createRemoteTask(this->simpleEvent,newTaskId, fragment, node[i]->getNodeLocation(),this->outputBufferSchema,tss,this->session,node[i]->getExtensions());
                 addNodeTaskMap(node[i], remoteTask);
                 addTask(node[i], remoteTask);
                 remoteTask->start();
@@ -904,7 +926,7 @@ public:
 
 
                 string location;
-                remoteTask = taskFactory.createRemoteTask(this->simpleEvent,newTaskId, fragment, node[i]->getNodeLocation(),this->outputBufferSchema,tss[i],this->session);
+                remoteTask = taskFactory.createRemoteTask(this->simpleEvent,newTaskId, fragment, node[i]->getNodeLocation(),this->outputBufferSchema,tss[i],this->session,node[i]->getExtensions());
                 addNodeTaskMap(node[i], remoteTask);
                 addTask(node[i], remoteTask);
                 remoteTask->start();

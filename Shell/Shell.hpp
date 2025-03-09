@@ -21,13 +21,8 @@ public:
         if(config.thisNodeIsCoordinator())
             this->shellStatus = true;
 
-        scriptExecutor = QueryServer::getScriptExecutor();
-    }
-
-    void start()
-    {
-        ExecutionConfig config;
-        string logLevel = config.getLog_level();
+        ExecutionConfig exeConfig;
+        string logLevel = exeConfig.getLog_level();
 
         if(logLevel == "debug") {
             spdlog::set_level(spdlog::level::debug);
@@ -49,6 +44,13 @@ public:
             spdlog::set_level(spdlog::level::info);
             spdlog::info("LOG_LEVEL:info");
         }
+
+
+        scriptExecutor = QueryServer::getScriptExecutor();
+    }
+
+    void start()
+    {
 
 
 

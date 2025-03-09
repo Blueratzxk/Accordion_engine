@@ -85,6 +85,12 @@ public:
 
     }
 
+    shared_ptr<arrow::Table> getLookupSourceData()
+    {
+        std::shared_ptr<PartitionedLookupSourceFactory::DefaultLookupSourceProvider> provider = static_pointer_cast<PartitionedLookupSourceFactory::DefaultLookupSourceProvider>(this->lookupSourceProvider);
+        return provider->getSourceData();
+    }
+
     bool tryFetchLookupSourceProvider()
     {
         if (this->lookupSourceProvider == NULL) {
@@ -119,6 +125,7 @@ public:
                                                         });
 
     }
+
 
     void buildPage()
     {
@@ -215,6 +222,7 @@ public:
 
         if(!tryFetchLookupSourceProvider())
             return NULL;
+
 
         if(!this->lookupSourceProvider->isLookupSourceExist())
             this->probe = NULL;

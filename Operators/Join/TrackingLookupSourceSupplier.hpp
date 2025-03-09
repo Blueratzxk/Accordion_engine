@@ -7,7 +7,7 @@
 
 #include "LookupSource.hpp"
 
-
+#include "LookupSourceSupplier.hpp"
 
 class TrackingLookupSourceSupplier
 {

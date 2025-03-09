@@ -39,10 +39,11 @@ class HttpRemoteTask
 
     shared_ptr<RestfulClient> restfulClient;
 
+    set<string> extension;
 
 public:
     HttpRemoteTask(shared_ptr<Event> eventListener,shared_ptr<TaskId> taskId, shared_ptr<PlanFragment> fragment,string nodeLocation,
-                   shared_ptr<OutputBufferSchema> schema,shared_ptr<TaskSource> initial_taskSources,shared_ptr<Session> session){
+                   shared_ptr<OutputBufferSchema> schema,shared_ptr<TaskSource> initial_taskSources,shared_ptr<Session> session, set<string> extension){
         this->taskId = taskId;
         this->httpRequestLocation = nodeLocation;
         this->schema = schema;
@@ -50,8 +51,10 @@ public:
         this->eventListener = eventListener;
         this->fragment = fragment;
         this->session = session;
+        this->extension = extension;
         this->taskInfoFetcher = make_shared<TaskInfoFetcher>(this->taskId,this->httpRequestLocation,this->eventListener);
         this->restfulClient = make_shared<RestfulClient>();
+
     }
 
 
@@ -100,6 +103,11 @@ public:
         vector<string> tokens;
         splitString(this->httpRequestLocation,tokens,":");
         return tokens[1];
+    }
+
+    set<string> getExtensions()
+    {
+        return this->extension;
     }
     bool hasThroughput()
     {

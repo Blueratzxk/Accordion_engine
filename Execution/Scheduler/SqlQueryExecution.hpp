@@ -87,6 +87,15 @@ public:
         thread(SqlQueryScheduler::addStageAllTaskIntraPipelineConcurrent,this->scheduler,stageId,pipelineId).detach();
         return "OK";
     }
+
+
+    string addStageTaskIntraExtensionPipelineConcurrentByTaskId(string extensionType,string stageId,int taskId,string pipelineId)
+    {
+
+        thread(SqlQueryScheduler::addStageTaskIntraExtensionPipelineConcurrentByTaskId,this->scheduler,extensionType,stageId,taskId,pipelineId).detach();
+        return "OK";
+    }
+
     string subStageAllTaskIntraPipelineConcurrent(string stageId,string pipelineId)
     {
 
@@ -560,6 +569,16 @@ public:
         this->dyScheduler->addStageAllTaskIntraPipelineConcurrent(stageId,pipelineId);
         return "OK";
     }
+
+
+    string Dynamic_addStageTaskIntraExtensionPipelineConcurrentByTaskId(string extensionType,string stageId,int taskId,string pipelineId)
+    {
+
+        this->dyScheduler-> addStageTaskIntraExtensionPipelineConcurrentByTaskId(extensionType,stageId,taskId,pipelineId);
+        return "OK";
+    }
+
+
     string Dynamic_subStageAllTaskIntraPipelineConcurrent(string stageId,string pipelineId)
     {
 

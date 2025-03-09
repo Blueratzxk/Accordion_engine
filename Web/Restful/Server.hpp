@@ -104,6 +104,11 @@ private:
         Routes::Get(router, "/v1/query/addStageTaskGroupConcurrentExtern/:queryId/:stageId/:taskNum", Routes::bind(&StatsEndpoint::addStageTaskGroupConcurrentExtern, this));
         Routes::Get(router, "/v1/query/addStageAllTaskPipelineConcurrentExtern/:queryId/:stageId/:pipelineId", Routes::bind(&StatsEndpoint::addStageAllTaskPipelineConcurrentExtern, this));
         Routes::Get(router, "/v1/query/subStageAllTaskPipelineConcurrentExtern/:queryId/:stageId/:pipelineId", Routes::bind(&StatsEndpoint::subStageAllTaskPipelineConcurrentExtern, this));
+        Routes::Get(router, "/v1/query/addStageTaskIntraExtensionPipelineConcurrentByTaskId/:queryId/:extensionType/:stageId/:taskId/:pipelineId", Routes::bind(&StatsEndpoint::addStageTaskIntraExtensionPipelineConcurrentByTaskId, this));
+
+
+
+
 
 
         Routes::Get(router, "/v1/query/giveMeAQueryExtern/:queryId", Routes::bind(&StatsEndpoint::giveMeAQueryExtern, this));
@@ -444,6 +449,50 @@ private:
         response.send(Http::Code::Ok,taskResponse);
 
     }
+
+    void addStageTaskIntraExtensionPipelineConcurrentByTaskId(const Rest::Request& request, Http::ResponseWriter response) {
+
+        string queryId;
+        string extensionType;
+        string stageId;
+        string taskId;
+        string pipelineId;
+
+        if (request.hasParam(":queryId")) {
+            auto value = request.param(":queryId");
+            queryId = value.as<string>();
+        }
+        if (request.hasParam(":extensionType")) {
+            auto value = request.param(":extensionType");
+            extensionType = value.as<string>();
+        }
+        if (request.hasParam(":stageId")) {
+            auto value = request.param(":stageId");
+            stageId = value.as<string>();
+        }
+        if (request.hasParam(":taskId")) {
+            auto value = request.param(":taskId");
+            taskId = value.as<string>();
+        }
+        if (request.hasParam(":pipelineId")) {
+            auto value = request.param(":pipelineId");
+            pipelineId = value.as<string>();
+        }
+
+        QueryInterFace api;
+        string taskResponse = api.addStageTaskIntraExtensionPipelineConcurrentByTaskId(queryId,extensionType,stageId,taskId,pipelineId);
+
+        nlohmann::json responseString;
+
+        string resultString;
+
+
+        response.headers().add<Http::Header::AccessControlAllowOrigin>("*");
+        response.send(Http::Code::Ok,taskResponse);
+
+    }
+
+
 
     void addStageTaskGroupConcurrentExtern(const Rest::Request& request, Http::ResponseWriter response) {
 

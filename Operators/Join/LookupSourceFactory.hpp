@@ -9,7 +9,8 @@
 #include "LookupSource.hpp"
 #include <iostream>
 #include <future>
-#include "LookupSourceProvider.hpp"
+
+class LookupSourceProvider;
 
 class LookupSourceFactory:public JoinBridge
 {

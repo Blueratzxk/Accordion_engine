@@ -15,12 +15,14 @@ class TaskIntraParaUpdateRequest : public TaskInterfereRequest
     string pipelineId;
     string increOrDecreParallel;
     string updateParaCount;
+    string extension;
 
 public:
-    TaskIntraParaUpdateRequest(string pipelineId,string increOrDecre,string updataParaCount) : TaskInterfereRequest("TaskIntraParaUpdateRequest"){
+    TaskIntraParaUpdateRequest(string pipelineId,string increOrDecre,string updataParaCount,string extension = "NO") : TaskInterfereRequest("TaskIntraParaUpdateRequest"){
         this->pipelineId = pipelineId;
         this->increOrDecreParallel = increOrDecre;
         this->updateParaCount = updataParaCount;
+        this->extension = extension;
     }
 
     string getPipelineId()
@@ -35,6 +37,14 @@ public:
     {
         return this->updateParaCount;
     }
+    bool isExtension()
+    {
+        return this->extension != "NO";
+    }
+    string getExtension()
+    {
+        return this->extension;
+    }
 
     static string Serialize(TaskIntraParaUpdateRequest update)
     {
@@ -42,6 +52,7 @@ public:
         IntraParaUpdateRequest["pipelineId"] = update.pipelineId;
         IntraParaUpdateRequest["updateType"] = update.increOrDecreParallel;
         IntraParaUpdateRequest["updateCount"] = update.updateParaCount;
+        IntraParaUpdateRequest["extension"] = update.extension;
         string result = IntraParaUpdateRequest.dump();
         return result;
 
@@ -50,7 +61,8 @@ public:
     {
         nlohmann::json updateRequest;
         updateRequest = nlohmann::json::parse(update);
-        auto intraRequest = make_shared<TaskIntraParaUpdateRequest>(updateRequest["pipelineId"],updateRequest["updateType"] ,updateRequest["updateCount"]);
+        auto intraRequest = make_shared<TaskIntraParaUpdateRequest>(updateRequest["pipelineId"],updateRequest["updateType"],
+                                                                    updateRequest["updateCount"],updateRequest["extension"]);
         return intraRequest;
     }
 

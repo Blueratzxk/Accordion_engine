@@ -10,7 +10,7 @@ using namespace std;
 #include <atomic>
 #include <spdlog/spdlog.h>
 #include "../Utils/TextColor.h"
-
+#include <set>
 
 class ClusterNode
 {
@@ -39,6 +39,7 @@ private:
     int netSpeed = 0;
     bool hasStorage = false;
 
+    set<string> extensions;
 
 public:
     ClusterNode(string identifier,string httpUrl,bool hasStorage){
@@ -67,6 +68,17 @@ public:
     {
         this->isCoordinator = true;
     }
+
+    void updateExtensions(set<string>extensions)
+    {
+        this->extensions = extensions;
+    }
+
+    set<string> getExtensions()
+    {
+        return this->extensions;
+    }
+
     bool is_Coordinator()
     {
         return this->isCoordinator;
@@ -209,6 +221,30 @@ public:
         re.append("|");
         re.append("NIC trans rate:");
         re.append(TextColor::LIGHT_RED(TextColor::numberTextTrim(to_string(this->netTransRate),8,"0")));
+
+
+        re.append("|");
+        string exts;
+        int round = 0;
+        for(auto ext : extensions) {
+            if(round > 0)
+                exts.append(ext).append(" ");
+            else
+                exts.append(ext);
+            round++;
+        }
+        if(!exts.empty()) {
+            re.append("Exts:");
+            re.append(TextColor::LIGHT_GREEN(exts));
+        }
+        else
+        {
+            re.append("Exts:");
+            re.append("NO ");
+        }
+
+
+
 
         re.append("|");
         spdlog::info(re);

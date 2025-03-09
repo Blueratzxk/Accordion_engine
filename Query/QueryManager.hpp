@@ -769,6 +769,21 @@ public:
             return "NULL";
     }
 
+    string addStageTaskIntraExtensionPipelineConcurrentByTaskId(string queryId,string extensionType,string stageId,string taskId,string pipelineId)
+    {
+
+        shared_ptr<SqlQueryExecution> queryExecution = nullptr;
+        if((*this->querys).find(queryId) != (*this->querys).end()) {
+            queryExecution = (*this->querys)[queryId];
+
+
+
+            return queryExecution->Dynamic_addStageTaskIntraExtensionPipelineConcurrentByTaskId(extensionType,stageId,atoi(taskId.c_str()),pipelineId);
+        }
+        else
+            return "NULL";
+    }
+
     string subStageAllTaskIntraPipelineConcurrent(string queryId,string stageId,string pipelineId)
     {
         shared_ptr<SqlQueryExecution> queryExecution = nullptr;

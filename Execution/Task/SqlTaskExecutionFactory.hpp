@@ -30,6 +30,8 @@ class SqlTaskExecutionFactory
     std::shared_ptr<SqlTaskExecution> sqlTaskExecution = NULL;
     shared_ptr<TasksRuntimeStats> tasksRuntimeStats;
 
+
+
 public:
     SqlTaskExecutionFactory(shared_ptr<TasksRuntimeStats> tasksRuntimeStats,std::shared_ptr<QueryContext> queryContext,std::shared_ptr<LocalExecutionPlanner> localExecutionPlanner,std::shared_ptr<TaskExecutor> taskExecutor){
         this->localExecutionPlanner = localExecutionPlanner;

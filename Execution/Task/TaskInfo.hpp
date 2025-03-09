@@ -13,14 +13,20 @@ class TaskInfo
 {
     shared_ptr<TaskInfoDescriptor> taskInfoDescriptor;
     double throughput = 0;
+    string host;
+    set<string> hostExtensions;
 
 public:
     TaskInfo(shared_ptr<TaskInfoDescriptor> taskInfoDescriptor){
         this->taskInfoDescriptor = taskInfoDescriptor;
     }
-    TaskInfo(shared_ptr<TaskInfoDescriptor> taskInfoDescriptor,long throughput){
+
+
+    TaskInfo(shared_ptr<TaskInfoDescriptor> taskInfoDescriptor,long throughput,string host,set<string> hostExtensions){
         this->taskInfoDescriptor = taskInfoDescriptor;
         this->throughput = throughput;
+        this->hostExtensions = hostExtensions;
+        this->host;
     }
 
     TaskInfo(){
@@ -30,6 +36,15 @@ public:
     shared_ptr<TaskInfoDescriptor> getTaskInfoDescriptor()
     {
         return this->taskInfoDescriptor;
+    }
+
+    void setHost(string host)
+    {
+        this->host = host;
+    }
+    void setExtensions(set<string> exts)
+    {
+        this->hostExtensions = exts;
     }
 
     string getStatus()
@@ -64,6 +79,8 @@ public:
 
         json["taskThroughput"] = taskInfo.throughput;
 
+        json["host"] = taskInfo.host;
+        json["hostExtensions"] = taskInfo.hostExtensions;
 
 
         string result = json.dump();
@@ -90,7 +107,7 @@ public:
 
         taskInfoDesc->addTaskCpuUsageDescriptor(TaskCpuUsageDescriptor::Deserialize(json["taskCpuUsageDescriptor"]));
 
-        return make_shared<TaskInfo>(taskInfoDesc,json["taskThroughput"]);
+        return make_shared<TaskInfo>(taskInfoDesc,json["taskThroughput"],json["host"],json["hostExtensions"]);
     }
 
     static string Visualization(TaskInfo taskInfo){
@@ -98,6 +115,8 @@ public:
         string json = taskInfo.taskInfoDescriptor->ToString();
         nlohmann::json  jj = nlohmann::json::parse(json);
         jj["taskThroughput"] = taskInfo.throughput;
+        jj["host"] = taskInfo.host;
+        jj["hostExtensions"] = taskInfo.hostExtensions;
         string output = jj.dump();
         return output;
 

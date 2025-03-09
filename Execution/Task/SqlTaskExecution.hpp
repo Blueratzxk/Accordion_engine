@@ -26,6 +26,9 @@
 
 #include <future>
 
+#include "../FunctionExtension/OperatorExtension.h"
+
+
 using namespace std::chrono;
 
 class SqlTaskExecution {
@@ -612,6 +615,39 @@ public:
         } else if (remoteSourceLogicalPipelineRegister.count(pipelineName) > 0) {
             this->closeARemoteSourceCPUPipeLine(pipelineName);
         }
+    }
+
+
+    void increasePipelineExtensionDriver(string extension, PipelineId pipelineName) {
+
+        spdlog::info("Pipeline "+pipelineName.get()+" Extension"+extension+" activeted!");
+
+        OperatorExtension operatorExtension;
+
+
+        auto factory = this->remoteSourcePipelineFactory[pipelineName];
+
+        shared_ptr<LogicalPipeline> CPU_logicalPipeline = factory->getLogicalPipeline();
+
+        vector<std::shared_ptr<LogicalOperator>> originTemplate = CPU_logicalPipeline->getLogicalPipelines();
+        vector<std::shared_ptr<LogicalOperator>> extendedTemplate = operatorExtension.extendPipelineTemplate(originTemplate);
+        shared_ptr<LogicalPipeline> extendedLogicalPipeline = CPU_logicalPipeline->getExtendedLogicalPipeline(extendedTemplate);
+
+        vector<std::shared_ptr<SplitRunner>> runners;
+
+        auto splits = this->taskContext->getPipelineContext(pipelineName)->getAllRegRemoteSplit();
+        if(splits.size() == 0)
+        {
+            spdlog::debug("No remote splits found! RemoteSourcePipeline cannot be created!");
+            return;
+        }
+
+        runners.push_back(factory->createLogicalPipelineRunnerWithExtendedLogicalPipeline(extendedLogicalPipeline,splits));
+        this->taskExecutor->enqueueSplits(this->taskHandle,runners);
+
+
+
+
     }
 
     void closeASourceCPUPipeline(PipelineId pipelineName)

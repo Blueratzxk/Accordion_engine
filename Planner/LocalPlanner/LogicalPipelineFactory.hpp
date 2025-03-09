@@ -60,8 +60,22 @@ public:
 
     std::shared_ptr<LogicalPipeline> getNewLogicalPipeline(LogicalPipeline lp)
     {
-        return std::make_shared<LogicalPipeline>(lp.pipelineId.get(),lp.pipelineType,lp.pipelineTemplate);
+        auto re = std::make_shared<LogicalPipeline>(lp.pipelineId.get(),lp.pipelineType,lp.pipelineTemplate);
+        re->setSourceId(this->sourceId.get());
+        return re;
     }
+    std::shared_ptr<LogicalPipeline> getExtendedLogicalPipeline(vector<std::shared_ptr<LogicalOperator>> newPipelineTemplate)
+    {
+        auto re = std::make_shared<LogicalPipeline>(this->pipelineId.get(),this->pipelineType,newPipelineTemplate);
+        re->setSourceId(this->sourceId.get());
+        return re;
+    }
+
+    vector<std::shared_ptr<LogicalOperator>> getPipelineTemplate()
+    {
+        return this->pipelineTemplate;
+    }
+
     string getPipelineTypesString()
     {
         vector<string> typeStrings;

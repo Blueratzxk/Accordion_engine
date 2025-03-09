@@ -5,7 +5,7 @@
 #ifndef OLVP_PAGESHASH_HPP
 #define OLVP_PAGESHASH_HPP
 
-#include "../LookupSourceSupplier.hpp"
+
 #include "../../../Page/DataPage.hpp"
 #include "../../../Page/Channel.hpp"
 #include "PagesHashStrategy.hpp"
@@ -36,6 +36,10 @@ public:
 
     }
 
+    vector<std::shared_ptr<arrow::ChunkedArray>> getChunkedArrayVector()
+    {
+        return pagesHashStrategy->getChunkedArrayVector();
+    }
     void createHashTable(atomic<long> &buildProgress)
     {
         HashCommon common;

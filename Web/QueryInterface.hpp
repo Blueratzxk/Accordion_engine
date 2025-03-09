@@ -62,6 +62,12 @@ public:
         return QueryServer::queryServer->decreaseStageParallelism(queryId,atoi(stageId.c_str()));
     }
 
+    static string addStageTaskIntraExtensionPipelineConcurrentByTaskId(string queryId,string extensionType,string stageId,string taskId,string pipelineId)
+    {
+        return QueryServer::queryServer->addStageTaskIntraExtensionPipelineConcurrentByTaskId(queryId,extensionType,stageId,taskId,pipelineId);
+    }
+
+
 
     static string addStageTaskGroup(string queryId,int stageId,int taskNum)
     {

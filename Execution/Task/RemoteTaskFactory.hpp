@@ -14,9 +14,9 @@ public:
     }
 
     shared_ptr<HttpRemoteTask> createRemoteTask(shared_ptr<Event> eventLister,shared_ptr<TaskId> taskId,shared_ptr<PlanFragment> fragment,string httpRequestLocation,
-                                                shared_ptr<OutputBufferSchema> schema,shared_ptr<TaskSource> initial_taskSources,shared_ptr<Session> session)
+                                                shared_ptr<OutputBufferSchema> schema,shared_ptr<TaskSource> initial_taskSources,shared_ptr<Session> session,set<string> extension)
     {
-        return make_shared<HttpRemoteTask>(eventLister,taskId,fragment,httpRequestLocation,schema,initial_taskSources,session);
+        return make_shared<HttpRemoteTask>(eventLister,taskId,fragment,httpRequestLocation,schema,initial_taskSources,session,extension);
     }
 
 };

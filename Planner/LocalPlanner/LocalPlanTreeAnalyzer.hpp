@@ -233,7 +233,7 @@ public:
         shared_ptr<JoinProbeFactory> joinProbeFactory = std::make_shared<JoinProbeFactory>(node->getLookupJoinDescriptor().getProbeOutputChannels()
                 ,node->getLookupJoinDescriptor().getProbeHashChannels());
 
-        auto hashProbe = make_shared<Logical_LookupJoinOperator>(probeInputSchema,buildOutputSchema,joinProbeFactory,lookupSourceFactory);
+        auto hashProbe = make_shared<Logical_LookupJoinOperator>(probeInputSchema,buildOutputSchema,joinProbeFactory,lookupSourceFactory,build);
 
 
 

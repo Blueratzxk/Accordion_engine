@@ -264,6 +264,7 @@ Table fromTableName(std::string tableName) {
     return it->second;
   }
   spdlog::error("Invalid TPC-H table name: '{}'"+tableName);
+  return Table::TBL_ORDERS;
 }
 
 size_t getRowCount(string table,double scaleFactor)
@@ -284,7 +285,7 @@ size_t getRowCount(string table,double scaleFactor)
         return 5;
     if(table == "LINEITEM" || table == "lineitem")
         return getLineItemRowCount(scaleFactor);
-
+    return 0;
 }
 
 size_t getRowCount(Table table, double scaleFactor) {

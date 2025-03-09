@@ -93,6 +93,7 @@ void NodesManager::initialNodes() {
         this->allClusterNodes[heartbeat.getNodeHttpURL()]->updateCpuUsage(heartbeat.getNodeCpuUsage());
         this->allClusterNodes[heartbeat.getNodeHttpURL()]->updateNetRecRate(heartbeat.getNet_receiveRate());
         this->allClusterNodes[heartbeat.getNodeHttpURL()]->updateNetTransRate(heartbeat.getNet_transRate());
+        this->allClusterNodes[heartbeat.getNodeHttpURL()]->updateExtensions(heartbeat.getExtensions());
     }
 
 

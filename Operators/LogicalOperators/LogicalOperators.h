@@ -23,4 +23,6 @@
 #include "Logical_NestedLoopJoinOperator.hpp"
 #include "Logical_LimitOperator.hpp"
 
+#include "../../FunctionExtension/GPU/Logical_GPUHashJoinOperator.hpp"
+
 #endif //OLVP_LOGICALOPERATORS_H
