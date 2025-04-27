@@ -3,7 +3,7 @@
 <img src="https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/icon.png?raw=true" width="20%" />
 
 # Accordion: cloud-native data analysis in accordance with your mind
-**SIGMOD 2025 Paper Access**: https://arxiv.org/pdf/2502.18184
+**SIGMOD 2025 Research Paper Access**: https://arxiv.org/pdf/2502.18184
 
 
 The first IQRE (Intra-Query Runtime Elasticity) SQL query engine (prototype).
@@ -349,8 +349,4 @@ $ bash stopcluster.sh
 * Dependencies. When deploying Accordion to the cloud, a `libs` directory needs to be added to the `accordion/` directory. The `libs` directory needs to hold all the dynamic link libraries that the Accordion executable file relies on (these link library files can be collected from the machine where Accordion is compiled).
 * Script. You can run a query by modifying a script file in the `accordion/` directory. You can trigger script execution by typing the 's' character in Accordion's command terminal (not the Web UI). You can also enter the 'h' character to view and use some of Accordion's commands. Queries run via script or web UI have their runtime information collected in the `accordion/monitorData/` directory.
 * Execution Configuration. The `accordion/execution.config` file is used to configure the initial intra-task or intra-stage parallelism of the query execution.
-
-# Next Work
-
-* **IQRE Computing Extension**. Using GPUs to accelerate computation during query execution. Stay tuned...
 
