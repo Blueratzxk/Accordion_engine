@@ -5,6 +5,7 @@
 #ifndef OLVP_SQLTASKEXECUTIONFACTORY_HPP
 #define OLVP_SQLTASKEXECUTIONFACTORY_HPP
 
+#include "TaskExecutionCondition.hpp"
 #include "SqlTaskExecution.hpp"
 #include "../../Planner/LocalPlanner/LogicalPipelineFactory.hpp"
 #include "../../Planner/LocalPlanner/LocalPlanTreeAnalyzer.hpp"
@@ -12,6 +13,7 @@
 
 #include "../../Planner/Fragment.hpp"
 #include "../Buffer/LazyOutputBuffer.hpp"
+
 
 class SqlTaskExecutionFactory
 {
@@ -43,10 +45,10 @@ public:
     }
 
     std::shared_ptr<SqlTaskExecution> createRuntimeMachine(shared_ptr<Session> session,shared_ptr<TaskId>taskId,std::shared_ptr<TaskStateMachine> taskStateMachine,
-                                                           std::shared_ptr<PlanFragment> planFragment,shared_ptr<OutputBuffer> outputBuffer)
+                                                           std::shared_ptr<PlanFragment> planFragment,shared_ptr<OutputBuffer> outputBuffer,shared_ptr<TaskExecutionCondition> condition)
     {
 
-        this->localExecutionPlanner = make_shared<LocalExecutionPlanner>(planFragment->getRoot(),outputBuffer);
+        this->localExecutionPlanner = make_shared<LocalExecutionPlanner>(planFragment->getRoot(),outputBuffer,condition);
         auto localExecutionPlan = this->localExecutionPlanner->plan();
         int joinNum = this->localExecutionPlanner->getContext()->getJoinNum();
 

@@ -195,6 +195,10 @@ void PipelineContext::reportBuildTime(double time){
 
 void PipelineContext::reportBuildComputingTime(string joinId,double time){
     this->taskContext.lock()->reportBuildComputingTime(joinId,time);
+}
+
+void PipelineContext::savePagesForInterTaskMission(string componentId, vector<shared_ptr<DataPage>> pages) {
+    this->taskContext.lock()->savePagesForInterTaskMission(componentId,pages);
 };
 
 #endif //OLVP_PIPELINECONTEXT_CPP

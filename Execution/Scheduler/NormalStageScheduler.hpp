@@ -118,9 +118,30 @@ public:
         ScheduleResult sR(newTasks);
         stageExecutor->recordTaskGroup(sR.getTaskIds());
 
+        return sR;
+    }
+
+    ScheduleResult addOneConcurrentForInterTaskMission(shared_ptr<TaskExecutionCondition> condition)
+    {
+        vector<shared_ptr<HttpRemoteTask>> newTasks;
+
+        int taskNums = 1;
+
+        NodeSelector aSelector;
+        vector<shared_ptr<ClusterNode>> aNode = aSelector.getNodesByMinThreadNums(taskNums);
+        for(int i = 0 ; i < aNode.size() ; i++) {
+            this->partitionToNode.push_back(aNode[i]);
+        }
+        for(int i = 0 ; i < aNode.size() ; i++) {
+            shared_ptr<HttpRemoteTask> task = stageExecutor->scheduleTask(aNode[i],condition);
+            newTasks.push_back(task);
+        }
+        ScheduleResult sR(newTasks);
+        stageExecutor->recordTaskGroup(sR.getTaskIds());
 
         return sR;
     }
+
     void decreaseOneConcurrentBySourceStage()
     {
         this->stageExecutor->finishATaskBySourceStageTasks();

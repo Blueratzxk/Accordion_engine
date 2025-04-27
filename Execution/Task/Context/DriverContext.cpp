@@ -21,12 +21,17 @@ weak_ptr<PipelineContext> DriverContext::getPipelineContext() {
 }
 
 bool DriverContext::hasDriver() {
-    return this->driver == NULL;
+    return this->driver != NULL;
 }
 
 void DriverContext::setDriver(shared_ptr<vector<shared_ptr<Operator>>> physicalPipeline) {
     this->driver = physicalPipeline;
 }
+shared_ptr<vector<shared_ptr<Operator>>> DriverContext::getDriver() {
+    return this->driver;
+}
+
+
 
 void DriverContext::addRemoteSourceLocation(set<std::shared_ptr<Split>> scheduledSplits) {
 
@@ -155,6 +160,10 @@ return this->pipelineContext.lock()->getAllBuildCount();
 atomic<long> &DriverContext::getBuildProgress()
 {
 return this->pipelineContext.lock()->getAllBuildProgress();
+}
+
+void DriverContext::savePagesForInterTaskMission(string componentId,vector<shared_ptr<DataPage>> pages) {
+    this->pipelineContext.lock()->savePagesForInterTaskMission(componentId,pages);
 }
 
 #endif //OLVP_DRIVERCONTEXT_CPP

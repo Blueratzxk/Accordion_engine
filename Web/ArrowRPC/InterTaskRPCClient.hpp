@@ -1,32 +1,33 @@
 //
-// Created by zxk on 6/4/23.
+// Created by zxk on 4/20/25.
 //
 
-#ifndef OLVP_RPCCLIENT_HPP
-#define OLVP_RPCCLIENT_HPP
+#ifndef OLVP_INTERTASKRPCCLIENT_HPP
+#define OLVP_INTERTASKRPCCLIENT_HPP
 
-#include "ArrowRPCClient.hpp"
+
+
+#include "InterTaskArrowRPCClient.hpp"
 #include "../../Split/RemoteSplit.hpp"
 #include "../../Split/InterTaskSplit.hpp"
 
-class RPCClient : public std::enable_shared_from_this<RPCClient>
+class InterTaskRPCClient : public std::enable_shared_from_this<InterTaskRPCClient>
 {
-    shared_ptr<DataPageRPCBuffer> buffer;
+    shared_ptr<InterTaskDataPageRPCBuffer> buffer;
     std::map<string,shared_ptr<ConnectorSplit>> taskIdToLocationMap;
 
-    std::map<string,shared_ptr<ArrowRPCClient>> allClients;
+    std::map<string,shared_ptr<InterTaskArrowRPCClient>> allClients;
     std::set<string> runningClients;
-    std::set<shared_ptr<ArrowRPCClient>> completedClients;
+    std::set<shared_ptr<InterTaskArrowRPCClient>> completedClients;
     atomic<int> endPageNum = 0;
     mutex lock;
 
     atomic<bool> abortAll = false;
 
-    shared_ptr<DriverContext> driverContext = NULL;
 
 public:
-    RPCClient(){
-        this->buffer = make_shared<DataPageRPCBuffer>();
+    InterTaskRPCClient(){
+        this->buffer = make_shared<InterTaskDataPageRPCBuffer>();
 
     }
 
@@ -38,16 +39,12 @@ public:
     {
         return this->abortAll;
     }
-    shared_ptr<DataPageRPCBuffer> getBuffer()
+    shared_ptr<InterTaskDataPageRPCBuffer> getBuffer()
     {
         return this->buffer;
     }
 
-    void addDriverContext(shared_ptr<DriverContext> driverContext)
-    {
-        this->driverContext = driverContext;
-        this->buffer->addDriverContext(driverContext);
-    }
+
     void addLocation(shared_ptr<RemoteSplit> remoteSource)
     {
         lock.lock();
@@ -56,9 +53,9 @@ public:
         if(this->taskIdToLocationMap.count(taskId) == 0) {
             this->taskIdToLocationMap[taskId] = remote;
 
-            shared_ptr<ArrowRPCClient> client;
+            shared_ptr<InterTaskArrowRPCClient> client;
             string bufferIds;
-            client = make_shared<ArrowRPCClient>(remote->getLocation()->getIp(),remote->getLocation()->getPort());
+            client = make_shared<InterTaskArrowRPCClient>(remote->getLocation()->getIp(),remote->getLocation()->getPort());
             bufferIds = remote->getLocation()->getBufferId();
             client->setBufferTarget(taskId,bufferIds,"0");
 
@@ -72,6 +69,27 @@ public:
     }
 
 
+    void addInterTaskDataExchangePath(shared_ptr<InterTaskSplit> interTaskSource)
+    {
+        lock.lock();
+        shared_ptr<InterTaskSplit> remote = interTaskSource;
+        string taskId = interTaskSource->getTaskId()->ToString();
+        if(this->taskIdToLocationMap.count(taskId) == 0) {
+            this->taskIdToLocationMap[taskId] = remote;
+
+            shared_ptr<InterTaskArrowRPCClient> client;
+            string bufferId;
+            client = make_shared<InterTaskArrowRPCClient>(remote->getLocation()->getIp(),remote->getLocation()->getPort());
+            bufferId = remote->getLocation()->getBufferId();
+            client->setInterTaskCacheTarget(taskId,remote->getComponentId(),bufferId);
+
+
+            this->allClients[taskId] = client;
+
+        }
+        lock.unlock();
+
+    }
 
     void broadcastNotes(string note)
     {
@@ -103,18 +121,18 @@ public:
         return this->buffer->getPage();
     }
 
-    void scheduleAllClient()
-    {
-        for(auto client :this->allClients)
-        {
-            lock.lock();
-            if(this->runningClients.count(client.first) == 0) {
-                schedule(client.second);
-                this->runningClients.insert(client.first);
-            }
-            lock.unlock();
-        }
-    }
+  ////  void scheduleAllClient()
+ //   {
+ //       for(auto client :this->allClients)
+ //       {
+  //          lock.lock();
+  //          if(this->runningClients.count(client.first) == 0) {
+  //              schedule(client.second);
+  //              this->runningClients.insert(client.first);
+  //          }
+  //          lock.unlock();
+  //      }
+ //   }
     bool hasRunningClient()
     {
         if(this->runningClients.size() > 0)
@@ -234,13 +252,13 @@ public:
 
     }
 
-    void scheduleOneRound(string clientId,shared_ptr<ArrowRPCClient> client,int pageNums)
+    void scheduleOneRound(string clientId,shared_ptr<InterTaskArrowRPCClient> client,int pageNums)
     {
 
         try{
-        thread th(startGetPageOneRound, clientId,shared_from_this(),buffer,client,pageNums);
-        pthread_setname_np(th.native_handle(), (clientId+"_HHH").c_str());
-        th.detach();
+            thread th(startGetPageOneRound, clientId,shared_from_this(),buffer,client,pageNums);
+            pthread_setname_np(th.native_handle(), (clientId+"_HHH").c_str());
+            th.detach();
         }
         catch (exception&e)
         {
@@ -249,21 +267,21 @@ public:
         }
     }
 
-    void schedule(shared_ptr<ArrowRPCClient> client)
-    {
-        thread(startGetAllPage,buffer,client).detach();
-    }
-    static void startGetAllPage(shared_ptr<DataPageRPCBuffer> buffer,shared_ptr<ArrowRPCClient> client)
-    {
-        arrow::Status status = client->getAllBatchesWithCircle(*buffer);
-    }
+ //   void schedule(shared_ptr<ArrowRPCClient> client)
+  //  {
+ //       thread(startGetAllPage,buffer,client).detach();
+  //  }
+//    static void startGetAllPage(shared_ptr<InterTaskDataPageRPCBuffer> buffer,shared_ptr<ArrowRPCClient> client)
+//    {
+//        arrow::Status status = client->getAllBatchesWithCircle(*buffer);
+//    }
 
-    static void startGetPageOneRound(string clientId,shared_ptr<RPCClient> RPC,shared_ptr<DataPageRPCBuffer> buffer,shared_ptr<ArrowRPCClient> client,int dataSize)
+    static void startGetPageOneRound(string clientId,shared_ptr<InterTaskRPCClient> RPC,shared_ptr<InterTaskDataPageRPCBuffer> buffer,shared_ptr<InterTaskArrowRPCClient> client,int dataSize)
     {
         int pageTypeTag = 0;
         int endPageCompensationNum = -1;
         vector<shared_ptr<DataPage>> pagesReturn;
-      //  arrow::Status status = client->getOnceBatches(*buffer,dataSize,&pageTypeTag);
+        //  arrow::Status status = client->getOnceBatches(*buffer,dataSize,&pageTypeTag);
         arrow::Status status = client->getOnceBatches(pagesReturn,dataSize,&pageTypeTag);
         bool haveNotSendEndpage = RPC->clientOnceCompleted(clientId,pageTypeTag,endPageCompensationNum);
 
@@ -291,4 +309,4 @@ public:
 };
 
 
-#endif //OLVP_RPCCLIENT_HPP
+#endif //OLVP_INTERTASKRPCCLIENT_HPP

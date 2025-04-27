@@ -12,7 +12,7 @@
 //#include "../Descriptor/TaskInterfere/TaskInterfereRequest.hpp"
 #include "../Descriptor/TaskInterfere/TaskInterfereRequestSerial.hpp"
 #include "../Session/SessionRepresentation.hpp"
-
+#include "../Execution/Task/TaskExecutionCondition.hpp"
 class TaskUpdateRequest
 {
     shared_ptr<TaskSource> taskSource = NULL;
@@ -20,16 +20,19 @@ class TaskUpdateRequest
     shared_ptr<PlanFragment> fragment = NULL;
     shared_ptr<TaskInterfereRequest> taskInterfereRequest = NULL;
     shared_ptr<SessionRepresentation> sessionRepresentation = NULL;
+    shared_ptr<TaskExecutionCondition> taskExecutionCondition = NULL;
 
 public:
     TaskUpdateRequest( shared_ptr<TaskSource> taskSource,shared_ptr<OutputBufferSchema> schema,shared_ptr<PlanFragment> fragment,
-                       shared_ptr<TaskInterfereRequest> taskInterfereRequest,shared_ptr<SessionRepresentation> sessionRepresentation){
+                       shared_ptr<TaskInterfereRequest> taskInterfereRequest,shared_ptr<SessionRepresentation> sessionRepresentation,
+                       shared_ptr<TaskExecutionCondition> taskExecutionCondition){
 
         this->taskSource = taskSource;
         this->schema = schema;
         this->fragment = fragment;
         this->taskInterfereRequest = taskInterfereRequest;
         this->sessionRepresentation = sessionRepresentation;
+        this->taskExecutionCondition = taskExecutionCondition;
     }
 
     TaskUpdateRequest( shared_ptr<TaskSource> taskSource,shared_ptr<PlanFragment> fragment){
@@ -87,7 +90,10 @@ public:
         return this->sessionRepresentation;
     }
 
-
+    shared_ptr<TaskExecutionCondition> getTaskExecutionCondition()
+    {
+        return this->taskExecutionCondition;
+    }
 
     static string Serialize(TaskUpdateRequest taskUpdateRequest)
     {
@@ -119,7 +125,10 @@ public:
         else
             json["sessionRepresentation"] = SessionRepresentation::Serialize(*taskUpdateRequest.sessionRepresentation);
 
-
+        if(taskUpdateRequest.taskExecutionCondition == NULL)
+            json["taskExecutionCondition"] = "NULL";
+        else
+            json["taskExecutionCondition"] = TaskExecutionCondition::Serialize(taskUpdateRequest.taskExecutionCondition);
 
         string result = json.dump();
 
@@ -132,7 +141,8 @@ public:
 
         return make_shared<TaskUpdateRequest>(TaskSource::Deserialize(json["taskSource"]),OutputBufferSchema::Deserialize(json["schema"]),
                                               PlanFragment::Deserialize(json["fragment"]),TaskInterfereSerializer::Deserialize(json["taskInterfere"]),
-                                              SessionRepresentation::Deserialize(json["sessionRepresentation"]));
+                                              SessionRepresentation::Deserialize(json["sessionRepresentation"]),
+                                              TaskExecutionCondition::Deserialize(json["taskExecutionCondition"]));
     }
 
 

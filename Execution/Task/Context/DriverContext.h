@@ -53,7 +53,7 @@ public:
     atomic<long> &getBuildProgress();
 
 
-
+    shared_ptr<vector<shared_ptr<Operator>>> getDriver();
     void setDriver(shared_ptr<vector<shared_ptr<Operator>>> physicalPipeline);
 
     void addRemoteSourceLocation(set<std::shared_ptr<Split>> scheduledSplits);
@@ -100,6 +100,8 @@ public:
 
     void addExchangeBufferTurnUpCounter();
     void addExchangeBufferTurnDownCounter();
+
+    void savePagesForInterTaskMission(string componentId,vector<shared_ptr<DataPage>> pages);
 };
 
 #endif //OLVP_DRIVERCONTEXT_H

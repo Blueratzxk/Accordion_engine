@@ -511,6 +511,16 @@ add_executable(OLVP main.cpp
         FunctionExtension/GPU/GPUHashJoinOperator.hpp
         FunctionExtension/GPU/Logical_GPUHashJoinOperator.hpp
         FunctionExtension/OperatorExtension.h
+        TpchTest/Querys/Query1_NL_Inter.hpp
+        Utils/ColumnCompute.hpp
+        Split/InterTaskSplit.hpp
+        Execution/Buffer/InterTaskSimpleOutputBuffer.hpp
+        Execution/Task/InterTaskDataExchangeManager.hpp
+        Web/ArrowRPC/InterTaskRPCClient.hpp
+        Web/ArrowRPC/InterTaskDataPageRPCBuffer.hpp
+        Web/ArrowRPC/InterTaskArrowRPCClient.hpp
+        Descriptor/InterTaskMissionDescriptor.hpp
+        Execution/Task/TaskExecutionCondition.hpp
 
 
 )

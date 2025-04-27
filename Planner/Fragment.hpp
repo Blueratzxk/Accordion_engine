@@ -65,6 +65,21 @@ public:
         return false;
     }
 
+    void findNodeByNodeName(string nodeType,vector<PlanNode *> &builder)
+    {
+        findNodeByName(this->root,nodeType,builder);
+    }
+
+    void findNodeByName(PlanNode *node,string nodeType,vector<PlanNode *> &builder)
+    {
+        for (PlanNode* source : node->getSources()) {
+            findNodeByName(source,nodeType,builder);
+        }
+        if (node->getType().compare(nodeType) == 0) {
+            builder.push_back(node);
+        }
+    }
+
     void findRemoteSourceNode(PlanNode *node,vector<PlanNode *> &builder)
     {
         for (PlanNode* source : node->getSources()) {

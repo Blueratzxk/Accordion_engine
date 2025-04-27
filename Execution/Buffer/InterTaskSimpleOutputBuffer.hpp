@@ -1,10 +1,9 @@
 //
-// Created by zxk on 6/4/23.
+// Created by zxk on 4/20/25.
 //
 
-#ifndef OLVP_SIMPLEOUTPUTBUFFER_HPP
-#define OLVP_SIMPLEOUTPUTBUFFER_HPP
-
+#ifndef OLVP_INTERTASKSIMPLEOUTPUTBUFFER_HPP
+#define OLVP_INTERTASKSIMPLEOUTPUTBUFFER_HPP
 
 #include <atomic>
 //#include "../../common.h"
@@ -13,8 +12,7 @@
 #include "OutputBufferSchema.hpp"
 #include "tbb/concurrent_map.h"
 
-
-class SimpleOutputBuffer: public OutputBuffer
+class InterTaskSimpleOutputBuffer: public OutputBuffer
 {
 
     atomic<int> pageNumsLimit = 1;
@@ -32,7 +30,6 @@ class SimpleOutputBuffer: public OutputBuffer
 
     int sizeForChange = 10;
 
-    shared_ptr<TaskContext> taskContext = NULL;
 
     atomic<long> remainingTuples = 0;
 
@@ -42,7 +39,6 @@ class SimpleOutputBuffer: public OutputBuffer
 
 
 
-    atomic<int> outputOperatorCount = 0;
     atomic<int> endPageNum = 0;
 
 
@@ -55,11 +51,11 @@ class SimpleOutputBuffer: public OutputBuffer
 
 public:
 
-    SimpleOutputBuffer(OutputBufferSchema schema){
+    InterTaskSimpleOutputBuffer(OutputBufferSchema schema){
         this->setOutputBuffersSchema(schema);
     }
 
-    SimpleOutputBuffer(){
+    InterTaskSimpleOutputBuffer(){
     }
 
     string getInfo() {
@@ -70,12 +66,6 @@ public:
         return "SimpleOutputBuffer";
     }
 
-    void regOutputOperator(){
-        this->outputOperatorCount++;
-    }
-    void addTaskContext(shared_ptr<TaskContext> taskContext){
-        this->taskContext = taskContext;
-    }
 
 
     vector<shared_ptr<DataPage>> getPages(string bufferId,long token) {
@@ -86,8 +76,6 @@ public:
         for(auto re :result) {
             this->remainingTuples -= re->getElementsCount();
 
-            if (this->taskContext != NULL)
-                this->taskContext->updateRemainingBufferTupleCount(-re->getElementsCount());
         }
 
         tuneBufferCapacity("consumer");
@@ -137,8 +125,7 @@ public:
 
         for(auto re :result) {
             this->remainingTuples -= re->getElementsCount();
-            if(taskContext!=NULL)
-                this->taskContext->updateRemainingBufferTupleCount(-re->getElementsCount());
+
         }
 
         //spdlog::info("All:"+ to_string(this->oneBuffer->getPageNums())+"Request:"+to_string(pageNums)+" Get:"+ to_string(result.size()));
@@ -172,9 +159,6 @@ public:
                 else
                     this->pageNumsLimit = 1;
 
-                if(this->traffic < this->pageNumsLimit)
-                    if(this->taskContext != NULL)
-                        this->taskContext->addBufferSizeTurnDownCounter();
 
 
                 this->start = NULL;
@@ -212,18 +196,17 @@ public:
         if(role == "producer" && this->isFull()) {
             this->curRole = producer;
             this->reduceBufferCapacity();
-         //   this->taskContext->addBufferSizeTurnDownCounter();
+            //   this->taskContext->addBufferSizeTurnDownCounter();
             this->expandTime = 0;
         }
 
         if(role == "consumer" && this->isEmpty()) {
             this->curRole = consumer;
-        //    if(this->expandTime < 3) {
-                this->expandBufferCapacity();
-            if(this->taskContext != NULL)
-                this->taskContext->addBufferSizeTurnUpCounter();
-                this->expandTime++;
-        //    }
+            //    if(this->expandTime < 3) {
+            this->expandBufferCapacity();
+
+            this->expandTime++;
+            //    }
 
         }
 
@@ -246,22 +229,20 @@ public:
 
             if(pages[i]->isEndPage()) {
                 this->endPageNum++;
-                if(this->endPageNum == this->outputOperatorCount) {
-                    this->endPageFounded = true;
-                    this->oneBuffer->enqueuePages({pages[i]});
-                }
+
+                this->endPageFounded = true;
+                this->oneBuffer->enqueuePages({pages[i]});
+
             }
             else
             {
                 this->oneBuffer->enqueuePages({pages[i]});
                 this->remainingTuples += pages[i]->getElementsCount();
-                if(this->taskContext != NULL)
-                    this->taskContext->updateRemainingBufferTupleCount(pages[i]->getElementsCount());
+
             }
         }
 
-        if(this->taskContext != NULL)
-            this->taskContext->setLastEnqueuedTupleCount(this->remainingTuples);
+
 
         tuneBufferCapacity("producer");
 
@@ -312,4 +293,5 @@ public:
 };
 
 
-#endif //OLVP_SIMPLEOUTPUTBUFFER_HPP
+
+#endif //OLVP_INTERTASKSIMPLEOUTPUTBUFFER_HPP

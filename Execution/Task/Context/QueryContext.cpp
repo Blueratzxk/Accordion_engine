@@ -2,10 +2,12 @@
 // Created by zxk on 6/6/23.
 //
 #include "QueryContext.h"
+#include "PipelineContext.h"
 #include "TaskContext.h"
+#include "DriverContext.h"
 
 QueryContext::QueryContext() {
-
+    this->interTaskDataExchangeManager = make_shared<InterTaskDataExchangeManager>();
 }
 
 void QueryContext::addTaskContext(string queryId,string taskId, shared_ptr<TaskContext> taskContext) {
@@ -57,4 +59,80 @@ shared_ptr<TaskContext> QueryContext::getTaskContext(string QueryId,string taskI
 shared_ptr<RuntimeConfigParser> QueryContext::getRuntimeConfigs()
 {
     return this->runtimeConfigs;
+}
+
+bool QueryContext::prepareInterTaskDataByComponentId(TaskId taskId,string componentId) {
+
+    string queryId = taskId.getQueryId().getId();
+    shared_ptr<TaskContext> context;
+    if(this->taskContexts.find(queryId) != this->taskContexts.end()) {
+        map<string, shared_ptr<TaskContext>> info;
+        info = this->taskContexts[queryId];
+        context = info[taskId.ToString()];
+    }
+    else
+        return false;
+
+
+    auto pipelines = context->getPipelineContexts();
+    list<shared_ptr<DriverContext>> allDrivers;
+    for (auto pipeline : pipelines)
+    {
+        for (auto driver :pipeline.second->getDriverContexts())
+            allDrivers.push_back(driver);
+    }
+    for(auto driver : allDrivers)
+    {
+        shared_ptr<vector<shared_ptr<Operator>>> physicalPipeline;
+        if(driver->hasDriver()) {
+            physicalPipeline = driver->getDriver();
+            for(auto op : *physicalPipeline)
+            {
+                if(op->getOperatorId() == componentId)
+                {
+                    return op->externalEvent();
+                }
+            }
+        }
+    }
+    return false;
+
+}
+
+
+void QueryContext::inputInterTaskDataByComponentId(TaskId taskId,string componentId,vector<shared_ptr<DataPage>> pages) {
+
+    string queryId = taskId.getQueryId().getId();
+    shared_ptr<TaskContext> context;
+    if(this->taskContexts.find(queryId) != this->taskContexts.end()) {
+        map<string, shared_ptr<TaskContext>> info;
+        info = this->taskContexts[queryId];
+        context = info[taskId.ToString()];
+    }
+    else
+        return;
+
+
+    auto pipelines = context->getPipelineContexts();
+    list<shared_ptr<DriverContext>> allDrivers;
+    for (auto pipeline : pipelines)
+    {
+        for (auto driver :pipeline.second->getDriverContexts())
+            allDrivers.push_back(driver);
+    }
+    for(auto driver : allDrivers)
+    {
+        shared_ptr<vector<shared_ptr<Operator>>> physicalPipeline;
+        if(driver->hasDriver()) {
+            physicalPipeline = driver->getDriver();
+            for(auto op : *physicalPipeline)
+            {
+                if(op->getOperatorId() == componentId)
+                {
+                    op->fulfillExternalEventWithPages(pages);
+                }
+            }
+        }
+    }
+
 }

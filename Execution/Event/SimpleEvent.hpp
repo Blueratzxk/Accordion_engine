@@ -12,7 +12,7 @@ class SimpleEvent: public Event
 {
     std::mutex mtx;
     std::condition_variable event;
-    bool ready;
+    bool ready = false;
 
 public:
     SimpleEvent()

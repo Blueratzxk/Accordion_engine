@@ -73,7 +73,7 @@ public:
     }
 
     void updateOrCreateTask(shared_ptr<PlanFragment> fragment,  shared_ptr<OutputBufferSchema> schema ,shared_ptr<TaskSource> taskSource,
-                                shared_ptr<TaskInterfereRequest> taskInterfereRequest) {
+                                shared_ptr<TaskInterfereRequest> taskInterfereRequest,shared_ptr<TaskExecutionCondition> condition) {
 
 
         if(this->taskHolder == NULL)
@@ -89,7 +89,8 @@ public:
                               this->taskId,
                               this->stateMachine,
                               fragment,
-                              this->buffer));
+                              this->buffer,
+                              condition));
         }
         else if(this->taskHolder->getTaskExecution() == NULL)
         {
@@ -104,7 +105,8 @@ public:
                             this->taskId,
                             this->stateMachine,
                             fragment,
-                            this->buffer));
+                            this->buffer,
+                            condition));
         }
 
 
@@ -140,7 +142,10 @@ public:
 
         }
 
+    }
 
+    void notifyInterTaskMissionByComponentId(string componentId)
+    {
 
     }
 

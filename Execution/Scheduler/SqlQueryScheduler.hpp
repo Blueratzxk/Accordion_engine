@@ -8,7 +8,7 @@
 
 #include "StageTreeExecutionFactory.hpp"
 #include "NormalStageScheduler.hpp"
-#include "../Task/Fetcher/TaskResultFetcher.hpp"
+
 #include "../../Utils/Timer.hpp"
 
 #include <stdio.h>
@@ -801,6 +801,45 @@ public:
         return result;
     }
 
+    static bool moveTaskOperatorTest(shared_ptr<SqlQueryScheduler> scheduler)
+    {
+        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
+            return false;
+
+
+        vector<StageExecutionAndScheduler> executions = scheduler->stageExeSchedulers;
+
+        for (int i = 0; i < executions.size(); i++) {
+            auto handle = executions[i].getStageExecution()->getFragment()->getPartitionHandle();
+            if (handle != NULL && handle->getConnectorHandle()->getHandleId().compare("SystemPartitioningHandle") == 0) {
+                if (static_pointer_cast<SystemPartitioningHandle>((handle)->getConnectorHandle())->partitioningType ==
+                    SystemPartitioningHandle::SINGLE) {
+
+                    if(executions[i].getStageExecution()->getStageId().getId() == 0) {
+                        executions[i].getStageExecution()->prepareMoveStatefulTask(0);
+
+
+                        ScheduleResult result = (static_pointer_cast<NormalStageScheduler>(executions[i].getStageScheduler()))->addOneConcurrentForInterTaskMission(
+                                make_shared<TaskExecutionCondition>("InterTaskMission","Logical_FinalAggregationOperator"));
+                        vector<shared_ptr<HttpRemoteTask>> newTasks = result.getNewTasks();
+                        executions[i].getStageLinkage()->processScheduleResultsToAddConcurrent(newTasks);
+
+
+                        executions[i].getStageExecution()->taskDataAddressNotification(0,newTasks[0]->getTaskId()->getId(),"FinalAggregationOperator");
+                        return true;
+                    }
+
+                       // scheduler->addMulConcurrencyForOneStage(executions,
+                        //                                        executions[i].getStageExecution()->getStageId().getId(),
+                         //                                       addConcur);
+                }
+            }
+        }
+
+    }
+
+
+
     static void schedule(shared_ptr<SqlQueryScheduler> scheduler) {
 
         spdlog::debug(scheduler->session->getQueryId() +" starts initial schedule!");
@@ -877,8 +916,6 @@ public:
         }
 //------------------------------------System Add Concurrent--------------------------------------------//
 
-        vector<shared_ptr<HttpRemoteTask>> remoteTasks = scheduler->rootStage->getAllTasks();
-        shared_ptr<TaskResultFetcher> taskResultFetcher = make_shared<TaskResultFetcher>(remoteTasks[0]->getTaskId(),remoteTasks[0]->getIP(),"9081","0");
 
         shared_ptr<DataPage> result;
 
@@ -889,7 +926,6 @@ public:
 
         Timer timer;
         bool infoTag = true;
-
 
 
         for(;;)
@@ -930,8 +966,9 @@ public:
 
 
             if(scheduler->stateMachine->isFinished()) {
-                taskResultFetcher->schedule();
-                result = taskResultFetcher->pollPage();
+                    auto taskResultFetcher = scheduler->rootStage->getTaskResultFetcher();
+                    taskResultFetcher->schedule();
+                    result = taskResultFetcher->pollPage();
 
                 if (result != NULL && !result->isEndPage() && result->getElementsCount() > 0) {
                     scheduler->resultSet.push_back(result);

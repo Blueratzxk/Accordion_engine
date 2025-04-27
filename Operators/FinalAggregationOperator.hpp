@@ -22,9 +22,10 @@
 #include <future>
 
 #include "../Utils/ArrowFunctionOptionsSupplier.hpp"
+#include "../Utils/ColumnCompute.hpp"
 #include "tbb/concurrent_queue.h"
 #include "../Utils/BlockQueue.hpp"
-
+#include "../Execution/Event/SimpleEvent.hpp"
 
 class FinalAggregationOperator:public Operator {
 
@@ -96,13 +97,82 @@ class FinalAggregationOperator:public Operator {
     std::shared_ptr<DataPageTransfer> transfer;
 
 
+
+
+    long totalElementCount = 0;
+    bool intermediateMode = false;
+    std::map<string/*inputKey*/,std::pair<string,string>/*functionName,outputName*/> intermediateTransformMap;
+    bool operatorMigration = false;
+    atomic<bool> waitInterTaskSync = false;
+    shared_ptr<Event> interTaskEvent;
+    list<shared_ptr<DataPage>> interTaskPages;
+
 public:
     string getOperatorId() { return this->name; }
 
 
+    bool externalEvent() override
+    {
+        return migrateOperator();
+    }
 
+    bool migrateOperator()
+    {
+        if(this->finished)
+            return false;
 
+        operatorMigration = true;
+        return true;
+    }
 
+    string  transformIntermiediate(string functionName,string outputName,string inputKey)
+    {
+        string transformFuncName = functionName;
+        if(functionName == "hash_mean") {
+            this->intermediateTransformMap[inputKey] = {functionName,outputName};
+            transformFuncName = "None";
+            this->intermediateMode = true;
+        }
+
+        return transformFuncName;
+    }
+
+    arrow::acero::aggregate::Aggregate getAggregation(AggregateDesc aggregateDesc)
+    {
+
+        string functionName = aggregateDesc.getFunctionName();
+        string outputName = aggregateDesc.getOutputName();
+        string inputKey = aggregateDesc.getInputKey();
+
+        functionName = transformIntermiediate(functionName,outputName,inputKey);
+
+        if(inputKey == "") {
+            return arrow::acero::aggregate::Aggregate(functionName, outputName);
+        }
+        else {
+            return arrow::acero::aggregate::Aggregate(functionName,
+                                                      ArrowFunctionOptionsSupplier::getOptions(functionName), inputKey,
+                                                      outputName);
+        }
+    }
+
+    void setupAggregations()
+    {
+
+        vector<AggregateDesc> aggregateDesc = this->desc.getAggregates();
+
+        for(int i = 0 ; i < aggregateDesc.size() ; i++)
+        {
+            arrow::acero::aggregate::Aggregate agg;
+            agg = getAggregation(aggregateDesc[i]);
+            if(agg.function != "None")
+                aggregates.push_back(agg);
+        }
+        for(int i = 0 ; i < desc.getGroupByKeys().size() ; i++)
+        {
+            this->groupByKeys.push_back(arrow::FieldRef(desc.getGroupByKeys()[i]));
+        }
+    }
 
     FinalAggregationOperator(shared_ptr<DriverContext> driverContext,AggregationDesc desc) {
 
@@ -113,31 +183,32 @@ public:
         this->transfer = std::make_shared<DataPageTransfer>();
         this->driverContext = driverContext;
 
-        vector<AggregateDesc> aggregateDesc = this->desc.getAggregates();
-
-        for(int i = 0 ; i < aggregateDesc.size() ; i++)
-        {
-            arrow::acero::aggregate::Aggregate agg;
-            if(aggregateDesc[i].getInputKey() == "")
-                agg = arrow::acero::aggregate::Aggregate(aggregateDesc[i].getFunctionName(),aggregateDesc[i].getOutputName());
-            else
-                agg = arrow::acero::aggregate::Aggregate(aggregateDesc[i].getFunctionName(),ArrowFunctionOptionsSupplier::getOptions(aggregateDesc[i].getFunctionName()),
-                                                         aggregateDesc[i].getInputKey(),aggregateDesc[i].getOutputName());
-
-            aggregates.push_back(agg);
-        }
-        for(int i = 0 ; i < desc.getGroupByKeys().size() ; i++)
-        {
-            this->groupByKeys.push_back(arrow::FieldRef(desc.getGroupByKeys()[i]));
-        }
-
-
-
-
-
-
+        this->interTaskEvent = make_shared<SimpleEvent>();
+        setupAggregations();
 
     }
+
+    void waitInterTaskDataSync()
+    {
+        this->waitInterTaskSync = true;
+    }
+
+    void fulfillExternalEventWithPages(vector<shared_ptr<DataPage>> pages) override
+    {
+        spdlog::warn("fulfillExternalEventWithPages!");
+        if(this->waitInterTaskSync) {
+            for(auto page : pages)
+            {
+                if(!page->isEndPage())
+                    this->interTaskPages.push_back(page);
+            }
+
+            this->waitInterTaskSync = false;
+            this->interTaskEvent->notify();
+        }
+
+    }
+
     FinalAggregationOperator() {
 
         this->finished = false;
@@ -145,10 +216,14 @@ public:
     void addInput(std::shared_ptr<DataPage> input) override {
         if (input != NULL) {
             this->inputPage = input;
+            if(this->inputPage->getElementsCount() > 0)
+                this->totalElementCount += this->inputPage->getElementsCount();
 
             if (this->input_schema == NULL) {
                 if(this->inputPage->isEndPage())
                 {
+
+
                     this->outputResultCompeleted = true;
                     return;
                 }
@@ -159,6 +234,10 @@ public:
                 }
             }
 
+            if(this->inputPage->isEndPage()) {
+                spdlog::warn("Agg get end page Operator migration is "+ to_string(this->operatorMigration));
+                supplyInterTaskData();
+            }
             bool ok;
             do{
                ok = this->transfer->givePage(this->inputPage);
@@ -171,10 +250,6 @@ public:
 
     static void GenerateAgg(FinalAggregationOperator *finalAgg)
     {
-
-
-
-
 
         auto source_node_options = arrow::acero::SourceNodeOptions{finalAgg->input_schema,finalAgg->MakeGenerator(finalAgg->transfer)};
 
@@ -220,14 +295,103 @@ public:
 
             std::shared_ptr<DataPage> page = state->dataPageTransfer->getPage();
 
-            if(page->isEndPage())
+            if(page->isEndPage()) {
+                spdlog::info("Final Agg accept End Page!");
                 return arrow::AsyncGeneratorEnd<std::optional<arrow::ExecBatch>>();
+            }
             else
                 return arrow::Future<std::optional<arrow::ExecBatch>>::MakeFinished(arrow::ExecBatch(*(page->get())));
         };
 
     }
 
+
+
+    shared_ptr<arrow::RecordBatch> applyFinalToIntermediateOutput(shared_ptr<arrow::RecordBatch> intermediateOutput)
+    {
+
+        shared_ptr<arrow::RecordBatch> output = intermediateOutput;
+        bool success = false;
+
+
+        for(auto inter : intermediateTransformMap)
+        {
+            string inputColumnName = inter.first;
+            string functionName = inter.second.first;
+            string outputName = inter.second.second;
+
+            if(functionName == "hash_mean") {
+                success = ColumnComputeUtils::ComputeInAndToRecordBatch(output, output, "divide",
+                                                                        inputColumnName, "groupBy_count", outputName);
+            }
+            else
+                spdlog::error("applyFinalToIntermediateOutput error,no function found!");
+        }
+
+        return output;
+    }
+
+    shared_ptr<arrow::RecordBatch> produceAllOutput()
+    {
+        std::shared_ptr<arrow::RecordBatch> batch = NULL;
+        vector<std::shared_ptr<arrow::RecordBatch>> recordBatchs;
+        do {
+            arrow::Status status = this->reader->ReadNext(&batch);
+            if(status.ok())
+            {
+
+                if(batch != NULL)
+                    recordBatchs.push_back(batch);
+            }
+            else
+            {
+                spdlog::critical("Final Agg Batch producing ERROR!"+status.ToString());
+            }
+        }
+        while (batch != NULL);
+
+        if(recordBatchs.empty())
+            return batch;
+
+        auto result = arrow::Table::FromRecordBatches(recordBatchs);
+        shared_ptr<arrow::RecordBatch> final = NULL;
+        shared_ptr<arrow::RecordBatch> allIntermediateOutput = result.ValueOrDie()->CombineChunksToBatch().ValueOrDie();
+
+
+        if(this->operatorMigration) {
+            this->driverContext->savePagesForInterTaskMission("FinalAggregationOperator",{make_shared<DataPage>(allIntermediateOutput)});
+            this->driverContext->savePagesForInterTaskMission("FinalAggregationOperator",{DataPage::getEndPage()});
+        }
+        else {
+            spdlog::info(allIntermediateOutput->ToString());
+            final = applyFinalToIntermediateOutput(allIntermediateOutput);
+        }
+        return final;
+    }
+
+    void supplyInterTaskData()
+    {
+        if(this->waitInterTaskSync) {
+            spdlog::warn("Need waitTaskSync,listen! Operator migration is "+ to_string(this->operatorMigration));
+            this->interTaskEvent->listen();
+            spdlog::warn("Listen go! Operator migration is "+ to_string(this->operatorMigration));
+        }
+
+        spdlog::warn("Input interTask Pages! Operator migration is "+ to_string(this->operatorMigration));
+        for(auto page : this->interTaskPages)
+        {
+            spdlog::info(page->get()->ToString());
+
+            bool ok;
+            do{
+                ok = this->transfer->givePage(page);
+            }
+            while (!ok);
+            this->totalElementCount+=page->getElementsCount();
+        }
+        spdlog::warn("Input interTask Pages OK! Operator migration is "+ to_string(this->operatorMigration));
+        this->interTaskPages.clear();
+    }
 
 
     bool produceOutput()
@@ -245,7 +409,17 @@ public:
         if(this->aggResult != NULL && this->reader != NULL)
         {
             std::shared_ptr<arrow::RecordBatch> batch = NULL;
-            arrow::Status status = this->reader->ReadNext(&batch);
+            arrow::Status status;
+
+            if(this->intermediateMode) {
+                batch = produceAllOutput();
+                status = arrow::Status::OK();
+            }
+            else
+                status = this->reader->ReadNext(&batch);
+
+
+
             if(status.ok()) {
                 if(batch == NULL) {
                     this->inputPage = NULL;
@@ -293,6 +467,10 @@ public:
             return NULL;
 
         if(this->inputPage->isEndPage()) {
+
+        //    if(this->waitInterTaskSync)
+         //       this->interTaskEvent->listen();
+
             this->sendEndPage = true;
             produceOutput();
             return this->outPutPage;

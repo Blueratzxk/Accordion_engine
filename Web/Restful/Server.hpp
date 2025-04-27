@@ -86,6 +86,7 @@ private:
         Routes::Post(router, "/v1/task/updateTask/:taskIdLength/:taskId/:updateRequest_Length/:updateRequest", Routes::bind(&StatsEndpoint::updateTask, this));
         Routes::Post(router, "/v1/task/getTaskInfo/:taskIdLength/:taskId", Routes::bind(&StatsEndpoint::getTaskInfo, this));
         Routes::Post(router, "/v1/task/closeTask/:taskIdLength/:taskId", Routes::bind(&StatsEndpoint::closeTask, this));
+        Routes::Post(router, "/v1/task/createInterTaskMission/:taskIdLength/:taskId/:interTaskMission_Length/:interTaskMissionRequest", Routes::bind(&StatsEndpoint::createInterTaskMission, this));
 
 
         Routes::Get(router, "/v1/task/getTaskInfoExtern/:taskId", Routes::bind(&StatsEndpoint::getTaskInfoExtern, this));
@@ -180,6 +181,22 @@ private:
 
 
         response.send(Http::Code::Ok,TaskInfo::Serialize(taskResponse));
+
+
+    }
+
+    void createInterTaskMission(const Rest::Request& request, Http::ResponseWriter response) {
+
+
+        string taskName = getRawValue(request,":taskIdLength",":taskId");
+        string mission = getRawValue(request,":interTaskMission_Length",":interTaskMissionRequest");
+
+        TaskServerInterFace api;
+
+        InterTaskDataHandle taskResponse = api.createInterTaskMission(taskName,mission);
+
+
+        response.send(Http::Code::Ok,InterTaskDataHandle::Serialize(taskResponse));
 
 
     }

@@ -101,6 +101,8 @@ public:
         this->tidLock.unlock();
     }
 
+    void savePagesForInterTaskMission(string componentId,vector<shared_ptr<DataPage>> pages);
+
 };
 
 #endif //OLVP_PIPELINECONTEXT_H

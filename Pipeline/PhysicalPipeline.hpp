@@ -80,7 +80,7 @@ public:
                             if(outputPage->isExtension()) {
                                 if (!operatorVectors[i + 1]->isExtension()) {
 
-                                    spdlog::info("Page in GPU."+operatorVectors[i]->getOperatorId()+" download to CPU for"+ operatorVectors[i+1]->getOperatorId());
+                                    spdlog::debug("Page in GPU."+operatorVectors[i]->getOperatorId()+" download to CPU for"+ operatorVectors[i+1]->getOperatorId());
                                     outputPage = operatorVectors[i]->downloadToCPU(outputPage);
                                 }
                                 else
@@ -88,7 +88,7 @@ public:
                             }
                             else if(operatorVectors[i+1]->isExtension()) {
 
-                                spdlog::info("Page in CPU. Operator in GPU."+operatorVectors[i+1]->getOperatorId()+" upload to GPU");
+                                spdlog::debug("Page in CPU. Operator in GPU."+operatorVectors[i+1]->getOperatorId()+" upload to GPU");
                                 outputPage = operatorVectors[i + 1]->uploadToExtension(outputPage);
                             }
                             operatorVectors[i + 1]->addInput(outputPage);
@@ -113,6 +113,11 @@ public:
         {
             string error = e.what();
             spdlog::critical("Pipeline Runtime error! "+ error);
+
+            for(auto op : operatorVectors)
+                spdlog::info(op->getOperatorId());
+
+
         }
 
         setNameOff();

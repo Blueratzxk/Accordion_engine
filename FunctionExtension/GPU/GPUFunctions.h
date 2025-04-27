@@ -26,6 +26,8 @@ typedef shared_ptr<arrow::Table> (*getPageFromGPU)(void* GPUPage,shared_ptr<arro
 
 
 typedef void (*maintainBuildTableInGPUByToken)(string token,shared_ptr<arrow::Table> buildTable);
+typedef string (*getNextToken)();
+
 typedef int (*deleteBuildTableInGPUByToken)(string token);
 typedef bool (*isBuildTableExistByToken)(string token);
 
@@ -223,6 +225,20 @@ public:
         }
 
         return p(token);
+    }
+
+    string getNextTokenStr(){
+
+        if(!load())
+            return "0";
+
+        getNextToken p = (getNextToken)dlsym(handle, "getNextToken");  //argv[2]对应输入需获取地址的符号名
+        if(!p) {
+            spdlog::debug("Load getNextToken failed");
+            return "0";
+        }
+
+        return p();
     }
 
 };

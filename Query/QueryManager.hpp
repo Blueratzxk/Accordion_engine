@@ -10,6 +10,7 @@
 #include "../TpchTest/Querys/Query1_NL.hpp"
 #include "../TpchTest/Querys/Query1_single.hpp"
 #include "../TpchTest/Querys/Query1_ssingle.hpp"
+#include "../TpchTest/Querys/Query1_NL_Inter.hpp"
 #include "../TpchTest/Querys/Query2.hpp"
 #include "../TpchTest/Querys/Query2_NL.hpp"
 #include "../TpchTest/Querys/Query2_hash.hpp"
@@ -129,6 +130,7 @@ public:
     void regQuerys()
     {
         regQueryList["Q1L"] = make_shared<Query1>();
+        regQueryList["Q1I"] = make_shared<Query1_NL_Inter>();
         regQueryList["Q1"] = make_shared<Query1_NL>();
         regQueryList["Q1S"] = make_shared<Query1_single>();
         regQueryList["Q1SS"] = make_shared<Query1_ssingle>();
@@ -532,7 +534,16 @@ public:
 
     }
 
+    void moveAllQueryOperatorTest() {
 
+        nlohmann::json queryInfos;
+        for(auto query : (*this->querys))
+        {
+            if(query.second->getState()->getState() == QueryStateMachine::RUNNING) {
+                query.second->moveTaskOperatorTest();
+            }
+        }
+    }
 
     string getAllRunningQueryInfo() {
 

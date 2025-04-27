@@ -246,5 +246,8 @@ public:
 
     void removeTids(set<__pid_t> ids);
 
+
+    void savePagesForInterTaskMission(string componentId,vector<shared_ptr<DataPage>> pages);
+
 };
 #endif //OLVP_TASKCONTEXT_H

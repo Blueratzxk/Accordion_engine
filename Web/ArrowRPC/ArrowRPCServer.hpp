@@ -68,26 +68,48 @@ public:
 
         std::vector<std::shared_ptr<arrow::RecordBatch>> batches;
 
-        string taskId, bufferId,note;
-        getTaskBufferInfo(request.ticket, taskId, bufferId,note);
-        int pageNums = getPageNums(request.ticket);
 
-        if(note != "")
+        string taskId, bufferId,note;
+        string componentId;
+        int pageNums = 0;
+
+        string ticketType = getTicketType(request.ticket);
+
+        if(ticketType == "normal") {
+            getTaskBufferInfo(request.ticket, taskId, bufferId, note);
+            pageNums = getPageNums(request.ticket);
+
+            if (note != "") {
+                TaskServerInterFace::triggerTaskBufferNoteEvent(taskId, bufferId, note);
+            }
+        }
+        else
         {
-            TaskServerInterFace::triggerTaskBufferNoteEvent(taskId,bufferId,note);
+            getInterTaskInfo(request.ticket, taskId, componentId,bufferId);
+            pageNums = getPageNums(request.ticket);
         }
 
         DataPageToArrowTable d2a;
+
+
         if(pageNums > 0)
         {
+
             vector<shared_ptr<DataPage>> pages;
-            pages = TaskServerInterFace::getTaskResults(taskId,bufferId,pageNums);
+            if(ticketType == "normal") {
+                pages = TaskServerInterFace::getTaskResults(taskId, bufferId, pageNums);
+                batches = d2a.ToBatches(pages);
+                spdlog::debug("Get page from task "+taskId+"---->"+bufferId+".Got " +to_string(batches[0]->num_columns())+" Pages");
+            }
+            else {
+                pages = TaskServerInterFace::getInterTaskPages(taskId, componentId, bufferId, pageNums);
+                batches = d2a.ToBatches(pages);
+                spdlog::debug("Get page from inter-task "+taskId+"---->"+bufferId+".Got " +to_string(batches[0]->num_columns())+" Pages");
+            }
 
-
-            batches = d2a.ToBatches(pages);
         }
 
-        spdlog::debug("Get page from task "+taskId+"---->"+bufferId+".Got " +to_string(batches[0]->num_columns())+" Pages");
+
 
 
         //  cout << "$$" << d2a.getSchema()->num_fields() << endl;
@@ -128,10 +150,21 @@ private:
             note = info["note"];
         else
             note = "";
-
-
+    }
+    void getInterTaskInfo(string ticket, string &taskId, string &componentId, string &bufferId) {
+        nlohmann::json info = nlohmann::json::parse(ticket);
+        taskId = info["taskId"];
+        bufferId = info["bufferId"];
+        componentId = info["componentId"];
 
     }
+    string getTicketType(string ticket)
+    {
+        nlohmann::json info = nlohmann::json::parse(ticket);
+        string type = info["ticketType"];
+        return type;
+    }
+
     int getPageNums(string ticket) {
         nlohmann::json info = nlohmann::json::parse(ticket);
         if(info.find("pageNums")!= info.end())

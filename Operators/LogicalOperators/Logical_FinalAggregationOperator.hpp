@@ -20,21 +20,27 @@ class Logical_FinalAggregationOperator:public LogicalOperator {
 
     AggregationDesc desc;
 
-
+    bool interTaskDataSync = false;
 
 public:
 
-    Logical_FinalAggregationOperator(AggregationDesc desc) {
+    Logical_FinalAggregationOperator(AggregationDesc desc,bool interTaskDataSync) {
         this->desc = desc;
-
+        this->interTaskDataSync = interTaskDataSync;
     }
 
     std::shared_ptr<Operator> getOperator(shared_ptr<DriverContext> driverContext) {
 
-        return std::make_shared<FinalAggregationOperator>(driverContext,this->desc);
+        auto op = std::make_shared<FinalAggregationOperator>(driverContext,this->desc);
+        if(this->interTaskDataSync)
+            op->waitInterTaskDataSync();
+        return op;
     }
     std::shared_ptr<void> getOperatorNonType(shared_ptr<DriverContext> driverContext) {
-        return std::make_shared<FinalAggregationOperator>(driverContext,this->desc);
+        auto op = std::make_shared<FinalAggregationOperator>(driverContext,this->desc);
+        if(this->interTaskDataSync)
+            op->waitInterTaskDataSync();
+        return op;
     }
     string getTypeId(){return name;}
 

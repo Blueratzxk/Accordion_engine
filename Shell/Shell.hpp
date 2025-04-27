@@ -213,6 +213,10 @@ public:
                 spdlog::info("schemas          ---> show the schema in the configuration file.");
 
             }
+            else if(cmd == "move")
+            {
+                QueryServer::getQueryServer()->moveAllQueryOperatorTest();
+            }
             else if(cmd == "sql") {
 
                 FrontEnd frontend;

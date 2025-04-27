@@ -20,7 +20,7 @@ class Logical_LookupJoinOperator :public LogicalOperator{
 
     std::shared_ptr <arrow::Schema> probeSchema;
     std::shared_ptr <arrow::Schema> buildOutputSchema;
-
+    std::shared_ptr <arrow::Schema> buildInputSchema;
     shared_ptr<LogicalOperator> hashBuilderLogicalOperator = NULL;
 
 
@@ -28,7 +28,9 @@ public:
 
 
 
-    Logical_LookupJoinOperator(std::shared_ptr <arrow::Schema> probeSchema,std::shared_ptr <arrow::Schema> buildOutputSchema,
+    Logical_LookupJoinOperator(std::shared_ptr <arrow::Schema> probeSchema,
+                               std::shared_ptr <arrow::Schema> buildInputSchema,
+                               std::shared_ptr <arrow::Schema> buildOutputSchema,
                                std::shared_ptr<JoinProbeFactory> joinProbeFactory,
                                std::shared_ptr<LookupSourceFactory> lookupSourceFactory,
                                shared_ptr<LogicalOperator> hashBuilderLogicalOperator) {
@@ -37,6 +39,7 @@ public:
         this->lookupSourceFactory = lookupSourceFactory;
         this->probeSchema = probeSchema;
         this->buildOutputSchema = buildOutputSchema;
+        this->buildInputSchema = buildInputSchema;
         this->hashBuilderLogicalOperator = hashBuilderLogicalOperator;
 
 
@@ -55,6 +58,8 @@ public:
 
     std::shared_ptr <arrow::Schema> getProbeSchema(){return probeSchema;}
     std::shared_ptr <arrow::Schema> getBuildOutputSchema(){return buildOutputSchema;}
+
+    std::shared_ptr <arrow::Schema> getBuildInputSchema(){return buildInputSchema;}
 
     std::shared_ptr<Operator> getOperator(shared_ptr<DriverContext> driverContext) {
 

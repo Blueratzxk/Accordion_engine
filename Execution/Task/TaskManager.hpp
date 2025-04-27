@@ -19,7 +19,7 @@
 #include "tbb/concurrent_map.h"
 #include "../../Descriptor/TaskInterfere/TaskInterfereRequest.hpp"
 #include "../../Descriptor/TaskUpdateRequest.hpp"
-
+#include "../../Descriptor/InterTaskMissionDescriptor.hpp"
 
 class TaskManager
 {
@@ -125,10 +125,11 @@ public:
         shared_ptr<OutputBufferSchema> schema = taskUpdateRequest->getSchema();
         shared_ptr<TaskInterfereRequest> taskInterfereRequest = taskUpdateRequest->getTaskInterfereRequest();
         shared_ptr<SessionRepresentation> sessionRepresentation = taskUpdateRequest->getSessionRepresentation();
+        shared_ptr<TaskExecutionCondition> condition = taskUpdateRequest->getTaskExecutionCondition();
 
         shared_ptr<SqlTask> sqlTaskPtr = this->checkTask(taskId,sessionRepresentation);
 
-        sqlTaskPtr->updateOrCreateTask(fragment,schema,sources,taskInterfereRequest);
+        sqlTaskPtr->updateOrCreateTask(fragment,schema,sources,taskInterfereRequest,condition);
 
         spdlog::debug("Task manager updateTask in");
         vector<shared_ptr<PipelineDescriptor>> emptyDescs;
@@ -147,6 +148,8 @@ public:
         else
             return sqlTaskPtr->getTaskResults(bufferId.get(),"0",maxSize);
     }
+
+
 
     void triggerTaskBufferNoteEvent(TaskId taskId,OutputBufferId bufferId,string note)
     {
@@ -204,6 +207,44 @@ public:
         }
     }
 
+
+    InterTaskDataHandle createInterTaskMission(TaskId taskId,InterTaskMissionDescriptor interTaskMissionDescriptor)
+    {
+
+        shared_ptr<SqlTask> sqlTaskPtr = this->findTask(taskId);
+        if(sqlTaskPtr == NULL) {
+            return InterTaskDataHandle(false,"test","test","0");
+        }
+
+        bool re = false;
+        if(interTaskMissionDescriptor.getMissionType() == "moveOperator") {
+            re = this->queryContext->prepareInterTaskDataByComponentId(taskId,
+                                                                       interTaskMissionDescriptor.getComponentId());
+        }
+        else if(interTaskMissionDescriptor.getMissionType() == "setDataLocation") {
+            this->queryContext->releaseRemoteInterTaskDataFetcher(taskId.ToString(),
+                                                           interTaskMissionDescriptor.getComponentId(),
+                                                           interTaskMissionDescriptor.getBufferId(),
+                                                           interTaskMissionDescriptor.getIP(),
+                                                           interTaskMissionDescriptor.getPort());
+            re = true;
+        }
+
+        return InterTaskDataHandle(re,taskId.ToString(),interTaskMissionDescriptor.getComponentId(),"0");
+    }
+
+    vector<shared_ptr<DataPage>> getInterTaskPages(TaskId taskId,string componentId,string bufferId,int pageNums)
+    {
+        return this->queryContext->takeInterTaskPages(componentId,bufferId);
+    }
+
+    string prepareInterTaskData(TaskId taskId,string componentId)
+    {
+        return InterTaskDataHandle::Serialize(InterTaskDataHandle("taskTest","test","0"));
+    }
+
+
+
     int getAllActiveThreadNums() {
         int nums = this->tasksRuntimeStats->getAllActiveThreadNums();
         return nums;
@@ -212,6 +253,8 @@ public:
         int nums = this->tasksRuntimeStats->getAllActiveTasks();
         return nums;
     }
+
+
 
 
   //  List<TaskInfo> getAllTaskInfo();

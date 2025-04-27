@@ -14,11 +14,15 @@
 #include "Id/TaskId.hpp"
 #include "TaskSource.hpp"
 #include "../../Descriptor/TaskInterfere/TaskIntraParaUpdateRequest.hpp"
-//#include "../../Descriptor/TaskBufferOpRequest.hpp"
+
+#include "../../Descriptor/InterTaskMissionDescriptor.hpp"
+
+
 #include "../../Descriptor/TaskUpdateRequest.hpp"
 #include "Fetcher/TaskInfoFetcher.hpp"
 
 #include "../Event/Event.h"
+
 class HttpRemoteTask
 {
     shared_ptr<TaskId> taskId;
@@ -41,9 +45,12 @@ class HttpRemoteTask
 
     set<string> extension;
 
+    shared_ptr<TaskExecutionCondition> condition;
+
 public:
     HttpRemoteTask(shared_ptr<Event> eventListener,shared_ptr<TaskId> taskId, shared_ptr<PlanFragment> fragment,string nodeLocation,
-                   shared_ptr<OutputBufferSchema> schema,shared_ptr<TaskSource> initial_taskSources,shared_ptr<Session> session, set<string> extension){
+                   shared_ptr<OutputBufferSchema> schema,shared_ptr<TaskSource> initial_taskSources,shared_ptr<Session> session,
+                   set<string> extension,shared_ptr<TaskExecutionCondition> condition){
         this->taskId = taskId;
         this->httpRequestLocation = nodeLocation;
         this->schema = schema;
@@ -52,6 +59,7 @@ public:
         this->fragment = fragment;
         this->session = session;
         this->extension = extension;
+        this->condition = condition;
         this->taskInfoFetcher = make_shared<TaskInfoFetcher>(this->taskId,this->httpRequestLocation,this->eventListener);
         this->restfulClient = make_shared<RestfulClient>();
 
@@ -127,7 +135,7 @@ public:
     }
     void createTask()
     {
-        TaskUpdateRequest request(this->initial_taskSource,this->schema,this->fragment,NULL,this->session->toSessionRepresentation());
+        TaskUpdateRequest request(this->initial_taskSource,this->schema,this->fragment,NULL,this->session->toSessionRepresentation(),this->condition);
         scheduleUpdate(TaskUpdateRequest::Serialize(request),"/v1/task/updateTask");
     }
 
@@ -154,11 +162,24 @@ public:
         scheduleUpdate(TaskUpdateRequest::Serialize(updateRequest),"/v1/task/updateTask");
     }
 
+    string createInterTaskMission(shared_ptr<InterTaskMissionDescriptor> interTaskMissionDescriptor)
+    {
+        return scheduleUpdateAndGetResult(InterTaskMissionDescriptor::Serialize(*interTaskMissionDescriptor),"/v1/task/createInterTaskMission");
+    }
+
     void scheduleUpdate(string updateString,string path)
     {
         if(this->started) {
             sendUpdate(this->httpRequestLocation, path,updateString);
         }
+    }
+
+    string scheduleUpdateAndGetResult(string updateString,string path)
+    {
+        if(this->started) {
+            return sendUpdateAndGetResult(this->httpRequestLocation, path,updateString);
+        }
+        return "NULL";
     }
 
     void sendUpdate(string location,string path,string updateString)
@@ -169,6 +190,16 @@ public:
             restfulClient->POST_GetResult(location,linkString,{TaskId::Serialize(*(this->taskId)),updateString});
         else
             restfulClient->POST_GetResult(location,linkString,{TaskId::Serialize(*(this->taskId))});
+    }
+
+    string sendUpdateAndGetResult(string location,string path,string updateString)
+    {
+        spdlog::debug("Schedule string is :"+location+"|"+path+"|");
+        string linkString = location+path;
+        if(updateString != "")
+            return restfulClient->POST_GetResult(location,linkString,{TaskId::Serialize(*(this->taskId)),updateString});
+        else
+            return restfulClient->POST_GetResult(location,linkString,{TaskId::Serialize(*(this->taskId))});
     }
 
     shared_ptr<TaskInfo> getTaskInfo()

@@ -24,7 +24,7 @@ public:
     {
         shared_ptr<Logical_HashBuilderOperator> hashBuilderOperator = static_pointer_cast<Logical_HashBuilderOperator>(lookupJoinOp->getHashBuilderLogicalOperator());
         shared_ptr<arrow::Schema>probeInputSchema = lookupJoinOp->getProbeSchema();
-        shared_ptr<arrow::Schema>buildInputSchema;
+        shared_ptr<arrow::Schema>buildInputSchema = lookupJoinOp->getBuildInputSchema();
         shared_ptr<arrow::Schema> buildOutputSchema = lookupJoinOp->getBuildOutputSchema();
         vector<int> probeHashChannels = lookupJoinOp->getJoinProbeFactory()->getProbeJoinChannels();
         vector<int> buildHashChannels = hashBuilderOperator->getHashChannels();

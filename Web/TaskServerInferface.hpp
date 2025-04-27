@@ -22,12 +22,24 @@ public:
         return  TaskServer::taskResourceManager->updateTask(*TaskId::Deserialize(taskId),TaskUpdateRequest::Deserialize(request));
     }
 
+    static InterTaskDataHandle createInterTaskMission(string taskId, string request)
+    {
+        return  TaskServer::taskResourceManager->createInterTaskMission(*TaskId::Deserialize(taskId),*InterTaskMissionDescriptor::Deserialize(request));
+    }
 
     static vector<shared_ptr<DataPage>> getTaskResults(string taskId,string bufferId,int size)
     {
         TaskId id;
         return  TaskServer::taskResourceManager->getTaskResults(*id.StringToObject(taskId),OutputBufferId(bufferId),size);
     }
+
+    static vector<shared_ptr<DataPage>> getInterTaskPages(string taskId,string componentId,string bufferId,int size)
+    {
+        TaskId id;
+        return  TaskServer::taskResourceManager->getInterTaskPages(*id.StringToObject(taskId),componentId,OutputBufferId(bufferId),size);
+    }
+
+
     static void triggerTaskBufferNoteEvent(string taskId,string bufferId,string note)
     {
         TaskId id;

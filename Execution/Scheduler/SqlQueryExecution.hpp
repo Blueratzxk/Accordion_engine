@@ -325,6 +325,12 @@ public:
         thread(this->scheduler->schedule,scheduler).detach();
     }
 
+    void moveTaskOperatorTest()
+    {
+        thread(this->scheduler->moveTaskOperatorTest,scheduler).detach();
+    }
+
+
     string getQueryExecutionInfo()
     {
 

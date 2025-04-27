@@ -213,4 +213,8 @@ void TaskContext::removeTids(set<__pid_t> ids) {
     this->tidLock.unlock();
 }
 
+void TaskContext::savePagesForInterTaskMission(string componentId,vector<shared_ptr<DataPage>> pages) {
+    this->queryContext.lock()->saveInterTaskPages(componentId,pages);
+}
+
 #endif //OLVP_TASKCONTEXT_CPP

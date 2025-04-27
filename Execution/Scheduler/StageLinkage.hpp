@@ -57,7 +57,7 @@ public:
             {
                 vector<int> partitions = scheme->getBucketToPartition();
                 int partitionCount = *max_element(partitions.begin(),partitions.end())+1;
-                childOutputBufferManagers.push_back(make_shared<BroadcastOutputBufferManager>());
+                childOutputBufferManagers.push_back(make_shared<SimpleOutputBufferManager>());
             }
         }
 

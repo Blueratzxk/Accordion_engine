@@ -33,6 +33,17 @@ public:
         return this->taskManager->getTaskResults(taskId,bufferId,maxSize);
     }
 
+    InterTaskDataHandle createInterTaskMission(TaskId taskId,InterTaskMissionDescriptor interTaskMissionDescriptor)
+    {
+        return this->taskManager->createInterTaskMission(taskId,interTaskMissionDescriptor);
+    }
+
+    vector<shared_ptr<DataPage>> getInterTaskPages(TaskId taskId, string componentId,OutputBufferId bufferId, int maxSize)
+    {
+        return this->taskManager->getInterTaskPages(taskId,componentId,bufferId.get(),maxSize);
+    }
+
+
     void triggerTaskBufferNoteEvent(TaskId taskId, OutputBufferId bufferId,string note)
     {
         this->taskManager->triggerTaskBufferNoteEvent(taskId,bufferId.get(),note);

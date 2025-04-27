@@ -153,10 +153,10 @@ public:
 class LocalPlanNodeTreeBreaker : public NodeVisitor {
 
 private:
-
+    shared_ptr<TaskExecutionCondition> condition = NULL;
 public:
-    LocalPlanNodeTreeBreaker() {
-
+    LocalPlanNodeTreeBreaker(shared_ptr<TaskExecutionCondition> condition) {
+        this->condition = condition;
     }
 
     void* VisitExchangeNode(ExchangeNode* node,void *context) override{
@@ -179,7 +179,11 @@ public:
 
         PhysicalOperation *source = (PhysicalOperation *)Visit(node->getSource(),context);
 
-        auto fagg = std::make_shared<Logical_FinalAggregationOperator>(node->getAggregationDesc());
+        bool interTaskSync = false;
+        if(condition != NULL && condition->getConditionType() == "InterTaskMission" && condition->getComponentId() == "Logical_FinalAggregationOperator")
+            interTaskSync = true;
+
+        auto fagg = std::make_shared<Logical_FinalAggregationOperator>(node->getAggregationDesc(),interTaskSync);
 
         return new PhysicalOperation(fagg,source);
     }
@@ -233,7 +237,7 @@ public:
         shared_ptr<JoinProbeFactory> joinProbeFactory = std::make_shared<JoinProbeFactory>(node->getLookupJoinDescriptor().getProbeOutputChannels()
                 ,node->getLookupJoinDescriptor().getProbeHashChannels());
 
-        auto hashProbe = make_shared<Logical_LookupJoinOperator>(probeInputSchema,buildOutputSchema,joinProbeFactory,lookupSourceFactory,build);
+        auto hashProbe = make_shared<Logical_LookupJoinOperator>(probeInputSchema,buildInputSchema,buildOutputSchema,joinProbeFactory,lookupSourceFactory,build);
 
 
 
@@ -429,20 +433,24 @@ public:
 class LocalExecutionPlanner {
 
     LocalExecutionPlanContext *context;
-    LocalPlanNodeTreeBreaker visitor;
+    shared_ptr<LocalPlanNodeTreeBreaker> visitor;
     PlanNode *root;
     std::shared_ptr<OutputBuffer> buffer = NULL;
+    shared_ptr<TaskExecutionCondition> condition = NULL;
 
 public:
     LocalExecutionPlanner(PlanNode *root) {
         this->root = root;
         this->context = new LocalExecutionPlanContext();
+        this->visitor = make_shared<LocalPlanNodeTreeBreaker>(condition);
     }
 
-    LocalExecutionPlanner(PlanNode *root, shared_ptr<OutputBuffer> buffer) {
+    LocalExecutionPlanner(PlanNode *root, shared_ptr<OutputBuffer> buffer,shared_ptr<TaskExecutionCondition> condition) {
         this->root = root;
         this->context = new LocalExecutionPlanContext();
         this->buffer = buffer;
+        this->condition = condition;
+        this->visitor = make_shared<LocalPlanNodeTreeBreaker>(condition);
 
         if (buffer != NULL) {
             string id = root->getType();
@@ -470,7 +478,7 @@ public:
     }
 
     void analyze() {
-        PhysicalOperation *op = (PhysicalOperation *) visitor.Visit(root, context);
+        PhysicalOperation *op = (PhysicalOperation *) visitor->Visit(root, context);
 
         if (this->buffer != NULL) {
             auto output = make_shared<Logical_TaskOutputOperator>(buffer);

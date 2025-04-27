@@ -48,6 +48,7 @@ class GPUHashJoinOperator :public Operator {
     std::shared_ptr<LookupSourceProvider> lookupSourceProvider = NULL;
     std::future<std::shared_ptr<LookupSourceProvider>> future;
 
+    string buildTableToken;
 
 public:
 
@@ -120,7 +121,8 @@ public:
             lookupSourceProvider = this->future.get();
             this->buildTable = getLookupSourceData();
             GPUFunctions gpuFunctions;
-            gpuFunctions.maintainBuildTableByToken("build",this->buildTable);
+            this->buildTableToken = gpuFunctions.getNextTokenStr();
+            gpuFunctions.maintainBuildTableByToken(buildTableToken,this->buildTable);
 
             return true;
         }
@@ -132,7 +134,9 @@ public:
     {
         void *outputTable;
         int elementCount;
-        gpuFunctions.inner_join_byToken(probeInputSchema,buildInputSchema,buildOutputSchema,probeHashChannels,buildHashChannels,probeOutputChannels,buildOutputChannels,inputPage->getExtensionPage(),"build",outputTable,elementCount);
+        gpuFunctions.inner_join_byToken(probeInputSchema,buildInputSchema,buildOutputSchema,probeHashChannels,
+                                        buildHashChannels,probeOutputChannels,buildOutputChannels,
+                                        inputPage->getExtensionPage(),this->buildTableToken,outputTable,elementCount);
         this->outPutPage = make_shared<DataPage>(outputTable,elementCount,DataPage::GPU);
         this->probe = NULL;
     }

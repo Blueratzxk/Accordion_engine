@@ -1,9 +1,10 @@
 //
-// Created by zxk on 6/4/23.
+// Created by zxk on 4/20/25.
 //
 
-#ifndef OLVP_ARROWRPCCLIENT_HPP
-#define OLVP_ARROWRPCCLIENT_HPP
+#ifndef OLVP_INTERTASKARROWRPCCLIENT_HPP
+#define OLVP_INTERTASKARROWRPCCLIENT_HPP
+
 
 
 #include <arrow/api.h>
@@ -17,15 +18,16 @@
 
 #include "../../Execution/Task/Id/TaskId.hpp"
 #include "PageTransformer.hpp"
-#include "DataPageRPCBuffer.hpp"
-class ArrowRPCClient
+
+#include "InterTaskDataPageRPCBuffer.hpp"
+class InterTaskArrowRPCClient
 {
     string clientBufferIp;
     string clientBufferPort;
     string path;
     string taskId;
     string bufferId = "";
-
+    string interTaskComponentId = "";
     string note;
 
     arrow::flight::Location location;
@@ -34,7 +36,7 @@ class ArrowRPCClient
     mutex notelock;
 
 public:
-    ArrowRPCClient(string ip,string port){
+    InterTaskArrowRPCClient(string ip,string port){
         this->clientBufferIp = ip;
         this->clientBufferPort = port;
         this->note = "";
@@ -56,7 +58,7 @@ public:
 
 
 
-    //    cout << "Connected to " << location.ToString() << std::endl;
+        //    cout << "Connected to " << location.ToString() << std::endl;
         return arrow::Status::OK();
     }
     arrow::Status close()
@@ -95,8 +97,14 @@ public:
         this->bufferId = bufferIdInput;
     }
 
+    void setInterTaskCacheTarget(string taskIdInput,string componentId,string bufferId)
+    {
+        this->taskId = taskIdInput;
+        this->interTaskComponentId = componentId;
+        this->bufferId = bufferId;
+    }
 
-    arrow::Status getOnceBatches(DataPageRPCBuffer &buffer,int dataSize,int *tagIn)
+    arrow::Status getOnceBatches(InterTaskDataPageRPCBuffer &buffer,int dataSize,int *tagIn)
     {
         std::unique_ptr<arrow::flight::FlightStreamReader> stream;
         arrow::flight::Ticket ticket;
@@ -152,23 +160,33 @@ public:
     }
 
 
-    string generateTicket(int dataSize) {
+    string generateTicket(int dataSize)
+    {
         string noteSend = this->getNote();
 
         nlohmann::json json;
 
+        if(this->interTaskComponentId == "") {
 
-        json["ticketType"] = "normal";
-        json["taskId"] = this->taskId;
-        json["bufferId"] = this->bufferId;
-        json["pageNums"] = to_string(dataSize);
+            json["ticketType"] = "normal";
+            json["taskId"] = this->taskId;
+            json["bufferId"] = this->bufferId;
+            json["pageNums"] = to_string(dataSize);
 
-        if (note != "") {
-            json["note"] = noteSend;
-            spdlog::debug("Task " + this->taskId + "set note " + noteSend + "!");
-            this->removeNote();
+            if (note != "") {
+                json["note"] = noteSend;
+                spdlog::debug("Task " + this->taskId + "set note " + noteSend + "!");
+                this->removeNote();
+            }
         }
-
+        else
+        {
+            json["ticketType"] = "interTask";
+            json["taskId"] = this->taskId;
+            json["componentId"] = this->interTaskComponentId;
+            json["bufferId"] = this->bufferId;
+            json["pageNums"] = to_string(dataSize);
+        }
 
         return json.dump();
     }
@@ -215,63 +233,8 @@ public:
         return arrow::Status::OK();
     }
 
-    arrow::Status getAllBatchesWithCircle(DataPageRPCBuffer &buffer)
-    {
-
-        std::unique_ptr<arrow::flight::FlightStreamReader> stream;
-        arrow::flight::Ticket ticket;
-
-        if( bufferId.compare("") == 0)
-            return arrow::Status::Cancelled("ParamterError");
-
-
-        nlohmann::json json;
-        json["taskId"] = this->taskId;
-        json["bufferId"] = this->bufferId;
-        json["pageNums"] = 10000;
-        ticket.ticket = json.dump();
-
-
-
-        bool end = false;
-
-        do {
-
-            arrow::Status  status = this->connect();
-
-            ARROW_ASSIGN_OR_RAISE(stream, client->DoGet(ticket));
-            arrow::Status  statusClose = this->close();
-            vector<std::shared_ptr<arrow::RecordBatch>> batches;
-            ARROW_ASSIGN_OR_RAISE(batches, stream->ToRecordBatches());
-
-            ArrowTableToDataPage a2d;
-            int tag;
-            vector<shared_ptr<DataPage>> results = a2d.ToPages(batches,&tag);
-
-            //cout << this->taskId << "get page! "<<results.size()<<endl;
-            if(results.size() > 0)
-            {
-                cout << this->taskId << "get page! "<<results.size()<<"###"<< results[0]->getElementsCount() << "@@@@@@@@@@@"<<endl;
-            }
-
-            buffer.enqueuePages(results);
-
-
-            for (int i = 0; i < results.size(); i++) {
-                if(results[i]->isEndPage())
-                    end = true;
-            }
-
-        }while(!end);
-
-
-
-        return arrow::Status::OK();
-    }
-
-
 
 };
 
 
-#endif //OLVP_ARROWRPCCLIENT_HPP
+#endif //OLVP_INTERTASKARROWRPCCLIENT_HPP

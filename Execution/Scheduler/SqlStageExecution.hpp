@@ -21,6 +21,7 @@
 
 #include "QueryInfos/StageInfo.hpp"
 #include "../Event/SimpleEvent.hpp"
+#include "../Task/Fetcher/TaskResultFetcher.hpp"
 #include <bitset>
 class taskCpuNetUsageInfo
 {
@@ -72,6 +73,7 @@ class SqlStageExecution:public enable_shared_from_this<SqlStageExecution>
     mutex taskGroupLock;
 
 
+    shared_ptr<TaskResultFetcher> taskResultFetcher = NULL;
 
 
 public:
@@ -286,10 +288,12 @@ public:
 
         for(auto task : allTasks) {
             shared_ptr<TaskInfo> taskInfo = task->getTaskInfo();
-            taskInfo->setHost(task->getTaskLocation());
-            taskInfo->setExtensions(task->getExtensions());
-            if(taskInfo != NULL)
+
+            if(taskInfo != NULL) {
                 taskInfos.push_back(taskInfo);
+                taskInfo->setHost(task->getTaskLocation());
+                taskInfo->setExtensions(task->getExtensions());
+            }
         }
 
 
@@ -690,9 +694,6 @@ public:
             }
         }
         tasksLock.unlock();
-
-
-
     }
 
     bool dopStateMigrating()
@@ -806,7 +807,7 @@ public:
     }
 
 
-    shared_ptr<HttpRemoteTask> scheduleTask(shared_ptr<ClusterNode> node)
+    shared_ptr<HttpRemoteTask> scheduleTask(shared_ptr<ClusterNode> node,shared_ptr<TaskExecutionCondition> condition = NULL)
     {
 
         spdlog::debug("Stage "+to_string(this->stageId) + " starts scheduling task!");
@@ -818,7 +819,7 @@ public:
 
 
         shared_ptr<HttpRemoteTask> remoteTask = taskFactory.createRemoteTask(this->simpleEvent,newTaskId,fragment,node->getNodeLocation(),this->outputBufferSchema,
-                                                                             task_Sources==NULL?TaskSource::getEmptyTaskSource():task_Sources,this->session,node->getExtensions());
+                                                                             task_Sources==NULL?TaskSource::getEmptyTaskSource():task_Sources,this->session,node->getExtensions(),condition);
 
         addNodeTaskMap(node,remoteTask);
         addTask(node,remoteTask);
@@ -1030,15 +1031,6 @@ public:
     }
 
 
-
-    void transitionToFinishedTaskScheduling() {
-
-    }
-    void transitionToSchedulingSplits()
-    {
-
-    }
-
     shared_ptr<TaskSource> sourceTasksTo_taskSources(TaskId ownTaskId)
     {
         shared_ptr<TaskSource> task_Sources = NULL;
@@ -1158,6 +1150,84 @@ public:
             states[3] = 1;
 
         return states;
+    }
+
+
+    shared_ptr<InterTaskDataHandle> prepareMoveStatefulTask(int taskId)
+    {
+        shared_ptr<HttpRemoteTask> target = NULL;
+        vector<shared_ptr<HttpRemoteTask>> tasks = getAllTasks();
+        for(auto task : tasks)
+            if(task->getTaskId()->getId() == taskId)
+                target = task;
+
+        vector<PlanNode*> nodes;
+        this->fragment->findNodeByNodeName("FinalAggregationNode",nodes);
+
+        string componentId;
+        bool status = false;
+        if(nodes.empty())
+            return NULL;
+
+        componentId = "FinalAggregationOperator";
+
+        string result;
+        shared_ptr<InterTaskDataHandle> handle;
+        if (target != NULL && !target->isDone()) {
+            result = target->createInterTaskMission(
+                    make_shared<InterTaskMissionDescriptor>("moveOperator", componentId));
+            if(result == "NULL")
+                return NULL;
+            handle = InterTaskDataHandle::Deserialize(result);
+            if(!handle->getStatus())
+                return NULL;
+            else
+                return handle;
+        }
+
+        return NULL;
+    }
+
+    bool taskDataAddressNotification(int preTaskId,int newTaskId,string componentId)
+    {
+        shared_ptr<HttpRemoteTask> preTask = NULL;
+        shared_ptr<HttpRemoteTask> newTask = NULL;
+        vector<shared_ptr<HttpRemoteTask>> tasks = getAllTasks();
+        for(auto task : tasks) {
+            if (task->getTaskId()->getId() == preTaskId)
+                preTask = task;
+            if (task->getTaskId()->getId() == newTaskId)
+                newTask = task;
+        }
+        string result;
+        shared_ptr<InterTaskDataHandle> handle;
+        if (preTask != NULL && !preTask->isDone() && newTask != NULL && !newTask->isDone()) {
+
+            result = newTask->createInterTaskMission(
+                    make_shared<InterTaskMissionDescriptor>("setDataLocation",preTask->getTaskId()->ToString(),componentId,preTask->getIP(),preTask->getPORT(),"0"));
+            if(result == "NULL")
+                return false;
+            handle = InterTaskDataHandle::Deserialize(result);
+            if(!handle->getStatus())
+                return false;
+
+        }
+
+
+
+        return false;
+    }
+
+    shared_ptr<TaskResultFetcher> getTaskResultFetcher()
+    {
+        if(this->taskResultFetcher == NULL) {
+            auto tasks = this->getAllTasks();
+            taskResultFetcher = make_shared<TaskResultFetcher>(tasks.back()->getTaskId(), tasks.back()->getIP(), "9081","0");
+            return taskResultFetcher;
+        }
+        else
+            return taskResultFetcher;
+
     }
 
 

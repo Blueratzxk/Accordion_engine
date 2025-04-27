@@ -38,7 +38,7 @@ public:
 
 
         this->probeInputSchema = probeInputSchema;
-        this->buildOutputSchema = buildInputSchema;
+        this->buildInputSchema = buildInputSchema;
         this->buildOutputSchema = buildOutputSchema;
         this->probeHashChannels = probeHashChannels;
         this->buildHashChannels = buildHashChannels;
