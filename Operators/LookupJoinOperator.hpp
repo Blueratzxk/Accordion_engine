@@ -6,7 +6,7 @@
 #define OLVP_LOOKUPJOINOPERATOR_HPP
 
 #include "../Operators/Operator.hpp"
-#include "Join/LookupSourceProvider.hpp"
+
 #include "Join/PartitionedLookUpSourceFactory.hpp"
 #include "Join/JoinProbe.hpp"
 #include "Join/LookupJoinPageBuilder.hpp"

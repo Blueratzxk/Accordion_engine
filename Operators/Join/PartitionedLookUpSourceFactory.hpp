@@ -5,8 +5,7 @@
 #ifndef OLVP_PARTITIONEDLOOKUPSOURCEFACTORY_HPP
 #define OLVP_PARTITIONEDLOOKUPSOURCEFACTORY_HPP
 #include "../../common.h"
-#include "LookupSourceFactory.hpp"
-#include "LookupSource.hpp"
+#include "LookupSourceProvider.hpp"
 #include "tbb/concurrent_hash_map.h"
 #include "PartitionedLookupSource.hpp"
 #include "tbb/concurrent_queue.h"

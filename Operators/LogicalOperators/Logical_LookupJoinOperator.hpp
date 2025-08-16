@@ -9,6 +9,7 @@
 
 #include "../LookupJoinOperator.hpp"
 
+
 class Logical_LookupJoinOperator :public LogicalOperator{
 
 

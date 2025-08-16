@@ -5,10 +5,12 @@
 #ifndef OLVP_FILTERDESCRIPTOR_HPP
 #define OLVP_FILTERDESCRIPTOR_HPP
 
+
+#include "../Frontend/AstNodes/AstNodePtr.hpp"
 #include "FieldDesc.hpp"
 #include "../ProjectorAndFilter/ExprAstFilterComplier.hpp"
 #include "../ProjectorAndFilter/ExprAstFilter.hpp"
-#include "../Frontend/AstNodes/AstNodePtr.hpp"
+
 #include "../Frontend/AstNodes/Serial/NodeTreeSerialization.hpp"
 #include "../Frontend/AstNodes/Serial/NodeTreeDeserialization.hpp"
 

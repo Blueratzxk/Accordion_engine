@@ -9,6 +9,8 @@
 #include "PagesHashStrategy.hpp"
 #include "ArrayPositionLinks.hpp"
 #include "JoinHash.hpp"
+#include "../LookupSourceSupplier.hpp"
+
 class JoinHashSupplier:public LookupSourceSupplier
 {
     std::shared_ptr<PagesHash> pagesHash = NULL;

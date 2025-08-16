@@ -40,6 +40,17 @@ typedef void (*inner_join_GPU_ByToken)(shared_ptr<arrow::Schema>probeInputSchema
                             vector<int> probeHashChannels,vector<int> buildHashChannels,vector<int> probeOutputChannels,vector<int> buildOutputChannels,
                             void* cudfProbe,string buildTableToken,void* &outputGPUTable,int &elementCount);
 
+
+
+typedef void* (*cudf_functionCall)(string funcName,vector<void*> args,string outputType);
+typedef void* (*cudf_get_column_by_index)(void *cudfTable,int index);
+typedef void* (*cudf_make_column_from_int32_scalar)(int value, int num_rows);
+typedef void* (*cudf_make_column_from_int64_scalar)(int64_t value, int num_rows);
+typedef void* (*cudf_make_column_from_double_scalar)(double value, int num_rows);
+typedef void* (*cudf_make_column_from_string_scalar)(string value, int num_rows);
+typedef void* (*cudf_make_column_from_date32_scalar)(string value, int num_rows);
+typedef void* (*cudf_apply_boolean_mask)(void *cudfTable,void* finalmask, int &elementCount);
+
 class GPUFunctions:public FuncExt
 {
     string libPath = "Glibs/GPU_LIBS";
@@ -240,6 +251,122 @@ public:
 
         return p();
     }
+
+
+
+
+    void *cudfFunctionCall(string funcName,vector<void*> args,string outputType){
+
+        if(!load())
+            return NULL;
+
+        cudf_functionCall p = (cudf_functionCall)dlsym(handle, "cudf_functionCall");  //argv[2]对应输入需获取地址的符号名
+        if(!p) {
+            spdlog::debug("Load cudf_functionCall failed");
+            return NULL;
+        }
+
+        return p(funcName,args,outputType);
+
+    }
+    void *cudfGetColumnByIndex(void *cudfTable,int index){
+
+        if(!load())
+            return NULL;
+
+        cudf_get_column_by_index p = (cudf_get_column_by_index)dlsym(handle, "cudf_get_column_by_index");  //argv[2]对应输入需获取地址的符号名
+        if(!p) {
+            spdlog::debug("Load cudf_get_column_by_index failed");
+            return NULL;
+        }
+
+        return p(cudfTable,index);
+    }
+    void *cudfMakeColumnFromInt32Scalar(int value, int num_rows){
+
+        if(!load())
+            return NULL;
+
+        cudf_make_column_from_int32_scalar p = (cudf_make_column_from_int32_scalar)dlsym(handle, "cudf_make_column_from_int32_scalar");  //argv[2]对应输入需获取地址的符号名
+        if(!p) {
+            spdlog::debug("Load cudf_make_column_from_int32_scalar failed");
+            return NULL;
+        }
+
+        return p(value,num_rows);
+
+    }
+    void *cudfMakeColumnFromInt64Scalar(int64_t value, int num_rows){
+
+        if(!load())
+            return NULL;
+
+        cudf_make_column_from_int64_scalar p = (cudf_make_column_from_int64_scalar)dlsym(handle, "cudf_make_column_from_int64_scalar");  //argv[2]对应输入需获取地址的符号名
+        if(!p) {
+            spdlog::debug("Load cudf_make_column_from_int64_scalar failed");
+            return NULL;
+        }
+
+        return p(value,num_rows);
+
+    }
+    void *cudfMakeColumnFromDoubleScalar(double value, int num_rows){
+
+        if(!load())
+            return NULL;
+
+        cudf_make_column_from_double_scalar p = (cudf_make_column_from_double_scalar)dlsym(handle, "cudf_make_column_from_double_scalar");  //argv[2]对应输入需获取地址的符号名
+        if(!p) {
+            spdlog::debug("Load cudf_make_column_from_double_scalar failed");
+            return NULL;
+        }
+
+        return p(value,num_rows);
+
+    }
+    void *cudfMakeColumnFromStringScalar(string value, int num_rows){
+
+        if(!load())
+            return NULL;
+
+        cudf_make_column_from_string_scalar p = (cudf_make_column_from_string_scalar)dlsym(handle, "cudf_make_column_from_string_scalar");  //argv[2]对应输入需获取地址的符号名
+        if(!p) {
+            spdlog::debug("Load cudf_make_column_from_string_scalar failed");
+            return NULL;
+        }
+
+        return p(value,num_rows);
+
+    }
+    void *cudfMakeColumnFromDate32Scalar(string value, int num_rows){
+
+        if(!load())
+            return NULL;
+
+        cudf_make_column_from_date32_scalar p = (cudf_make_column_from_date32_scalar)dlsym(handle, "cudf_make_column_from_date32_scalar");  //argv[2]对应输入需获取地址的符号名
+        if(!p) {
+            spdlog::debug("Load cudf_make_column_from_date32_scalar failed");
+            return NULL;
+        }
+
+        return p(value,num_rows);
+
+    }
+    void *cudfApplyBooleanMask(void* cudf_table, void* finalmask, int elementCount){
+
+        if(!load())
+            return NULL;
+
+        cudf_apply_boolean_mask p = (cudf_apply_boolean_mask)dlsym(handle, "cudf_apply_boolean_mask");  //argv[2]对应输入需获取地址的符号名
+        if(!p) {
+            spdlog::debug("Load cudf_apply_boolean_mask failed");
+            return NULL;
+        }
+
+        return p(cudf_table,finalmask,elementCount);
+
+    }
+
 
 };
 

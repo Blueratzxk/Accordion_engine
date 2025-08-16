@@ -5,7 +5,7 @@
 #ifndef OLVP_PARTITIONEDLOOKUPSOURCE_HPP
 #define OLVP_PARTITIONEDLOOKUPSOURCE_HPP
 
-#include "LookupSource.hpp"
+
 #include "TrackingLookupSourceSupplier.hpp"
 #include "../../Execution/Buffer/OutputPartitioningBuffer/BufferShuffler/SimplePageHashGenerator.hpp"
 class PatitionedLookupSourceSupplier;

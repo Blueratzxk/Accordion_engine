@@ -24,6 +24,11 @@ public:
 
     }
 
+    FilterDescriptor getFilterDesc()
+    {
+        return this->filterDesc;
+    }
+
     std::shared_ptr<Operator> getOperator(shared_ptr<DriverContext> driverContext) {
 
         return std::make_shared<FilterOperator>(driverContext,this->filterDesc);

@@ -521,6 +521,11 @@ add_executable(OLVP main.cpp
         Web/ArrowRPC/InterTaskArrowRPCClient.hpp
         Descriptor/InterTaskMissionDescriptor.hpp
         Execution/Task/TaskExecutionCondition.hpp
+        FunctionExtension/GPU/GPUFilterOperator.hpp
+        FunctionExtension/GPU/GPUFilterExprEvaluator.hpp
+        FunctionExtension/GPU/Logical_GPUFilterOperator.hpp
+        FunctionExtension/GPU/GPUExprFilter.hpp
+        FunctionExtension/OperatorExtension.cpp
 
 
 )
