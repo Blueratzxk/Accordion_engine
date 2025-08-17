@@ -7,6 +7,7 @@
 
 #include "../Execution/Scheduler/SqlQueryExecution.hpp"
 #include "../TpchTest/Querys/Query1.hpp"
+#include "../TpchTest/Querys/SimpleTest/Query1_GPUFilter.hpp"
 #include "../TpchTest/Querys/Query1_NL.hpp"
 #include "../TpchTest/Querys/Query1_single.hpp"
 #include "../TpchTest/Querys/Query1_ssingle.hpp"
@@ -134,6 +135,8 @@ public:
         regQueryList["Q1"] = make_shared<Query1_NL>();
         regQueryList["Q1S"] = make_shared<Query1_single>();
         regQueryList["Q1SS"] = make_shared<Query1_ssingle>();
+        regQueryList["Q1GF"] = make_shared<Query1_GPUFilter>();
+
 
         regQueryList["Q2L"] = make_shared<Query2>();
         regQueryList["Q2"] = make_shared<Query2_NL>();

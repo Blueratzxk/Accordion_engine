@@ -8,9 +8,9 @@
 
 #include "../Operators/Operator.hpp"
 
-
 #include "../../Execution/Task/Context/DriverContext.h"
 #include "GPUExprFilter.hpp"
+
 
 class GPUFilterOperator:public Operator
 {
@@ -31,7 +31,7 @@ class GPUFilterOperator:public Operator
 
     FilterDescriptor filterDesc;
 
-
+    GPUFunctions gpuFunctions;
     shared_ptr<DriverContext> driverContext;
 
     int count = 0;
@@ -77,8 +77,10 @@ public:
     {
         if(this->filter != NULL )
         {
-            if(!this->inputPage->isEmptyPage())
+            if(!this->inputPage->isEmptyPage()) {
                 this->outPutPage = this->filter->evaluate(this->inputPage);
+                gpuFunctions.freeGPUPage(this->inputPage->getExtensionPage());
+            }
             else
                 this->outPutPage = NULL;
         }
@@ -129,6 +131,25 @@ public:
     bool isFinished()
     {
         return this->finished;
+    }
+
+    int isExtension() override
+    {
+        return true;
+    }
+    shared_ptr<DataPage> downloadToCPU(shared_ptr<DataPage> page) override
+    {
+        if(page->isEndPage())
+            return page;
+        auto table = gpuFunctions.getCPUPageFromGPU(page->getExtensionPage(),input_schema);
+        return make_shared<DataPage>(table->CombineChunksToBatch().ValueOrDie());
+    }
+    shared_ptr<DataPage> uploadToExtension(shared_ptr<DataPage> page) override
+    {
+        spdlog::info("filter uploadToExtension:"+ to_string(page->getElementsCount()));
+        if(page->isEndPage())
+            return page;
+        return make_shared<DataPage>(gpuFunctions.pushCPUPageToGPU(page->get()),page->getElementsCount(),DataPage::GPU);
     }
 
 

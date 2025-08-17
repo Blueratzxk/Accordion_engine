@@ -40,6 +40,8 @@ typedef void (*inner_join_GPU_ByToken)(shared_ptr<arrow::Schema>probeInputSchema
                             vector<int> probeHashChannels,vector<int> buildHashChannels,vector<int> probeOutputChannels,vector<int> buildOutputChannels,
                             void* cudfProbe,string buildTableToken,void* &outputGPUTable,int &elementCount);
 
+typedef void (*releaseGPUPage)(void *table);
+typedef void (*releaseGPUColumn)(void *column);
 
 
 typedef void* (*cudf_functionCall)(string funcName,vector<void*> args,string outputType);
@@ -352,7 +354,7 @@ public:
         return p(value,num_rows);
 
     }
-    void *cudfApplyBooleanMask(void* cudf_table, void* finalmask, int elementCount){
+    void *cudfApplyBooleanMask(void* cudf_table, void* finalmask, int &elementCount){
 
         if(!load())
             return NULL;
@@ -366,6 +368,34 @@ public:
         return p(cudf_table,finalmask,elementCount);
 
     }
+    void freeGPUPage(void* cudf_table){
+
+        if(!load())
+            return ;
+
+        releaseGPUPage p = (releaseGPUPage)dlsym(handle, "releaseGPUPage");  //argv[2]对应输入需获取地址的符号名
+        if(!p) {
+            spdlog::debug("Load releaseGPUPage failed");
+            return ;
+        }
+
+        return p(cudf_table);
+    }
+
+    void freeGPUColumn(void* cudf_column){
+
+        if(!load())
+            return ;
+
+        releaseGPUColumn p = (releaseGPUColumn)dlsym(handle, "releaseGPUColumn");  //argv[2]对应输入需获取地址的符号名
+        if(!p) {
+            spdlog::debug("Load releaseGPUColumn failed");
+            return ;
+        }
+
+        return p(cudf_column);
+    }
+
 
 
 };

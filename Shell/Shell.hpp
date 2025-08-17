@@ -7,7 +7,7 @@
 
 
 #include "../Frontend/FrontEnd.h"
-
+//#include "../FunctionExtension/GPU/GPUExprFilter.hpp"
 class Shell
 {
     bool shellStatus = false;
@@ -217,6 +217,12 @@ public:
             {
                 QueryServer::getQueryServer()->moveAllQueryOperatorTest();
             }
+           // else if(cmd == "filter")
+          //  {
+
+           //     GPUExprFilter gpu;
+          //      gpu.test();
+          //  }
             else if(cmd == "sql") {
 
                 FrontEnd frontend;

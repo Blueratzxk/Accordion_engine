@@ -196,6 +196,7 @@ public:
 
         if (this->sendEndPage) {
             this->finished = true;
+            gpuFunctions.deleteBuildTableByToken(this->buildTableToken);
             return DataPage::getEndPage();
         }
 
@@ -241,7 +242,7 @@ public:
     }
     shared_ptr<DataPage> uploadToExtension(shared_ptr<DataPage> page) override
     {
-        spdlog::info("uploadToExtension:"+ to_string(page->getElementsCount()));
+        spdlog::info("hashjoin uploadToExtension:"+ to_string(page->getElementsCount()));
         if(page->isEndPage())
             return page;
         return make_shared<DataPage>(gpuFunctions.pushCPUPageToGPU(page->get()),page->getElementsCount(),DataPage::GPU);

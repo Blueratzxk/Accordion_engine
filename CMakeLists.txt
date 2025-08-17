@@ -526,6 +526,7 @@ add_executable(OLVP main.cpp
         FunctionExtension/GPU/Logical_GPUFilterOperator.hpp
         FunctionExtension/GPU/GPUExprFilter.hpp
         FunctionExtension/OperatorExtension.cpp
+        TpchTest/Querys/SimpleTest/Query1_GPUFilter.hpp
 
 
 )

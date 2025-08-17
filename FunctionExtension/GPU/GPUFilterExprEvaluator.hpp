@@ -16,10 +16,16 @@
 class EvaResult
 {
     void* ptr = nullptr;
+    bool releaseAble = true;
     GPUFunctions gpuFunctions;
 
 public:
 
+    EvaResult(void* ptr,bool releaseAble)
+    {
+        this->ptr = ptr;
+        this->releaseAble = releaseAble;
+    }
     EvaResult(void* ptr)
     {
         this->ptr = ptr;
@@ -27,9 +33,14 @@ public:
 
     void freeResult()
     {
-        if(this->ptr != NULL) {
-
+        if(this->ptr != NULL && this->canRelease()) {
+            gpuFunctions.freeGPUColumn(this->ptr);
         }
+    }
+
+    bool canRelease()
+    {
+        return this->releaseAble;
     }
 
 
@@ -62,6 +73,7 @@ public:
     void* VisitFunctionCall(FunctionCall* node,void* context) {
 
 
+
         vector<Node*> arguments = node->getChildren();
 
         vector<EvaResult*> results;
@@ -72,10 +84,11 @@ public:
         }
 
         EvaResult *outputResult = NULL;
-
+        spdlog::info("FunctionCall"+node->getFuncName());
         if(node->getFuncName() == "subtract")
         {
             auto re = gpuFunctions.cudfFunctionCall(node->getFuncName(),{results[0]->getColumn(),results[1]->getColumn()},node->getOutputType());
+            cout << "sub res:" << re << endl;
             outputResult = new EvaResult(re);
         }
         else if(node->getFuncName() == "less_than_or_equal_to")
@@ -98,9 +111,14 @@ public:
             auto re = gpuFunctions.cudfFunctionCall(node->getFuncName(),{results[0]->getColumn(),results[1]->getColumn()},node->getOutputType());
             outputResult = new EvaResult(re);
         }
+        else if(node->getFuncName() == "castDATE")
+        {
+            auto re = gpuFunctions.cudfFunctionCall(node->getFuncName(),{results[0]->getColumn()},node->getOutputType());
+            outputResult = new EvaResult(re);
+        }
         else
         {
-            printf("Unsupported filter op %s!",node->getFuncName().c_str());
+            spdlog::info("Unsupported filter op " + node->getFuncName());
             return NULL;
         }
 
@@ -114,26 +132,28 @@ public:
 
     void* VisitDoubleLiteral(DoubleLiteral* node,void* context) {
 
+        spdlog::info("DoubleLiteral");
         auto re = gpuFunctions.cudfMakeColumnFromDoubleScalar(node->getValue(), page->getElementsCount());
 
         return new EvaResult(re);
     }
     void* VisitInt32Literal(Int32Literal* node,void* context) {
 
-
+        spdlog::info("Int32Literal");
         auto re = gpuFunctions.cudfMakeColumnFromInt32Scalar(node->getValue(), page->getElementsCount());;
 
         return new EvaResult(re);
     }
     void* VisitInt64Literal(Int64Literal* node,void* context) {
 
-
+        spdlog::info("Int64Literal");
         auto re = gpuFunctions.cudfMakeColumnFromInt64Scalar(node->getValue(), page->getElementsCount());;
 
         return new EvaResult(re);
     }
     void* VisitStringLiteral(StringLiteral* node,void* context){
 
+        spdlog::info("StringLiteral");
         auto re = gpuFunctions.cudfMakeColumnFromStringScalar(node->getValue(), page->getElementsCount());;
 
         return new EvaResult(re);
@@ -144,7 +164,13 @@ public:
     void* VisitDate32Literal(Date32Literal* node,void* context){
 
 
-        auto re = gpuFunctions.cudfMakeColumnFromDate32Scalar(node->getValue(), page->getElementsCount());;
+        spdlog::info("Date32Literal");
+        int32_t date;
+        TimeCommon::getDate32(node->getValue(),&date);
+
+        auto re = gpuFunctions.cudfMakeColumnFromInt32Scalar(date, page->getElementsCount());;
+        cout <<  page->getElementsCount() << endl;
+        cout << re << endl;
 
         return new EvaResult(re);
     }
@@ -156,14 +182,17 @@ public:
     }
     void *VisitDayTimeIntervalLiteral(DayTimeIntervalLiteral* node,void* context)
     {
-
+        spdlog::info("DayTimeIntervalLiteral");
+        cout <<  page->getElementsCount() << endl;
         auto re = gpuFunctions.cudfMakeColumnFromInt32Scalar(node->getValue(), page->getElementsCount());;
+        cout << re << endl;
 
         return new EvaResult(re);
     }
 
     void* VisitColumn(Column* node,void* context){
 
+        spdlog::info("Column "+node->getValue());
         int columnIndex = -1;
         auto allFields = this->input_schemaIn->field_names();
 
@@ -175,7 +204,7 @@ public:
 
         auto re = gpuFunctions.cudfGetColumnByIndex(page->getExtensionPage(),columnIndex);
 
-        return new EvaResult(re);
+        return new EvaResult(re,false);
 
     }
 
