@@ -27,6 +27,11 @@ public:
         this->desc = desc;
     }
 
+    AggregationDesc getDesc()
+    {
+        return this->desc;
+    }
+
     std::shared_ptr<Operator> getOperator(shared_ptr<DriverContext> driverContext) {
 
         return std::make_shared<PartialAggregationOperator>(driverContext,this->desc);

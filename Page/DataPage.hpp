@@ -44,8 +44,10 @@ public:
             this->elementsCount = page->num_rows();
     }
 
-    DataPage(void *dataPage,int rows,ExtensionToken token)
+    DataPage(void *dataPage,shared_ptr<arrow::Schema> schema, int rows,ExtensionToken token)
     {
+        vector<shared_ptr<arrow::Array>> arrays;
+        this->page = arrow::RecordBatch::Make(schema,0,arrays);
         this->extensionPage = dataPage;
         this->elementsCount = rows;
         this->loc = token;

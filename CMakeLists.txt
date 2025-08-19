@@ -527,6 +527,12 @@ add_executable(OLVP main.cpp
         FunctionExtension/GPU/GPUExprFilter.hpp
         FunctionExtension/OperatorExtension.cpp
         TpchTest/Querys/SimpleTest/Query1_GPUFilter.hpp
+        FunctionExtension/GPU/GPUProjectEvaluator.hpp
+        FunctionExtension/GPU/Logical_GPUProjectOperator.hpp
+        FunctionExtension/GPU/GPUProjectOperator.hpp
+        FunctionExtension/GPU/GPUProjector.hpp
+        FunctionExtension/GPU/GPUPartialAggregationOperator.hpp
+        FunctionExtension/GPU/Logical_GPUPartialAggregationOperator.hpp
 
 
 )

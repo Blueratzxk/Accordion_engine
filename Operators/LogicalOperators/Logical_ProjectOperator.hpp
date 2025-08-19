@@ -30,6 +30,10 @@ public:
 
     }
 
+    ProjectAssignments getAssignments()
+    {
+        return this->assignments;
+    }
     std::shared_ptr<Operator> getOperator(shared_ptr<DriverContext> driverContext) {
         return std::make_shared<ProjectOperator>(driverContext,this->assignments);
     }

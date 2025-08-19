@@ -6,13 +6,15 @@
 #define OLVP_PARTIALAGGREGATIONOPERATOR_HPP
 
 
-#include "arrow/compute/api_scalar.h"
-#include "arrow/compute/api_vector.h"
+//#include "arrow/compute/api_scalar.h"
+//#include "arrow/compute/api_vector.h"
 
-//#include "arrow/acero/groupby.h"
-#include "arrow/compute/exec.h"
+
+#include "arrow/acero/options.h"
 #include "arrow/acero/aggregate_node.h"
+#include "arrow/compute/api_aggregate.h"
 #include "arrow/table.h"
+#include "arrow/acero/exec_plan.h"
 
 #include "../Operators/Operator.hpp"
 #include "../Descriptor/AggregationDescriptor.hpp"

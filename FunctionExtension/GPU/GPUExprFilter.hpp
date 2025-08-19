@@ -34,7 +34,7 @@ public:
 
         result->freeResult();
         delete result;
-        return make_shared<DataPage>(final,elementCount,DataPage::GPU);
+        return make_shared<DataPage>(final,this->input_schema,elementCount,DataPage::GPU);
     }
 
 
@@ -193,7 +193,7 @@ public:
 
         auto re = gpuFunctions.pushCPUPageToGPU(record_batch);
 
-        this->evaluate(make_shared<DataPage>(re,2,DataPage::GPU));
+        this->evaluate(make_shared<DataPage>(re,input_schema,2,DataPage::GPU));
     }
 
 

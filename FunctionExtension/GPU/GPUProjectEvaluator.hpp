@@ -1,9 +1,10 @@
 //
-// Created by zxk on 8/16/25.
+// Created by zxk on 8/17/25.
 //
 
-#ifndef OLVP_GPUFILTEREXPREVALUATOR_HPP
-#define OLVP_GPUFILTEREXPREVALUATOR_HPP
+#ifndef OLVP_GPUPROJECTEVALUATOR_HPP
+#define OLVP_GPUPROJECTEVALUATOR_HPP
+
 
 
 #include "../Frontend/AstNodes/tree.h"
@@ -13,7 +14,8 @@
 #include "../Utils/ArrowDicts.hpp"
 #include "GPUFunctions.h"
 #include "../Page/DataPage.hpp"
-class EvaResult
+
+class ProjectEvaResult
 {
     void* ptr = nullptr;
     bool releaseAble = true;
@@ -21,12 +23,12 @@ class EvaResult
 
 public:
 
-    EvaResult(void* ptr,bool releaseAble)
+    ProjectEvaResult(void* ptr,bool releaseAble)
     {
         this->ptr = ptr;
         this->releaseAble = releaseAble;
     }
-    EvaResult(void* ptr)
+    ProjectEvaResult(void* ptr)
     {
         this->ptr = ptr;
     }
@@ -51,8 +53,7 @@ public:
 
 };
 
-
-class AstTreeEvaluator: public DefaultAstNodeVisitor
+class GPUProjectEvaluator: public DefaultAstNodeVisitor
 {
 
     std::shared_ptr<arrow::Schema> input_schemaIn;
@@ -63,7 +64,7 @@ public:
 
 
 
-    AstTreeEvaluator(std::shared_ptr<arrow::Schema> input_schemaIn, shared_ptr<DataPage> page){
+    GPUProjectEvaluator(std::shared_ptr<arrow::Schema> input_schemaIn, shared_ptr<DataPage> page){
         this->input_schemaIn = input_schemaIn;
         this->page = page;
 
@@ -76,65 +77,60 @@ public:
 
         vector<Node*> arguments = node->getChildren();
 
-        vector<EvaResult*> results;
+        vector<ProjectEvaResult*> results;
         for(int i = 0 ; i < arguments.size() ; i++)
         {
             auto re = Visit(arguments[i],NULL);
-            results.push_back((EvaResult*)re);
+            results.push_back((ProjectEvaResult*)re);
         }
 
-        EvaResult *outputResult = NULL;
+        ProjectEvaResult *outputResult = NULL;
         spdlog::info("FunctionCall"+node->getFuncName());
         if(node->getFuncName() == "subtract")
         {
             auto re = gpuFunctions.cudfFunctionCall(node->getFuncName(),{results[0]->getColumn(),results[1]->getColumn()},node->getOutputType());
-            cout << "sub res:" << re << endl;
-            outputResult = new EvaResult(re);
+            outputResult = new ProjectEvaResult(re);
+        }
+        else if(node->getFuncName() == "add")
+        {
+            auto re = gpuFunctions.cudfFunctionCall(node->getFuncName(),{results[0]->getColumn(),results[1]->getColumn()},node->getOutputType());
+
+            outputResult = new ProjectEvaResult(re);
+        }
+        else if(node->getFuncName() == "multiply")
+        {
+            auto re = gpuFunctions.cudfFunctionCall(node->getFuncName(),{results[0]->getColumn(),results[1]->getColumn()},node->getOutputType());
+            outputResult = new ProjectEvaResult(re);
+        }
+        else if(node->getFuncName() == "extractYear")
+        {
+            auto re = gpuFunctions.cudfFunctionCall(node->getFuncName(),{results[0]->getColumn()},node->getOutputType());
+            outputResult = new ProjectEvaResult(re);
         }
         else if(node->getFuncName() == "less_than_or_equal_to")
         {
             auto re = gpuFunctions.cudfFunctionCall(node->getFuncName(),{results[0]->getColumn(),results[1]->getColumn()},node->getOutputType());
-            outputResult = new EvaResult(re);
+            outputResult = new ProjectEvaResult(re);
         }
         else if(node->getFuncName() == "less_than")
         {
             auto re = gpuFunctions.cudfFunctionCall(node->getFuncName(),{results[0]->getColumn(),results[1]->getColumn()},node->getOutputType());
-            outputResult = new EvaResult(re);
+            outputResult = new ProjectEvaResult(re);
         }
         else if(node->getFuncName() == "greater_than")
         {
             auto re = gpuFunctions.cudfFunctionCall(node->getFuncName(),{results[0]->getColumn(),results[1]->getColumn()},node->getOutputType());
-            outputResult = new EvaResult(re);
+            outputResult = new ProjectEvaResult(re);
         }
         else if(node->getFuncName() == "greater_than_or_equal_to")
         {
             auto re = gpuFunctions.cudfFunctionCall(node->getFuncName(),{results[0]->getColumn(),results[1]->getColumn()},node->getOutputType());
-            outputResult = new EvaResult(re);
-        }
-        else if(node->getFuncName() == "equal")
-        {
-            auto re = gpuFunctions.cudfFunctionCall(node->getFuncName(),{results[0]->getColumn(),results[1]->getColumn()},node->getOutputType());
-            outputResult = new EvaResult(re);
-        }
-        else if(node->getFuncName() == "not_equal")
-        {
-            auto re = gpuFunctions.cudfFunctionCall(node->getFuncName(),{results[0]->getColumn(),results[1]->getColumn()},node->getOutputType());
-            outputResult = new EvaResult(re);
-        }
-        else if(node->getFuncName() == "and")
-        {
-            auto re = gpuFunctions.cudfFunctionCall(node->getFuncName(),{results[0]->getColumn(),results[1]->getColumn()},node->getOutputType());
-            outputResult = new EvaResult(re);
-        }
-        else if(node->getFuncName() == "or")
-        {
-            auto re = gpuFunctions.cudfFunctionCall(node->getFuncName(),{results[0]->getColumn(),results[1]->getColumn()},node->getOutputType());
-            outputResult = new EvaResult(re);
+            outputResult = new ProjectEvaResult(re);
         }
         else if(node->getFuncName() == "castDATE")
         {
             auto re = gpuFunctions.cudfFunctionCall(node->getFuncName(),{results[0]->getColumn()},node->getOutputType());
-            outputResult = new EvaResult(re);
+            outputResult = new ProjectEvaResult(re);
         }
         else
         {
@@ -155,28 +151,28 @@ public:
         spdlog::info("DoubleLiteral");
         auto re = gpuFunctions.cudfMakeColumnFromDoubleScalar(node->getValue(), page->getElementsCount());
 
-        return new EvaResult(re);
+        return new ProjectEvaResult(re);
     }
     void* VisitInt32Literal(Int32Literal* node,void* context) {
 
         spdlog::info("Int32Literal");
         auto re = gpuFunctions.cudfMakeColumnFromInt32Scalar(node->getValue(), page->getElementsCount());;
 
-        return new EvaResult(re);
+        return new ProjectEvaResult(re);
     }
     void* VisitInt64Literal(Int64Literal* node,void* context) {
 
         spdlog::info("Int64Literal");
         auto re = gpuFunctions.cudfMakeColumnFromInt64Scalar(node->getValue(), page->getElementsCount());;
 
-        return new EvaResult(re);
+        return new ProjectEvaResult(re);
     }
     void* VisitStringLiteral(StringLiteral* node,void* context){
 
         spdlog::info("StringLiteral");
         auto re = gpuFunctions.cudfMakeColumnFromStringScalar(node->getValue(), page->getElementsCount());;
 
-        return new EvaResult(re);
+        return new ProjectEvaResult(re);
     }
 
 
@@ -192,7 +188,7 @@ public:
         cout <<  page->getElementsCount() << endl;
         cout << re << endl;
 
-        return new EvaResult(re);
+        return new ProjectEvaResult(re);
     }
     void* VisitIdentifier(Identifier* node,void* context){
 
@@ -207,7 +203,7 @@ public:
         auto re = gpuFunctions.cudfMakeColumnFromInt32Scalar(node->getValue(), page->getElementsCount());;
         cout << re << endl;
 
-        return new EvaResult(re);
+        return new ProjectEvaResult(re);
     }
 
     void* VisitColumn(Column* node,void* context){
@@ -224,7 +220,7 @@ public:
 
         auto re = gpuFunctions.cudfGetColumnByIndex(page->getExtensionPage(),columnIndex);
 
-        return new EvaResult(re,false);
+        return new ProjectEvaResult(re,false);
 
     }
 
@@ -252,13 +248,10 @@ public:
 
 
 
-    void* filter(void* finalMask, int &elementCount)
-    {
-        auto filtered = gpuFunctions.cudfApplyBooleanMask(page->getExtensionPage(),finalMask,elementCount);
-        return filtered;
-    }
-
 };
 
 
-#endif //OLVP_GPUFILTEREXPREVALUATOR_HPP
+
+
+
+#endif //OLVP_GPUPROJECTEVALUATOR_HPP

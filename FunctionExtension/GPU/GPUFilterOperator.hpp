@@ -17,7 +17,7 @@ class GPUFilterOperator:public Operator
 
     bool finished;
 
-    string name = "FilterOperator";
+    string name = "GPUFilterOperator";
 
 
 
@@ -149,7 +149,7 @@ public:
         spdlog::info("filter uploadToExtension:"+ to_string(page->getElementsCount()));
         if(page->isEndPage())
             return page;
-        return make_shared<DataPage>(gpuFunctions.pushCPUPageToGPU(page->get()),page->getElementsCount(),DataPage::GPU);
+        return make_shared<DataPage>(gpuFunctions.pushCPUPageToGPU(page->get()),page->get()->schema(),page->getElementsCount(),DataPage::GPU);
     }
 
 

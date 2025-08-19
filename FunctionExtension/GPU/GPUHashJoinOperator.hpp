@@ -137,7 +137,7 @@ public:
         gpuFunctions.inner_join_byToken(probeInputSchema,buildInputSchema,buildOutputSchema,probeHashChannels,
                                         buildHashChannels,probeOutputChannels,buildOutputChannels,
                                         inputPage->getExtensionPage(),this->buildTableToken,outputTable,elementCount);
-        this->outPutPage = make_shared<DataPage>(outputTable,elementCount,DataPage::GPU);
+        this->outPutPage = make_shared<DataPage>(outputTable,outputSchema,elementCount,DataPage::GPU);
         this->probe = NULL;
     }
 
@@ -245,7 +245,7 @@ public:
         spdlog::info("hashjoin uploadToExtension:"+ to_string(page->getElementsCount()));
         if(page->isEndPage())
             return page;
-        return make_shared<DataPage>(gpuFunctions.pushCPUPageToGPU(page->get()),page->getElementsCount(),DataPage::GPU);
+        return make_shared<DataPage>(gpuFunctions.pushCPUPageToGPU(page->get()),page->get()->schema(),page->getElementsCount(),DataPage::GPU);
     }
 };
 

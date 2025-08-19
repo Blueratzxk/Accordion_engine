@@ -52,6 +52,11 @@ typedef void* (*cudf_make_column_from_double_scalar)(double value, int num_rows)
 typedef void* (*cudf_make_column_from_string_scalar)(string value, int num_rows);
 typedef void* (*cudf_make_column_from_date32_scalar)(string value, int num_rows);
 typedef void* (*cudf_apply_boolean_mask)(void *cudfTable,void* finalmask, int &elementCount);
+typedef void* (*cudf_make_table)(vector<void*> columns);
+typedef void* (*cudf_copy_column_by_index)(void* table_ptr, int index);
+typedef void* (*cudf_aggregation)(void* cudf_table,vector<int> group_columns,vector<int> agg_columns,
+        vector<string> agg_types,vector<string> &outputTypes,int &elementCount);
+
 
 class GPUFunctions:public FuncExt
 {
@@ -396,6 +401,48 @@ public:
         return p(cudf_column);
     }
 
+    void* cudfMakeTable(vector<void*> columns){
+
+        if(!load())
+            return NULL;
+
+        cudf_make_table p = (cudf_make_table)dlsym(handle, "cudf_make_table");  //argv[2]对应输入需获取地址的符号名
+        if(!p) {
+            spdlog::debug("Load cudf_make_table failed");
+            return NULL;
+        }
+
+        return p(columns);
+    }
+
+    void* cudfCopyColumnByIndex(void* table_ptr, int index){
+
+        if(!load())
+            return NULL;
+
+        cudf_copy_column_by_index p = (cudf_copy_column_by_index)dlsym(handle, "cudf_copy_column_by_index");  //argv[2]对应输入需获取地址的符号名
+        if(!p) {
+            spdlog::debug("Load cudf_copy_column_by_index failed");
+            return NULL;
+        }
+
+        return p(table_ptr,index);
+    }
+
+    void* cudfAggregation(void* cudf_table,vector<int> group_columns,vector<int> agg_columns,
+                          vector<string> agg_types,vector<string> &outputTypes, int &elementCount){
+
+        if(!load())
+            return NULL;
+
+        cudf_aggregation p = (cudf_aggregation)dlsym(handle, "cudf_aggregation");  //argv[2]对应输入需获取地址的符号名
+        if(!p) {
+            spdlog::debug("Load cudf_aggregation failed");
+            return NULL;
+        }
+
+        return p(cudf_table,group_columns,agg_columns,agg_types,outputTypes,elementCount);
+    }
 
 
 };
