@@ -57,6 +57,8 @@ typedef void* (*cudf_copy_column_by_index)(void* table_ptr, int index);
 typedef void* (*cudf_aggregation)(void* cudf_table,vector<int> group_columns,vector<int> agg_columns,
         vector<string> agg_types,vector<string> &outputTypes,int &elementCount);
 
+typedef void* (*cudf_copy_if_else)(void* mask_col, void* true_col, void* false_col);
+typedef void* (*cudf_contains) (void* search, void* valuesTable);
 
 class GPUFunctions:public FuncExt
 {
@@ -444,6 +446,34 @@ public:
         return p(cudf_table,group_columns,agg_columns,agg_types,outputTypes,elementCount);
     }
 
+    void* cudfCopyIfElse(void* mask_col, void* true_col, void* false_col){
+
+        if(!load())
+            return NULL;
+
+        cudf_copy_if_else p = (cudf_copy_if_else)dlsym(handle, "cudf_copy_if_else");  //argv[2]对应输入需获取地址的符号名
+        if(!p) {
+            spdlog::debug("Load cudf_copy_if_else failed");
+            return NULL;
+        }
+
+        return p(mask_col,true_col,false_col);
+    }
+
+
+    void* cudfContains(void* search, void* valuesTable)
+    {
+        if(!load())
+            return NULL;
+
+        cudf_contains p = (cudf_contains)dlsym(handle, "cudf_contains");  //argv[2]对应输入需获取地址的符号名
+        if(!p) {
+            spdlog::debug("Load cudf_contains failed");
+            return NULL;
+        }
+
+        return p(search,valuesTable);
+    }
 
 };
 

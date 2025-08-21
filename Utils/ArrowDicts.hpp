@@ -53,6 +53,65 @@ public:
 
 
 
+    static std::shared_ptr<arrow::Array> make_arrow_column(const arrow::DataType& type, const std::vector<std::string>& data) {
+        std::shared_ptr<arrow::Array> array;
+
+
+        switch (type.id()) {
+            case arrow::Type::INT32: {
+                arrow::Int32Builder builder;
+                for (const auto& s : data) {
+                    int32_t val = std::stoi(s);
+                    builder.Append(val).ok();
+                }
+                builder.Finish(&array).ok();
+                break;
+            }
+            case arrow::Type::INT64: {
+                arrow::Int64Builder builder;
+                for (const auto& s : data) {
+                    int64_t val = std::stoll(s);
+                    builder.Append(val).ok();
+                }
+                builder.Finish(&array).ok();
+                break;
+            }
+            case arrow::Type::FLOAT: {
+                arrow::FloatBuilder builder;
+                for (const auto& s : data) {
+                    float val = std::stof(s);
+                    builder.Append(val).ok();
+                }
+                builder.Finish(&array).ok();
+                break;
+            }
+            case arrow::Type::DOUBLE: {
+                arrow::DoubleBuilder builder;
+                for (const auto& s : data) {
+                    double val = std::stod(s);
+                    builder.Append(val).ok();
+                }
+                builder.Finish(&array).ok();
+                break;
+            }
+            case arrow::Type::STRING: {
+                arrow::StringBuilder builder;
+                for (const auto& s : data) {
+                    builder.Append(s).ok();
+                }
+                builder.Finish(&array).ok();
+                break;
+            }
+            default:
+                throw std::runtime_error("Make_arrow_column unsupported Arrow data type");
+        }
+
+
+        return array;
+    }
+
+
+
 
 };
 

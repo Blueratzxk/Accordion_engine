@@ -68,6 +68,7 @@ public:
 
     void addInput(std::shared_ptr<DataPage> input) override {
         if(input != NULL && !input->isEndPage()) {
+
             this->inputPage = input;
             if(this->schema == NULL) {
                 this->schema = this->inputPage->get()->schema();
@@ -147,6 +148,7 @@ public:
                 sortedResult.push_back(builders[i].buildFinish().ValueOrDie());
             }
 
+
             this->outPutPage = std::make_shared<DataPage>(arrow::RecordBatch::Make(this->schema,indices->length(),sortedResult));
 
         }
@@ -177,12 +179,10 @@ public:
 
         if(this->inputPage->isEndPage()) {
             this->sendEndPage = true;
-            process();
-            return this->outPutPage;
         }
 
-
-        return NULL;
+        process();
+        return this->outPutPage;
 
     }
 

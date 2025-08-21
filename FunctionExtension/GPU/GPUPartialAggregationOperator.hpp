@@ -129,7 +129,9 @@ public:
         int startIndex = group_columns.size();
         for(int i = 0 ; i < agg_columns.size() ; i++)
         {
-            auto field = make_shared<arrow::Field>(this->desc.getAggregates()[i].getOutputName(), transCudfTypeToArrowType(outputTypes[startIndex+i]));
+            auto outputName = this->desc.getAggregates()[i].getOutputName();
+            auto outputType = transCudfTypeToArrowType(outputTypes[startIndex+i]);
+            auto field = make_shared<arrow::Field>(outputName,outputType);
             fields.push_back(field);
         }
         shared_ptr<arrow::Schema> outputschema = arrow::schema(fields);

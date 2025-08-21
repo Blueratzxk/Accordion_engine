@@ -102,6 +102,26 @@ public:
             auto re = gpuFunctions.cudfFunctionCall(node->getFuncName(),{results[0]->getColumn(),results[1]->getColumn()},node->getOutputType());
             outputResult = new ProjectEvaResult(re);
         }
+        else if(node->getFuncName() == "equal")
+        {
+            auto re = gpuFunctions.cudfFunctionCall(node->getFuncName(),{results[0]->getColumn(),results[1]->getColumn()},node->getOutputType());
+            outputResult = new ProjectEvaResult(re);
+        }
+        else if(node->getFuncName() == "not_equal")
+        {
+            auto re = gpuFunctions.cudfFunctionCall(node->getFuncName(),{results[0]->getColumn(),results[1]->getColumn()},node->getOutputType());
+            outputResult = new ProjectEvaResult(re);
+        }
+        else if(node->getFuncName() == "and")
+        {
+            auto re = gpuFunctions.cudfFunctionCall(node->getFuncName(),{results[0]->getColumn(),results[1]->getColumn()},node->getOutputType());
+            outputResult = new ProjectEvaResult(re);
+        }
+        else if(node->getFuncName() == "or")
+        {
+            auto re = gpuFunctions.cudfFunctionCall(node->getFuncName(),{results[0]->getColumn(),results[1]->getColumn()},node->getOutputType());
+            outputResult = new ProjectEvaResult(re);
+        }
         else if(node->getFuncName() == "extractYear")
         {
             auto re = gpuFunctions.cudfFunctionCall(node->getFuncName(),{results[0]->getColumn()},node->getOutputType());
@@ -132,9 +152,24 @@ public:
             auto re = gpuFunctions.cudfFunctionCall(node->getFuncName(),{results[0]->getColumn()},node->getOutputType());
             outputResult = new ProjectEvaResult(re);
         }
+        else if(node->getFuncName() == "castFLOAT8")
+        {
+            auto re = gpuFunctions.cudfFunctionCall(node->getFuncName(),{results[0]->getColumn()},node->getOutputType());
+            outputResult = new ProjectEvaResult(re);
+        }
+        else if(node->getFuncName() == "timestampaddYear")
+        {
+            auto re = gpuFunctions.cudfFunctionCall(node->getFuncName(),{results[0]->getColumn(),results[1]->getColumn()},node->getOutputType());
+            outputResult = new ProjectEvaResult(re);
+        }
+        else if(node->getFuncName() == "timestampaddMonth")
+        {
+            auto re = gpuFunctions.cudfFunctionCall(node->getFuncName(),{results[0]->getColumn(),results[1]->getColumn()},node->getOutputType());
+            outputResult = new ProjectEvaResult(re);
+        }
         else
         {
-            spdlog::info("Unsupported filter op " + node->getFuncName());
+            spdlog::info("Unsupported project op " + node->getFuncName());
             return NULL;
         }
 
@@ -227,23 +262,52 @@ public:
     void* VisitIfExpression(IfExpression *node,void* context)
     {
         vector<Node*> arguments = node->getChildren();
-        for(int i = 0 ; i < arguments.size() ; i++)
-        {
-            Visit(arguments[i],NULL);
-        }
 
-        return NULL;
+        auto Condition = Visit(node->getCondition(),NULL);
+        auto Then = Visit(node->getThenAction(),NULL);
+        auto Else = Visit(node->getElseAction(),NULL);
+
+        ProjectEvaResult* ProjCondition = (ProjectEvaResult*)Condition;
+        ProjectEvaResult* ProjThen = (ProjectEvaResult*)Then;
+        ProjectEvaResult* ProjElse = (ProjectEvaResult*)Else;
+
+        auto re = gpuFunctions.cudfCopyIfElse(ProjCondition->getColumn(),ProjThen->getColumn(),ProjElse->getColumn());
+
+        ProjCondition->freeResult();
+        ProjThen->freeResult();
+        ProjElse->freeResult();
+        delete ProjCondition;
+        delete ProjThen;
+        delete ProjElse;
+
+        return new ProjectEvaResult(re);
     }
 
     void* VisitInExpression(InExpression *node,void* context)
     {
         vector<Node*> arguments = node->getChildren();
-        for(int i = 0 ; i < arguments.size() ; i++)
-        {
-            Visit(arguments[i],NULL);
-        }
 
-        return NULL;
+        vector<string> values = node->getInConstants();
+
+        auto arrowCol = Typer::make_arrow_column(*Typer::getType(node->getInputType()),node->getInConstants());
+
+        arrow::FieldVector fieldVector;
+        fieldVector.push_back(make_shared<arrow::Field>("values",Typer::getType(node->getInputType())));
+        auto valuesSchema = make_shared<arrow::Schema>(fieldVector);
+        auto arrowConstants = arrow::RecordBatch::Make(valuesSchema,arrowCol->length(),{arrowCol});
+        void *cudfTable = gpuFunctions.pushCPUPageToGPU(arrowConstants);
+
+
+        ProjectEvaResult* searchCol = (ProjectEvaResult*)Visit(arguments[0],NULL);
+        auto re = gpuFunctions.cudfContains(searchCol,cudfTable);
+
+
+        gpuFunctions.freeGPUPage(cudfTable);
+        searchCol->freeResult();
+        delete searchCol;
+
+        return new ProjectEvaResult(re);
+
     }
 
 

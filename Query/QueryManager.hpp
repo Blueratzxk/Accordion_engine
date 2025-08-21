@@ -30,6 +30,7 @@
 #include "../TpchTest/Querys/Query4_hash_NL.hpp"
 #include "../TpchTest/Querys/Query4_single.hpp"
 #include "../TpchTest/Querys/Query5.hpp"
+#include "../TpchTest/Querys/SimpleTest/Query5_GPUFilter.hpp"
 #include "../TpchTest/Querys/Query5_NL.hpp"
 #include "../TpchTest/Querys/Query5_hash.hpp"
 #include "../TpchTest/Querys/Query5_hash_NL.hpp"
@@ -168,6 +169,8 @@ public:
         regQueryList["Q5_h_NL"] = make_shared<Query5_hash_NL>();
         regQueryList["Q5_ss"] = make_shared<Query5_ShuffleStage>();
         regQueryList["Q5S"] = make_shared<Query5_single>();
+        regQueryList["Q5GF"] = make_shared<Query5_GPUFilter>();
+
 
 
         regQueryList["Q6L"] = make_shared<Query6>();

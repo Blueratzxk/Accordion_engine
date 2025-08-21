@@ -103,6 +103,27 @@ public:
         funcLess->addChilds({lshipDate,castDate});
 
 
+        Column *l_shipmode = new Column("0","l_shipmode","string");
+        InExpression *shipmodeIn = new InExpression("0","string",{"AIR","TRUCK"});
+        shipmodeIn->addChilds({l_shipmode});
+
+        FunctionCall *funcOr1 = new FunctionCall("0","or","bool");
+        funcOr1->addChilds({funcLess,shipmodeIn});
+
+
+
+        StringLiteral *l_commentLike = new StringLiteral("0","%special%");
+        Column *l_comment = new Column("0","l_comment","string");
+
+        FunctionCall *like  = new FunctionCall("0","like","bool");
+        like->addChilds({l_comment,l_commentLike});
+
+
+        FunctionCall *funcOr2= new FunctionCall("0","or","bool");
+        funcOr2->addChilds({funcOr1,like});
+
+
+
         vector<FieldDesc> fieldsIn = {FieldDesc("l_orderkey","int64"),
                                       FieldDesc("l_partkey","int64"),
                                       FieldDesc("l_suppkey","int64"),
@@ -120,7 +141,7 @@ public:
                                       FieldDesc("l_shipmode","string"),
                                       FieldDesc("l_comment","string")};
 
-        FilterDescriptor filterDescriptor(fieldsIn,funcLess);
+        FilterDescriptor filterDescriptor(fieldsIn,funcOr2);
         FilterNode *filterTime = new FilterNode(UUID::create_uuid(),filterDescriptor);
         return filterTime;
     }
