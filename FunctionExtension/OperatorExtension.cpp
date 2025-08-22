@@ -14,8 +14,7 @@
 #include "GPU/Logical_GPUFilterOperator.hpp"
 #include "GPU/Logical_GPUProjectOperator.hpp"
 #include "GPU/Logical_GPUPartialAggregationOperator.hpp"
-
-
+#include "GPU/Logical_GPUBatchAssembleOperator.hpp"
 
 shared_ptr<Logical_GPUHashJoinOperator> OperatorExtension::extendHashJoin(shared_ptr<Logical_LookupJoinOperator> lookupJoinOp)
 {
@@ -88,6 +87,25 @@ vector<std::shared_ptr<LogicalOperator>> OperatorExtension::extendPipelineTempla
         else
             extendedTemplate.push_back(logicalOp);
     }
+
+    for(int i = 0 ; i < extendedTemplate.size() ; i++)
+    {
+        if(extendedTemplate[i]->getTypeId() == "Logical_GPUHashJoinOperator" ||
+                extendedTemplate[i]->getTypeId() == "Logical_GPUFilterOperator" ||
+                extendedTemplate[i]->getTypeId() == "Logical_GPUProjectOperator" ||
+                extendedTemplate[i]->getTypeId() == "Logical_GPUPartialAggregationOperator")
+        {
+    //        extendedTemplate.insert(extendedTemplate.begin() + i, make_shared<Logical_GPUBatchAssembleOperator>());
+            break;
+        }
+    }
+
+    string outputString;
+    for(int i = 0 ; i < extendedTemplate.size() ; i++)
+    {
+        outputString.append(extendedTemplate[i]->getTypeId()).append(" ");
+    }
+    spdlog::info(outputString);
+
     return extendedTemplate;
 }
-
