@@ -16,11 +16,13 @@ class Logical_FilterOperator:public LogicalOperator
 
     FilterDescriptor filterDesc;
 
+    string operatorId;
 
 public:
 
-    Logical_FilterOperator(FilterDescriptor filterDesc) {
+    Logical_FilterOperator(string operatorId,FilterDescriptor filterDesc) :LogicalOperator("Logical_FilterOperator") {
         this->filterDesc = filterDesc;
+        this->operatorId = operatorId;
 
     }
 
@@ -31,17 +33,18 @@ public:
 
     std::shared_ptr<Operator> getOperator(shared_ptr<DriverContext> driverContext) {
 
-        return std::make_shared<FilterOperator>(driverContext,this->filterDesc);
+        return std::make_shared<FilterOperator>(this->operatorId,driverContext,this->filterDesc);
     }
 
     std::shared_ptr<void> getOperatorNonType(shared_ptr<DriverContext> driverContext) {
 
-        return std::make_shared<FilterOperator>(driverContext,this->filterDesc);
+        return std::make_shared<FilterOperator>(this->operatorId,driverContext,this->filterDesc);
     }
 
-    string getTypeId(){return this->name;}
-
-
+    string getLogicalOperatorId() override
+    {
+        return this->operatorId;
+    }
 
 };
 

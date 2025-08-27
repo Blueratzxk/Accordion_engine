@@ -482,7 +482,7 @@ uint32_t blockSize;
 uint32_t reserve2[11];
 };
 
-/* FLEXSPI memory config block related defintions */
+/* FLEXSPI memory Config block related defintions */
 #define MG_FLEXSPI_CFG_BLK_TAG (0x42464346UL)      // ascii "FCFB" Big Endian
 #define MG_FLEXSPI_CFG_BLK_VERSION (0x56010400UL)  // V1.4.0
 
@@ -6362,7 +6362,7 @@ MG_INFO(("Swapping partitions, size %u (%u sectors)", max, max / ss));
 MG_INFO(("Do NOT power off..."));
 mg_log_level = MG_LL_NONE;
 
-// We use the last sector of partition2 for OTA data/config storage
+// We use the last sector of partition2 for OTA data/Config storage
 // Therefore we can use last sector of partition1 for swapping
 char *tmpsector = partition1 + fs / 2 - ss;  // Last sector of partition1
 (void) tmpsector;
@@ -18871,7 +18871,7 @@ ETH0->NETWORK_CONFIG = MG_BIT(29) | MG_BIT(26) | MG_BIT(21) |
 ((cr & 7) << 18) | MG_BIT(8) | MG_BIT(4) | MG_BIT(1) |
 MG_BIT(0);
 
-// config DMA settings: Force TX burst, Discard on Error, set RX buffer size
+// Config DMA settings: Force TX burst, Discard on Error, set RX buffer size
 // to 1536, TX_PBUF_SIZE, RX_PBUF_SIZE, AMBA_BURST_LENGTH
 ETH0->DMA_CONFIG =
 MG_BIT(26) | MG_BIT(24) | (0x18 << 16) | MG_BIT(10) | (3 << 8) | 4;

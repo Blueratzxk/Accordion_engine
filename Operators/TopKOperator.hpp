@@ -29,7 +29,7 @@ private:
     bool finished;
 
     string name = "SortOperator";
-
+    string operatorId;
     bool sendEndPage = false;
 
 
@@ -50,15 +50,13 @@ public:
 
 
 
-    string getOperatorId() { return this->name; }
-
-    TopKOperator(shared_ptr<DriverContext> driverContext,int64_t k,vector<string> sortKeys,vector<SortOrder> sortOrders) {
+    TopKOperator(string operatorId,shared_ptr<DriverContext> driverContext,int64_t k,vector<string> sortKeys,vector<SortOrder> sortOrders): Operator("SortOperator") {
 
         this->sortKeys = sortKeys;
         this->sortOrders = sortOrders;
         this->driverContext = driverContext;
         this->finished = false;
-
+        this->operatorId = operatorId;
 
         for(int i = 0 ; i < this->sortKeys.size() ; i++)
         {
@@ -200,12 +198,15 @@ public:
 
     }
 
-
     bool isFinished()
     {
         return this->finished;
     }
 
+    string getOperatorId() override
+    {
+        return this->operatorId;
+    }
 
 };
 

@@ -19,12 +19,13 @@ class Logical_PartialAggregationOperator:public LogicalOperator {
 
 
     AggregationDesc desc;
-
+    string operatorId;
 
 public:
 
-    Logical_PartialAggregationOperator(AggregationDesc desc) {
+    Logical_PartialAggregationOperator(string operatorId,AggregationDesc desc):LogicalOperator("Logical_PartialAggregationOperator") {
         this->desc = desc;
+        this->operatorId = operatorId;
     }
 
     AggregationDesc getDesc()
@@ -34,13 +35,16 @@ public:
 
     std::shared_ptr<Operator> getOperator(shared_ptr<DriverContext> driverContext) {
 
-        return std::make_shared<PartialAggregationOperator>(driverContext,this->desc);
+        return std::make_shared<PartialAggregationOperator>(this->operatorId,driverContext,this->desc);
     }
     std::shared_ptr<void> getOperatorNonType(shared_ptr<DriverContext> driverContext) {
-        return std::make_shared<PartialAggregationOperator>(driverContext,this->desc);
+        return std::make_shared<PartialAggregationOperator>(this->operatorId,driverContext,this->desc);
     }
-    string getTypeId(){return name;}
 
+    string getLogicalOperatorId() override
+    {
+        return this->operatorId;
+    }
 
 };
 

@@ -11,7 +11,11 @@
 using namespace std;
 
 class Operator {
+    string opType;
+
 public:
+    Operator(string opType){this->opType = opType;}
+    string getOperatorType(){return this->opType;}
     virtual string getOperatorId() =0;
     virtual void addInput(std::shared_ptr<DataPage> input) {}
     virtual std::shared_ptr<DataPage> getOutput() { return NULL; }

@@ -20,6 +20,8 @@
 #include "../../Query/QueryStateMachine.hpp"
 #include "QueryInfos/StageProcessingTimeCollector.hpp"
 
+#include "../Task/SidewayExchangeSystem/SidewayDataExchangeScheduler.hpp"
+
 
 class SqlQueryScheduler : public enable_shared_from_this<SqlQueryScheduler>{
 
@@ -519,6 +521,8 @@ public:
     }
 
 
+
+
     static void addStageConcurrent(shared_ptr<SqlQueryScheduler> scheduler,int stageId)
     {
         if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
@@ -807,6 +811,7 @@ public:
             return false;
 
 
+
         vector<StageExecutionAndScheduler> executions = scheduler->stageExeSchedulers;
 
         for (int i = 0; i < executions.size(); i++) {
@@ -816,28 +821,37 @@ public:
                     SystemPartitioningHandle::SINGLE) {
 
                     if(executions[i].getStageExecution()->getStageId().getId() == 0) {
-                        executions[i].getStageExecution()->prepareMoveStatefulTask(0);
-
-
-                        ScheduleResult result = (static_pointer_cast<NormalStageScheduler>(executions[i].getStageScheduler()))->addOneConcurrentForInterTaskMission(
-                                make_shared<TaskExecutionCondition>("InterTaskMission","Logical_FinalAggregationOperator"));
-                        vector<shared_ptr<HttpRemoteTask>> newTasks = result.getNewTasks();
-                        executions[i].getStageLinkage()->processScheduleResultsToAddConcurrent(newTasks);
-
-
-                        executions[i].getStageExecution()->taskDataAddressNotification(0,newTasks[0]->getTaskId()->getId(),"FinalAggregationOperator");
+                        SidewayDataExchangeScheduler scheduler(executions[i].getStageExecution(),executions[i].getStageScheduler(),executions[i].getStageLinkage(),0);
+                        scheduler.schedule();
                         return true;
                     }
 
-                       // scheduler->addMulConcurrencyForOneStage(executions,
-                        //                                        executions[i].getStageExecution()->getStageId().getId(),
-                         //                                       addConcur);
+
                 }
             }
         }
 
     }
 
+    static void moveFinishedTaskDataToNewNodeForStage(shared_ptr<SqlQueryScheduler> scheduler,int stageId,int taskId)
+    {
+        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
+            return;
+        /*
+        auto executions = scheduler->stageExeSchedulers;
+
+        for (int i = 0; i < executions.size(); i++) {
+
+            if (executions[i].getStageExecution()->getStageId().getId() == stageId) {
+
+                TaskId taskIdTemp;
+                ScheduleResult result = (static_pointer_cast<NormalStageScheduler>(executions[i].getStageScheduler()))->moveFinishedTaskToNewNodeForStage({taskId});
+                vector<shared_ptr<HttpRemoteTask>> newTasks = result.getNewTasks();
+                executions[i].getStageLinkage()->processScheduleResultsToReplaceSourceTasks(newTasks,{taskId});
+            }
+
+        }*/
+    }
 
 
     static void schedule(shared_ptr<SqlQueryScheduler> scheduler) {

@@ -19,7 +19,7 @@ class TableScanOperator:public Operator {
     std::shared_ptr<DataPage> out;
     bool finished;
 
-
+    string operatorId;
     string name = "TableScanOperator";
 
     atomic<bool> forceShutDown = false;
@@ -49,9 +49,9 @@ class TableScanOperator:public Operator {
     int tupleLen = -1;
 
 public:
-    string getOperatorId() { return this->name; }
 
-    TableScanOperator(shared_ptr<DriverContext> driverContext,std::shared_ptr<PageSourceManager> pageSourceProvider) {
+
+    TableScanOperator(string operatorId,shared_ptr<DriverContext> driverContext,std::shared_ptr<PageSourceManager> pageSourceProvider):Operator("TableScanOperator") {
 
         this->PSM = pageSourceProvider;
 
@@ -59,11 +59,12 @@ public:
         this->driverContext = driverContext;
         this->tableScanRecord = NULL;
         this->finished = false;
+        this->operatorId = operatorId;
 
 
     }
 
-    TableScanOperator(string id,shared_ptr<DriverContext> driverContext,std::shared_ptr<PageSourceManager> pageSourceProvider) {
+    TableScanOperator(string operatorId,string id,shared_ptr<DriverContext> driverContext,std::shared_ptr<PageSourceManager> pageSourceProvider):Operator("TableScanOperator") {
 
         this->PSM = pageSourceProvider;
 
@@ -72,7 +73,7 @@ public:
         this->tableScanRecord = NULL;
         this->finished = false;
         this->tableScanId = id;
-
+        this->operatorId = operatorId;
 
     }
 
@@ -206,6 +207,11 @@ public:
     bool isFinished()
     {
         return this->finished;
+    }
+
+    string getOperatorId() override
+    {
+        return this->operatorId;
     }
 
 };

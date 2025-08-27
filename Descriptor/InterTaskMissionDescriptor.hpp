@@ -6,47 +6,99 @@
 #define OLVP_INTERTASKMISSIONDESCRIPTOR_HPP
 
 
+class InterTaskSourceDescriptor
+{
+    string source_ip;
+    string source_port;
+    string sourceId;
+    string bufferId;
+
+    string destinationIdOnNewTask;
+public:
+    InterTaskSourceDescriptor(){}
+    InterTaskSourceDescriptor(string source_ip,string source_port,string sourceId,string bufferId,string destinationIdOnNewTask){
+        this->source_ip = source_ip;
+        this->source_port = source_port;
+        this->sourceId = sourceId;
+        this->bufferId = bufferId;
+        this->destinationIdOnNewTask = destinationIdOnNewTask;
+    }
+
+    string getInterSource_ip(){return this->source_ip;}
+    string getInterSource_port(){return this->source_port;}
+    string getInterSourceId(){return this->sourceId;}
+    string getBufferId(){return this->bufferId;}
+    string getDestinationIdOnNewTask(){return this->destinationIdOnNewTask;}
+
+    static string Serialize(InterTaskSourceDescriptor interTaskSourceDescriptor)
+    {
+        nlohmann::json json;
+
+        json["source_ip"] = interTaskSourceDescriptor.source_ip;
+        json["source_port"] = interTaskSourceDescriptor.source_port;
+        json["sourceId"] = interTaskSourceDescriptor.sourceId;
+        json["bufferId"] = interTaskSourceDescriptor.bufferId;
+        json["destinationIdOnNewTask"] = interTaskSourceDescriptor.destinationIdOnNewTask;
+
+
+        string result = json.dump();
+
+        return result;
+    }
+
+    static InterTaskSourceDescriptor Deserialize(string interTaskSourceDescriptor)
+    {
+        nlohmann::json json = nlohmann::json::parse(interTaskSourceDescriptor);
+        return InterTaskSourceDescriptor(json["source_ip"],json["source_port"],json["sourceId"],json["bufferId"],json["destinationIdOnNewTask"]);
+    }
+
+};
+
 class InterTaskMissionDescriptor
 {
 
-    string missionType = "";
-    string taskId = "";
-    string componentId = "";
-    string IP = "";
-    string PORT = "";
-    string bufferId = "";
 public:
-    InterTaskMissionDescriptor(string missionType,string componentId){
+    enum MissionType
+    {
+        OPERATOR_MIGRATION,
+        INTERTASK_EXCHANGE_SERVICE
+    };
+
+private:
+
+    set<string> sourceTypes;
+    MissionType missionType;
+
+    InterTaskSourceDescriptor interTaskSourceDescriptor;
+public:
+    InterTaskMissionDescriptor(MissionType missionType,set<string> sourceTypes,InterTaskSourceDescriptor interTaskSourceDescriptor){
         this->missionType = missionType;
-        this->componentId = componentId;
+        this->sourceTypes = sourceTypes;
+        this->interTaskSourceDescriptor = interTaskSourceDescriptor;
     }
 
-    InterTaskMissionDescriptor(string missionType,string taskId,string componentId,string IP,string PORT,string bufferId){
+    InterTaskMissionDescriptor(MissionType missionType,set<string> sourceTypes){
         this->missionType = missionType;
-        this->componentId = componentId;
-        this->IP = IP;
-        this->PORT = PORT;
-        this->bufferId = bufferId;
-        this->taskId = taskId;
+        this->sourceTypes = sourceTypes;
+    }
+    InterTaskMissionDescriptor(MissionType missionType,InterTaskSourceDescriptor interTaskSourceDescriptor){
+        this->missionType = missionType;
+        this->interTaskSourceDescriptor = interTaskSourceDescriptor;
     }
 
-    string getBufferId(){return this->bufferId;}
-    string getIP(){return this->IP;}
-    string getPort(){return this->PORT;}
-    string getMissionType(){return this->missionType;}
-    string getComponentId(){return this->componentId;}
-    string getTaskId(){return this->taskId;}
+
+
+    MissionType getMissionType(){return this->missionType;}
+    set<string> getSourceTypes(){return this->sourceTypes;}
+    InterTaskSourceDescriptor getInterTaskSourceDescriptor(){return this->interTaskSourceDescriptor;}
 
     static string Serialize(InterTaskMissionDescriptor interTaskMissionDescriptor) {
 
         nlohmann::json json;
 
         json["missionType"] = interTaskMissionDescriptor.missionType;
-        json["componentId"] = interTaskMissionDescriptor.componentId;
-        json["IP"] = interTaskMissionDescriptor.IP;
-        json["PORT"] = interTaskMissionDescriptor.PORT;
-        json["bufferId"] = interTaskMissionDescriptor.bufferId;
-        json["taskId"] = interTaskMissionDescriptor.taskId;
+        json["sourceTypes"] = interTaskMissionDescriptor.sourceTypes;
+        json["interTaskSourceDescriptor"] = InterTaskSourceDescriptor::Serialize(interTaskMissionDescriptor.interTaskSourceDescriptor);
 
         string result = json.dump();
         return result;
@@ -56,7 +108,7 @@ public:
     {
         nlohmann::json json = nlohmann::json::parse(interTaskMissionDescriptor);
 
-        return make_shared<InterTaskMissionDescriptor>(json["missionType"],json["taskId"],json["componentId"],json["IP"],json["PORT"],json["bufferId"]);
+        return make_shared<InterTaskMissionDescriptor>(json["missionType"],json["sourceTypes"],InterTaskSourceDescriptor::Deserialize(json["interTaskSourceDescriptor"]));
     }
 
 

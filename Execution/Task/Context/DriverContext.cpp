@@ -39,7 +39,7 @@ void DriverContext::addRemoteSourceLocation(set<std::shared_ptr<Split>> schedule
     {
         for(int i = 0 ; i < (*this->driver).size() ; i++) {
 
-            if ((*this->driver)[i]->getOperatorId() == "RemoteSourceOperator") {
+            if ((*this->driver)[i]->getOperatorType() == "RemoteSourceOperator") {
 
                 static_pointer_cast<RemoteSourceOperator>((*this->driver)[i])->addSources(scheduledSplits);
                 break;
@@ -52,7 +52,7 @@ void DriverContext::closeRemoteSourceDriver() {
 
     for (int i = 0; i < (*this->driver).size(); i++) {
 
-        if ((*this->driver)[i]->getOperatorId() == "RemoteSourceOperator") {
+        if ((*this->driver)[i]->getOperatorType() == "RemoteSourceOperator") {
 
             static_pointer_cast<RemoteSourceOperator>((*this->driver)[i])->abort();
             break;

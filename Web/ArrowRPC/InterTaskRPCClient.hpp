@@ -81,7 +81,7 @@ public:
             string bufferId;
             client = make_shared<InterTaskArrowRPCClient>(remote->getLocation()->getIp(),remote->getLocation()->getPort());
             bufferId = remote->getLocation()->getBufferId();
-            client->setInterTaskCacheTarget(taskId,remote->getComponentId(),bufferId);
+            client->setInterTaskCacheTarget(taskId,remote->getSourceId(),bufferId);
 
 
             this->allClients[taskId] = client;

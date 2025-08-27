@@ -39,7 +39,7 @@
 #define NAME "TPC-R"
 #endif
 #ifndef NAME
-//#error Benchmark version must be defined in config.h
+//#error Benchmark version must be defined in Config.h
 #endif
 #define TPC "Transaction Processing Performance Council"
 #define C_DATES "1994 - 2010"
@@ -401,7 +401,7 @@ EXTERN int delete_segment;
 #define PATH_TAG "DSS_PATH" /* environment var to override ... */
 #define PATH_DFLT "." /* default directory to hold tables */
 #define CONFIG_TAG "DSS_CONFIG" /* environment var to override ... */
-#define CONFIG_DFLT "." /* default directory to config files */
+#define CONFIG_DFLT "." /* default directory to Config files */
 #define ADHOC_TAG "DSS_ADHOC" /* environment var to override ... */
 #define ADHOC_DFLT "adhoc.dss" /* default file name for adhoc vars */
 

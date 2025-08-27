@@ -175,7 +175,7 @@ class NestedLoopJoinOperator :public Operator{
     bool finished;
 
     string name = "NestedLoopJoinOperator";
-
+    string operatorId;
 
     bool sendEndPage = false;
 
@@ -203,9 +203,9 @@ class NestedLoopJoinOperator :public Operator{
 public:
 
 
-    string getOperatorId() { return this->name; }
 
-    NestedLoopJoinOperator(shared_ptr<DriverContext> driverContext,std::shared_ptr <arrow::Schema> probeSchema,std::shared_ptr <arrow::Schema> buildSchema, std::shared_ptr <arrow::Schema> probeOutputSchema,std::shared_ptr <arrow::Schema> buildOutputSchema,std::shared_ptr<NestedLoopJoinBridge>  supplier) {
+
+    NestedLoopJoinOperator(string operatorId,shared_ptr<DriverContext> driverContext,std::shared_ptr <arrow::Schema> probeSchema,std::shared_ptr <arrow::Schema> buildSchema, std::shared_ptr <arrow::Schema> probeOutputSchema,std::shared_ptr <arrow::Schema> buildOutputSchema,std::shared_ptr<NestedLoopJoinBridge>  supplier) :Operator("NestedLoopJoinOperator"){
 
         this->finished = false;
 
@@ -219,7 +219,7 @@ public:
         this->driverContext = driverContext;
 
         this->sourceFuture = this->supplier->getPagesFuture();
-
+        this->operatorId = operatorId;
 
 
     }
@@ -346,6 +346,11 @@ public:
 
     bool isFinished() {
         return this->finished;
+    }
+
+    string getOperatorId() override
+    {
+        return this->operatorId;
     }
 
 };

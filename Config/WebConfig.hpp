@@ -87,7 +87,7 @@ public:
     {
         readConfigFile();
         if(this->Restful_Web_Server_IP == this->Coordinator_Restful_Web_Server_IP && this->Arrow_RPC_Server_IP == this->Coordinator_Arrow_RPC_Server_IP
-        && this->Restful_Web_Server_Port == this->Coordinator_Restful_Web_Server_Port && this->Arrow_RPC_Server_Port == this->Coordinator_Arrow_RPC_Server_Port)
+           && this->Restful_Web_Server_Port == this->Coordinator_Restful_Web_Server_Port && this->Arrow_RPC_Server_Port == this->Coordinator_Arrow_RPC_Server_Port)
             return true;
         else
             return false;

@@ -11,12 +11,13 @@
 class Operator;
 
 class LogicalOperator {
+    string opType;
 public:
-
+    LogicalOperator(string opType){this->opType = opType;}
+    string getLogicalOperatorType(){return opType;}
     virtual std::shared_ptr<Operator> getOperator(shared_ptr<DriverContext> driverContext) { return NULL; };
     virtual std::shared_ptr<void> getOperatorNonType(shared_ptr<DriverContext> driverContext) { return NULL; };
-    virtual std::string getTypeId(){return "";};
-
+    virtual string getLogicalOperatorId() = 0;
 };
 
 

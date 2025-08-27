@@ -18,25 +18,27 @@ class Logical_GPUBatchAssembleOperator:public LogicalOperator
     string name = "Logical_GPUBatchAssembleOperator";
 
 
+    string operatorId;
 public:
 
-    Logical_GPUBatchAssembleOperator() {
-
-
+    Logical_GPUBatchAssembleOperator(string operatorId) :LogicalOperator("Logical_GPUBatchAssembleOperator"){
+        this->operatorId = operatorId;
     }
 
     std::shared_ptr<Operator> getOperator(shared_ptr<DriverContext> driverContext) {
 
-        return std::make_shared<GPUBatchAssembleOperator>(driverContext);
+        return std::make_shared<GPUBatchAssembleOperator>(this->operatorId,driverContext);
     }
 
     std::shared_ptr<void> getOperatorNonType(shared_ptr<DriverContext> driverContext) {
 
-        return std::make_shared<GPUBatchAssembleOperator>(driverContext);
+        return std::make_shared<GPUBatchAssembleOperator>(this->operatorId,driverContext);
     }
 
-    string getTypeId(){return this->name;}
-
+    string getLogicalOperatorId() override
+    {
+        return this->operatorId;
+    }
 
 
 };

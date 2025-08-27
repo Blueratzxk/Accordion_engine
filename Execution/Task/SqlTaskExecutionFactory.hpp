@@ -5,7 +5,7 @@
 #ifndef OLVP_SQLTASKEXECUTIONFACTORY_HPP
 #define OLVP_SQLTASKEXECUTIONFACTORY_HPP
 
-#include "TaskExecutionCondition.hpp"
+#include "SidewayExchangeSystem/TaskExecutionCondition.hpp"
 #include "SqlTaskExecution.hpp"
 #include "../../Planner/LocalPlanner/LogicalPipelineFactory.hpp"
 #include "../../Planner/LocalPlanner/LocalPlanTreeAnalyzer.hpp"
@@ -202,7 +202,7 @@ public:
             this->sqlTaskExecution->Reg_SourcePlanNodeId_To_LPipeline(lp.getSourceId(),lp.getPipelineId());
         for(int i = 0 ; i < lp.getLogicalPipelines().size() ; i++)
         {
-            if(lp.getLogicalPipelines()[i]->getTypeId().compare("Logical_LocalExchangeSourceOperator") == 0)
+            if(lp.getLogicalPipelines()[i]->getLogicalOperatorType().compare("Logical_LocalExchangeSourceOperator") == 0)
             {
                 auto source = static_pointer_cast<Logical_LocalExchangeSourceOperator>(lp.getLogicalPipelines()[i]);
 
@@ -213,7 +213,7 @@ public:
     void RegJoinBridge(LogicalPipeline lp)
     {
         for(int i = 0 ; i < lp.getLogicalPipelines().size() ; i++) {
-            if(lp.getLogicalPipelines()[i]->getTypeId().compare("Logical_LookupJoinOperator") == 0)
+            if(lp.getLogicalPipelines()[i]->getLogicalOperatorType().compare("Logical_LookupJoinOperator") == 0)
             {
                 auto hashJoin = static_pointer_cast<Logical_LookupJoinOperator>(lp.getLogicalPipelines()[i]);
 

@@ -71,6 +71,25 @@ public:
 
     }
 
+    void addLocation(shared_ptr<InterTaskSplit> interTaskSource)
+    {
+        lock.lock();
+        shared_ptr<InterTaskSplit> remote = interTaskSource;
+        string taskId = interTaskSource->getTaskId()->ToString();
+        if(this->taskIdToLocationMap.count(taskId) == 0) {
+            this->taskIdToLocationMap[taskId] = remote;
+
+            shared_ptr<ArrowRPCClient> client;
+            string bufferId;
+            bufferId = remote->getLocation()->getBufferId();
+            client = make_shared<ArrowRPCClient>(remote->getLocation()->getIp(),remote->getLocation()->getPort(),remote->getSourceId(),bufferId);
+            this->allClients[taskId] = client;
+
+        }
+        lock.unlock();
+
+    }
+
 
 
     void broadcastNotes(string note)

@@ -54,7 +54,7 @@ public:
 
             for(int i = 0 ; i < (*this->driver).size() ; i++)
             {
-                if((*this->driver)[i]->getOperatorId() == "TableScanOperator")
+                if((*this->driver)[i]->getOperatorType() == "TableScanOperator")
                 {
                     static_pointer_cast<TableScanOperator>((*this->driver)[i])->addSplits(this->session,*(this->scheduledSplit->getSplit()));
                     this->scheduledSplit = NULL;
@@ -68,7 +68,7 @@ public:
         {
             for(int i = 0 ; i < (*this->driver).size() ; i++) {
 
-                if ((*this->driver)[i]->getOperatorId() == "RemoteSourceOperator") {
+                if ((*this->driver)[i]->getOperatorType() == "RemoteSourceOperator") {
 
                     static_pointer_cast<RemoteSourceOperator>((*this->driver)[i])->addSources(this->scheduledSplits);
                     break;

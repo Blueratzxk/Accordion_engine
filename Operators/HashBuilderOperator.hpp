@@ -28,7 +28,7 @@ public:
 
 private:
     bool finished = false;
-
+    string operatorId;
 
     string name = "HashBuilderOperator";
 
@@ -66,10 +66,9 @@ public:
 
 
 
-    string getOperatorId() { return this->name; }
 
-    HashBuilderOperator(string joinId,shared_ptr<DriverContext> driverContext,int partitionIndex,std::shared_ptr<PartitionedLookupSourceFactory> lookupSourceFactory,
-                        vector<int> outputChannels,vector<int> hashChannels) {
+    HashBuilderOperator(string operatorId,string joinId,shared_ptr<DriverContext> driverContext,int partitionIndex,std::shared_ptr<PartitionedLookupSourceFactory> lookupSourceFactory,
+                        vector<int> outputChannels,vector<int> hashChannels) :Operator("HashBuilderOperator"){
 
         this->finished = false;
         this->partitionIndex = partitionIndex;
@@ -80,6 +79,7 @@ public:
         this->hashChannels = hashChannels;
         this->driverContext = driverContext;
         this->joinId = joinId;
+        this->operatorId = operatorId;
 
     }
     State getState()
@@ -200,6 +200,10 @@ public:
         return this->finished;
     }
 
+    string getOperatorId() override
+    {
+        return this->operatorId;
+    }
 
 };
 

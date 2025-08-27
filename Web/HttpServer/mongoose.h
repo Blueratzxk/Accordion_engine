@@ -2324,7 +2324,7 @@ struct mg_tls {
   mbedtls_x509_crt cert;    // Parsed certificate
   mbedtls_pk_context pk;    // Private key context
   mbedtls_ssl_context ssl;  // SSL/TLS context
-  mbedtls_ssl_config conf;  // SSL-TLS config
+  mbedtls_ssl_config conf;  // SSL-TLS Config
 #ifdef MBEDTLS_SSL_SESSION_TICKETS
   mbedtls_ssl_ticket_context ticket;  // Session tickets context
 #endif
@@ -3005,7 +3005,7 @@ struct mg_tcpip_driver_stm32h_data {
   int mdc_cr;  // Valid values: -1, 0, 1, 2, 3, 4, 5
 
   uint8_t phy_addr;  // PHY address
-  uint8_t phy_conf;  // PHY config
+  uint8_t phy_conf;  // PHY Config
 };
 
 #ifndef MG_TCPIP_PHY_ADDR

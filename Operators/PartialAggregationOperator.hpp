@@ -23,7 +23,7 @@
 class PartialAggregationOperator:public Operator {
 
     bool finished;
-
+    string operatorId;
     string name = "PartialAggregationOperator";
 
 
@@ -51,12 +51,13 @@ class PartialAggregationOperator:public Operator {
 
     shared_ptr<DriverContext> driverContext;
 public:
-    string getOperatorId() { return this->name; }
 
-    PartialAggregationOperator(shared_ptr<DriverContext> driverContext,AggregationDesc desc){
+
+    PartialAggregationOperator(string operatorId,shared_ptr<DriverContext> driverContext,AggregationDesc desc):Operator("PartialAggregationOperator") {
 
 
         this->desc = desc;
+        this->operatorId = operatorId;
         this->finished = false;
         this->driverContext = driverContext;
 
@@ -224,6 +225,10 @@ public:
         return this->finished;
     }
 
+    string getOperatorId() override
+    {
+        return this->operatorId;
+    }
 
 };
 

@@ -178,7 +178,6 @@ public:
         return "UNSUPPORT";
     }
 
-
     static string Serialize(PlanFragment planFragment)
     {
         nlohmann::json json;

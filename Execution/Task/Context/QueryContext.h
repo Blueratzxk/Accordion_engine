@@ -10,7 +10,7 @@
 #include "../../../common.h"
 //#include "../Id/TaskId.hpp"
 #include "../../../Session/RuntimeConfigParser.hpp"
-#include "../InterTaskDataExchangeManager.hpp"
+#include "../SidewayExchangeSystem/InterTaskDataExchangeManager.hpp"
 
 class TaskContext;
 using namespace std;
@@ -34,26 +34,26 @@ public:
         return this->interTaskDataExchangeManager->takePages(componentId,bufferId,1);
     }
 
-    void saveInterTaskPages(string componentId,vector<shared_ptr<DataPage>> pages)
+    void saveInterTaskPages(string sourceId,vector<shared_ptr<DataPage>> pages)
     {
-        this->interTaskDataExchangeManager->savePages(componentId,pages);
+        this->interTaskDataExchangeManager->savePages(sourceId,pages);
     }
 
-    void releaseRemoteInterTaskDataFetcher(string taskId,string componentId, string bufferId,string ip,string port)
+    void releaseRemoteInterTaskDataFetcher(string taskId,string targetId,string ip,string port,string sourceId, string bufferId)
     {
-        thread executor(requestRemoteInterTaskData,shared_from_this(),taskId,componentId,bufferId,ip,port);
+        thread executor(requestRemoteInterTaskData,shared_from_this(),taskId,targetId,ip,port,sourceId,bufferId);
         executor.detach();
     }
-    static vector<shared_ptr<DataPage>> requestRemoteInterTaskData(shared_ptr<QueryContext> queryContext,string taskId,string componentId, string bufferId,string ip,string port)
+    static vector<shared_ptr<DataPage>> requestRemoteInterTaskData(shared_ptr<QueryContext> queryContext,string curTaskId,string targetId,string sourceIp,string sourcePort,string sourceId,string bufferId)
     {
-        auto result = queryContext->interTaskDataExchangeManager->requestRemoteInterTaskPages(taskId,componentId,bufferId,ip,port);
+        auto result = queryContext->interTaskDataExchangeManager->requestRemoteInterTaskPages(curTaskId,sourceIp,sourcePort,sourceId,bufferId);
         TaskId tId;
-        queryContext->inputInterTaskDataByComponentId(*tId.StringToObject(taskId),componentId,result);
+        queryContext->inputInterTaskDataByComponentId(*tId.StringToObject(curTaskId),targetId,result);
         return result;
     }
 
 
-    bool prepareInterTaskDataByComponentId(TaskId taskId,string componentId);
+    bool prepareInterTaskDataByComponentId(TaskId taskId,set<string> sourceTypes);
     void inputInterTaskDataByComponentId(TaskId taskId,string componentId,vector<shared_ptr<DataPage>> pages);
 };
 

@@ -21,16 +21,17 @@ class LocalExchangeSourceOperator:public Operator
 
     shared_ptr<DriverContext> driverContext;
 
-
+    string operatorId;
 public:
-    string getOperatorId() { return this->name; }
 
-    LocalExchangeSourceOperator(shared_ptr<DriverContext> driverContext,std::shared_ptr<LocalExchangeSource> source) {
+
+    LocalExchangeSourceOperator(string operatorId,shared_ptr<DriverContext> driverContext,std::shared_ptr<LocalExchangeSource> source) :Operator("LocalExchangeSourceOperator"){
 
 
         this->source = source;
         this->finished = false;
         this->driverContext = driverContext;
+        this->operatorId = operatorId;
 
     }
 
@@ -74,6 +75,11 @@ public:
     bool isFinished()
     {
         return this->finished;
+    }
+
+    string getOperatorId() override
+    {
+        return this->operatorId;
     }
 
 

@@ -99,7 +99,7 @@ public:
         auto opTail = operators.back();
         auto opHead = operators.Frontend();
 
-        if(opHead->getTypeId() == "Logical_LocalExchangeSourceOperator" && opTail->getTypeId() == "Logical_LocalExchangeSinkOperator")
+        if(opHead->getLogicalOperatorType() == "Logical_LocalExchangeSourceOperator" && opTail->getLogicalOperatorType() == "Logical_LocalExchangeSinkOperator")
             return true;
         return false;
         */
@@ -107,7 +107,7 @@ public:
 
         for(auto op : operators)
         {
-            if(op->getTypeId() == "Logical_NestedLoopBuildOperator" ||op->getTypeId() == "Logical_HashBuilderOperator" ||op->getTypeId() == "Logical_TableScanOperator" ||op->getTypeId() == "Logical_FinalAggregationOperator" || op->getTypeId() == "Logical_TopKOperator" || op->getTypeId() == "Logical_SortOperator")
+            if(op->getLogicalOperatorType() == "Logical_NestedLoopBuildOperator" ||op->getLogicalOperatorType() == "Logical_HashBuilderOperator" ||op->getLogicalOperatorType() == "Logical_TableScanOperator" ||op->getLogicalOperatorType() == "Logical_FinalAggregationOperator" || op->getLogicalOperatorType() == "Logical_TopKOperator" || op->getLogicalOperatorType() == "Logical_SortOperator")
                 return false;
         }
         return true;
@@ -120,7 +120,7 @@ public:
 
         for(auto op : operators)
         {
-            if(op->getTypeId() == "Logical_NestedLoopBuildOperator" ||op->getTypeId() == "Logical_HashBuilderOperator")
+            if(op->getLogicalOperatorType() == "Logical_NestedLoopBuildOperator" ||op->getLogicalOperatorType() == "Logical_HashBuilderOperator")
                 return true;
         }
         return false;
@@ -132,7 +132,7 @@ public:
         auto opTail = operators.back();
         auto opHead = operators.front();
 
-        if(opHead->getTypeId() == "Logical_RemoteSourceOperator" && opTail->getTypeId() == "Logical_LocalExchangeSinkOperator")
+        if(opHead->getLogicalOperatorType() == "Logical_RemoteSourceOperator" && opTail->getLogicalOperatorType() == "Logical_LocalExchangeSinkOperator")
             return true;
         return false;
     }
@@ -152,7 +152,7 @@ public:
         auto opTail = operators.back();
         auto opHead = operators.front();
 
-        if(opHead->getTypeId() == "Logical_RemoteSourceOperator" && opTail->getTypeId() == "Logical_TaskOutputOperator")
+        if(opHead->getLogicalOperatorType() == "Logical_RemoteSourceOperator" && opTail->getLogicalOperatorType() == "Logical_TaskOutputOperator")
             return true;
         return false;
     }
@@ -163,7 +163,7 @@ public:
 
         auto opHead = operators.front();
 
-        if(opHead->getTypeId() == "Logical_RemoteSourceOperator")
+        if(opHead->getLogicalOperatorType() == "Logical_RemoteSourceOperator")
             return true;
         return false;
     }
@@ -175,7 +175,7 @@ public:
 
         auto opTail = operators.back();
         auto opHead = operators.front();
-        if(opHead->getTypeId() == "Logical_LocalExchangeSourceOperator" && opTail->getTypeId() == "Logical_TaskOutputOperator")
+        if(opHead->getLogicalOperatorType() == "Logical_LocalExchangeSourceOperator" && opTail->getLogicalOperatorType() == "Logical_TaskOutputOperator")
             return true;
         return false;
 
@@ -186,7 +186,7 @@ public:
 
         auto opTail = operators.back();
         auto opHead = operators.front();
-        if(opHead->getTypeId() == "Logical_LocalExchangeSourceOperator")
+        if(opHead->getLogicalOperatorType() == "Logical_LocalExchangeSourceOperator")
             return true;
         return false;
 
@@ -446,7 +446,7 @@ public:
                     runners.push_back(splitRunner);
                 }
 
-    //            auto id = this->remoteSourcePipelineFactory[pipelineId]->getLogicalPipeline()->getLogicalPipelines().back()->getTypeId();
+    //            auto id = this->remoteSourcePipelineFactory[pipelineId]->getLogicalPipeline()->getLogicalPipelines().back()->getLogicalOperatorType();
      //           if(id == "Logical_LocalExchangeSinkOperator"){
      //               std::shared_ptr<SplitRunner> splitRunner = this->remoteSourcePipelineFactory[pipelineId]->createLogicalPipelineRunner(task.second);
       //              runners.push_back(splitRunner);
@@ -480,18 +480,56 @@ public:
 
     }
 
-    void updateSources(shared_ptr<TaskSource> taskSource)
+    bool processConditionExecution(shared_ptr<TaskExecutionCondition> condition)
+    {
+
+        if(condition->getConditionType() == TaskExecutionCondition::BUFFER_MIGRATION) {
+
+            MigratedBufferAddress migratedBufferAddress = condition->getMigratedBufferAddress();
+
+            TaskId taskIdTemp;
+            auto remoteSplit = make_shared<RemoteSplit>(taskIdTemp.Deserialize(migratedBufferAddress.getTaskId()),
+                                                        make_shared<Location>(migratedBufferAddress.getIP(),
+                                                                              migratedBufferAddress.getPort(),
+                                                                              migratedBufferAddress.getBufferId()));
+
+            auto scheSplit = make_shared<ScheduledSplit>(PlanNodeId(migratedBufferAddress.getTaskId()),
+                                                         make_shared<Split>(ConnectorId("remote"), remoteSplit));
+
+            set<shared_ptr<ScheduledSplit>> remoteSplits;
+
+            PlanNodeId planNodeId = PlanNodeId(migratedBufferAddress.getTaskId());
+            if (this->sourcePlanNodeId_To_LPipeline.find(planNodeId) != this->sourcePlanNodeId_To_LPipeline.end()) {
+                remoteSplits.insert(scheSplit);
+            }
+
+            if (!remoteSplits.empty())
+                startRemoteTask(remoteSplits);
+
+            return true;
+        }
+        else if(condition->getConditionType() == TaskExecutionCondition::OPERATOR_MIGRATION)
+        {
+            return false;
+        }
+    }
+
+    void updateSources(shared_ptr<TaskSource> taskSource, shared_ptr<TaskExecutionCondition> condition = NULL)
     {
 
         this->taskStateMachine->start();
         //we can use planNodeId to figure out what the split for, tableScanPipeline or remoteSourcePipeline
 
 
-
         //we can get plannodeId from tasksource,figure out this task source's plannodeId.
 
         //if a fragment has mul sources,how to tell task source,which source is you to set? we can use plannode id to identify.
 
+        if(condition->getConditionType() != TaskExecutionCondition::NO_CONDITION)
+        {
+            if(processConditionExecution(condition))
+                return;
+        }
 
         set<shared_ptr<ScheduledSplit>> tableScanSplits;
         set<shared_ptr<ScheduledSplit>> remoteSplits;
@@ -581,7 +619,7 @@ public:
 
    //     if(factory->getLogicalPipeline()->getLogicalPipelines().size() != 5)
   //      return;
-     //   if(factory->getLogicalPipeline()->getLogicalPipelines().back()->getTypeId() != "Logical_LocalExchangeSinkOperator")
+     //   if(factory->getLogicalPipeline()->getLogicalPipelines().back()->getLogicalOperatorType() != "Logical_LocalExchangeSinkOperator")
        // {
          //   return;
         //}

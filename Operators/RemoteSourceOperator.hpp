@@ -16,7 +16,7 @@ class RemoteSourceOperator:public Operator
 {
 
     bool finished;
-
+    string operatorId;
     std::shared_ptr<DataPage> inputPage;
 
     string name = "RemoteSourceOperator";
@@ -50,11 +50,12 @@ class RemoteSourceOperator:public Operator
     int bufferTuneCircle = 500; //ms
 
 public:
-    string getOperatorId() { return this->name; }
 
-    RemoteSourceOperator(shared_ptr<DriverContext> driverContext) {
+
+    RemoteSourceOperator(string operatorId,shared_ptr<DriverContext> driverContext):Operator("RemoteSourceOperator")  {
 
         this->finished = false;
+        this->operatorId = operatorId;
         this->client = make_shared<RPCClient>();
         this->driverContexts = driverContext;
         this->hasBuildTask = this->driverContexts->hasBuildTask();
@@ -195,6 +196,10 @@ public:
         return this->finished;
     }
 
+    string getOperatorId() override
+    {
+        return this->operatorId;
+    }
 
 };
 

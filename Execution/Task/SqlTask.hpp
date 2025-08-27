@@ -124,7 +124,7 @@ public:
 
         if(taskSource != NULL)
         if(!taskSource->getSplits().empty()) {
-           this->taskHolder->getTaskExecution()->updateSources(taskSource);
+           this->taskHolder->getTaskExecution()->updateSources(taskSource,condition);
         }
 
         if(taskInterfereRequest != NULL)

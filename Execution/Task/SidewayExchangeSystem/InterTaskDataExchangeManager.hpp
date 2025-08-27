@@ -8,36 +8,26 @@
 #include <memory>
 #include <map>
 #include <vector>
-#include "../Buffer/InterTaskSimpleOutputBuffer.hpp"
-#include "../../Web/ArrowRPC/InterTaskRPCClient.hpp"
+#include "../../Buffer/InterTaskSimpleOutputBuffer.hpp"
+#include "../../../Web/ArrowRPC/InterTaskRPCClient.hpp"
 using namespace std;
 
 class InterTaskDataHandle
 {
     bool status;
-    string taskId;
-    string componentId;
-    string bufferId;
 public:
-    InterTaskDataHandle(string taskId,string componentId,string bufferId)
+    InterTaskDataHandle()
     {
-        this->taskId = taskId;
-        this->componentId = componentId;
-        this->bufferId = bufferId;
+
         this->status = true;
     }
-    InterTaskDataHandle(bool status,string taskId,string componentId,string bufferId)
+    InterTaskDataHandle(bool status)
     {
         this->status = status;
-        this->taskId = taskId;
-        this->componentId = componentId;
-        this->bufferId = bufferId;
+
     }
 
     bool getStatus(){return this->status;}
-    string getTaskId(){return this->taskId;}
-    string getComponentId(){return this->componentId;}
-    string getBufferId(){return this->bufferId;}
 
 
     static string Serialize(InterTaskDataHandle interTaskDataHandle)
@@ -45,10 +35,6 @@ public:
         nlohmann::json json;
 
         json["status"] = interTaskDataHandle.status;
-        json["taskId"] = interTaskDataHandle.taskId;
-        json["componentId"] = interTaskDataHandle.componentId;
-        json["bufferId"] = interTaskDataHandle.bufferId;
-
 
         string result = json.dump();
         return result;
@@ -59,7 +45,7 @@ public:
         nlohmann::json json = nlohmann::json::parse(interTaskDataHandle);
 
 
-        auto result = make_shared<InterTaskDataHandle>(json["status"],json["taskId"],json["componentId"],json["bufferId"]);
+        auto result = make_shared<InterTaskDataHandle>(json["status"]);
 
         return  result;
     }
@@ -98,25 +84,25 @@ public:
         return re;
     }
 
-    vector<shared_ptr<DataPage>> requestRemoteInterTaskPages(string taskId,string componentId, string bufferId,string ip,string port) {
+    vector<shared_ptr<DataPage>> requestRemoteInterTaskPages(string taskId,string ip,string port,string sourceId, string bufferId) {
 
         TaskId id;
-        interTaskRpcClients[componentId] = make_shared<InterTaskRPCClient>();
-        interTaskRpcClients[componentId]->addInterTaskDataExchangePath(make_shared<InterTaskSplit>(id.StringToObject(taskId),componentId,
+        interTaskRpcClients[sourceId] = make_shared<InterTaskRPCClient>();
+        interTaskRpcClients[sourceId]->addInterTaskDataExchangePath(make_shared<InterTaskSplit>(id.StringToObject(taskId),sourceId,
                                                                                                    make_shared<Location>(ip,"9081",bufferId)));
 
         vector<shared_ptr<DataPage>> allPages;
         shared_ptr<DataPage> page = NULL;
 
         do {
-            interTaskRpcClients[componentId]->scheduleAllClientOneRound(1000);
-            page = interTaskRpcClients[componentId]->pollPage();
+            interTaskRpcClients[sourceId]->scheduleAllClientOneRound(1000);
+            page = interTaskRpcClients[sourceId]->pollPage();
             if(page != NULL)
                 allPages.push_back(page);
         }
         while(page==NULL || !page->isEndPage());
 
-        interTaskRpcClients.erase(componentId);
+        interTaskRpcClients.erase(sourceId);
 
         return allPages;
     }

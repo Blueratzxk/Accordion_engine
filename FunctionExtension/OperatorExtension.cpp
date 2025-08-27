@@ -16,6 +16,7 @@
 #include "GPU/Logical_GPUPartialAggregationOperator.hpp"
 #include "GPU/Logical_GPUBatchAssembleOperator.hpp"
 
+
 shared_ptr<Logical_GPUHashJoinOperator> OperatorExtension::extendHashJoin(shared_ptr<Logical_LookupJoinOperator> lookupJoinOp)
 {
     shared_ptr<Logical_HashBuilderOperator> hashBuilderOperator = static_pointer_cast<Logical_HashBuilderOperator>(lookupJoinOp->getHashBuilderLogicalOperator());
@@ -28,7 +29,7 @@ shared_ptr<Logical_GPUHashJoinOperator> OperatorExtension::extendHashJoin(shared
     vector<int> buildOutputChannels = hashBuilderOperator->getOutputChannels();
     shared_ptr<arrow::Table> buildTable;
 
-    shared_ptr<Logical_GPUHashJoinOperator> logicalGpuHashJoinOperator = make_shared<Logical_GPUHashJoinOperator>(
+    shared_ptr<Logical_GPUHashJoinOperator> logicalGpuHashJoinOperator = make_shared<Logical_GPUHashJoinOperator>(lookupJoinOp->getLogicalOperatorId(),
             probeInputSchema,buildInputSchema,buildOutputSchema,probeHashChannels,buildHashChannels,probeOutputChannels,buildOutputChannels,
             lookupJoinOp->getLookupSourceFactory());
 
@@ -38,21 +39,21 @@ shared_ptr<Logical_GPUHashJoinOperator> OperatorExtension::extendHashJoin(shared
 shared_ptr<Logical_GPUFilterOperator> OperatorExtension::extendFilter(shared_ptr<Logical_FilterOperator> filterOp)
 {
 
-    shared_ptr<Logical_GPUFilterOperator> logicalGpuFilterOperator = make_shared<Logical_GPUFilterOperator>(filterOp->getFilterDesc());
+    shared_ptr<Logical_GPUFilterOperator> logicalGpuFilterOperator = make_shared<Logical_GPUFilterOperator>(filterOp->getLogicalOperatorId(),filterOp->getFilterDesc());
     return logicalGpuFilterOperator;
 }
 
 shared_ptr<Logical_GPUProjectOperator> OperatorExtension::extendProject(shared_ptr<Logical_ProjectOperator> proOp)
 {
 
-    shared_ptr<Logical_GPUProjectOperator> logicalGpuProjectOperator = make_shared<Logical_GPUProjectOperator>(proOp->getAssignments());
+    shared_ptr<Logical_GPUProjectOperator> logicalGpuProjectOperator = make_shared<Logical_GPUProjectOperator>(proOp->getLogicalOperatorId(),proOp->getAssignments());
     return logicalGpuProjectOperator;
 }
 
 shared_ptr<Logical_GPUPartialAggregationOperator> OperatorExtension::extendPartialAggregation(shared_ptr<Logical_PartialAggregationOperator> parOp)
 {
 
-    shared_ptr<Logical_GPUPartialAggregationOperator> logicalGPUPartialAggOperator = make_shared<Logical_GPUPartialAggregationOperator>(parOp->getDesc());
+    shared_ptr<Logical_GPUPartialAggregationOperator> logicalGPUPartialAggOperator = make_shared<Logical_GPUPartialAggregationOperator>(parOp->getLogicalOperatorId(),parOp->getDesc());
     return logicalGPUPartialAggOperator;
 }
 
@@ -64,22 +65,22 @@ vector<std::shared_ptr<LogicalOperator>> OperatorExtension::extendPipelineTempla
     vector<std::shared_ptr<LogicalOperator>> extendedTemplate;
     for(auto logicalOp : pipelineTemplate)
     {
-        if(logicalOp->getTypeId() == "Logical_LookupJoinOperator"){
+        if(logicalOp->getLogicalOperatorType() == "Logical_LookupJoinOperator"){
 
             shared_ptr<Logical_LookupJoinOperator> join = static_pointer_cast<Logical_LookupJoinOperator>(logicalOp);
             extendedTemplate.push_back(extendHashJoin(join));
         }
-        else if(logicalOp->getTypeId() == "Logical_FilterOperator")
+        else if(logicalOp->getLogicalOperatorType() == "Logical_FilterOperator")
         {
             shared_ptr<Logical_FilterOperator> filter = static_pointer_cast<Logical_FilterOperator>(logicalOp);
             extendedTemplate.push_back(extendFilter(filter));
         }
-        else if(logicalOp->getTypeId() == "Logical_ProjectOperator")
+        else if(logicalOp->getLogicalOperatorType() == "Logical_ProjectOperator")
         {
             shared_ptr<Logical_ProjectOperator> proj = static_pointer_cast<Logical_ProjectOperator>(logicalOp);
             extendedTemplate.push_back(extendProject(proj));
         }
-        else if(logicalOp->getTypeId() == "Logical_PartialAggregationOperator")
+        else if(logicalOp->getLogicalOperatorType() == "Logical_PartialAggregationOperator")
         {
             shared_ptr<Logical_PartialAggregationOperator> paragg = static_pointer_cast<Logical_PartialAggregationOperator>(logicalOp);
             extendedTemplate.push_back(extendPartialAggregation(paragg));
@@ -88,24 +89,20 @@ vector<std::shared_ptr<LogicalOperator>> OperatorExtension::extendPipelineTempla
             extendedTemplate.push_back(logicalOp);
     }
 
-    for(int i = 0 ; i < extendedTemplate.size() ; i++)
-    {
-        if(extendedTemplate[i]->getTypeId() == "Logical_GPUHashJoinOperator" ||
-                extendedTemplate[i]->getTypeId() == "Logical_GPUFilterOperator" ||
-                extendedTemplate[i]->getTypeId() == "Logical_GPUProjectOperator" ||
-                extendedTemplate[i]->getTypeId() == "Logical_GPUPartialAggregationOperator")
-        {
-    //        extendedTemplate.insert(extendedTemplate.begin() + i, make_shared<Logical_GPUBatchAssembleOperator>());
-            break;
+
+
+    if(gpuExecutionConfig.isUseGPUBatchAssembleOperator()) {
+        for (int i = 0; i < extendedTemplate.size(); i++) {
+            if (extendedTemplate[i]->getLogicalOperatorType() == "Logical_GPUHashJoinOperator" ||
+                extendedTemplate[i]->getLogicalOperatorType() == "Logical_GPUFilterOperator" ||
+                extendedTemplate[i]->getLogicalOperatorType() == "Logical_GPUProjectOperator" ||
+                extendedTemplate[i]->getLogicalOperatorType() == "Logical_GPUPartialAggregationOperator") {
+                        extendedTemplate.insert(extendedTemplate.begin() + i, make_shared<Logical_GPUBatchAssembleOperator>("-1"));
+                        break;
+            }
         }
     }
 
-    string outputString;
-    for(int i = 0 ; i < extendedTemplate.size() ; i++)
-    {
-        outputString.append(extendedTemplate[i]->getTypeId()).append(" ");
-    }
-    spdlog::info(outputString);
 
     return extendedTemplate;
 }

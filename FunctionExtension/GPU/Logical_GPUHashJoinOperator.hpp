@@ -29,12 +29,15 @@ class Logical_GPUHashJoinOperator :public LogicalOperator{
     vector<int> buildOutputChannels;
     shared_ptr<arrow::Table> buildTable;
     std::shared_ptr<LookupSourceFactory> lookupSourceFactory;
+
+    string operatorId;
 public:
 
 
-    Logical_GPUHashJoinOperator(shared_ptr<arrow::Schema>probeInputSchema,shared_ptr<arrow::Schema>buildInputSchema,
+    Logical_GPUHashJoinOperator(string operatorId,
+                                shared_ptr<arrow::Schema>probeInputSchema,shared_ptr<arrow::Schema>buildInputSchema,
                                 shared_ptr<arrow::Schema> buildOutputSchema,vector<int> probeHashChannels,vector<int> buildHashChannels,vector<int> probeOutputChannels,vector<int> buildOutputChannels,
-                                std::shared_ptr<LookupSourceFactory> lookupSourceFactory) {
+                                std::shared_ptr<LookupSourceFactory> lookupSourceFactory)  :LogicalOperator("Logical_GPUHashJoinOperator"){
 
 
         this->probeInputSchema = probeInputSchema;
@@ -47,18 +50,22 @@ public:
         this->buildOutputChannels = buildOutputChannels;
         this->lookupSourceFactory = lookupSourceFactory;
 
+        this->operatorId = operatorId;
     }
 
     std::shared_ptr<Operator> getOperator(shared_ptr<DriverContext> driverContext) {
 
-        return std::make_shared<GPUHashJoinOperator>(driverContext,probeInputSchema,buildInputSchema,buildOutputSchema,probeHashChannels,buildHashChannels,probeOutputChannels,buildOutputChannels,lookupSourceFactory);
+        return std::make_shared<GPUHashJoinOperator>(this->operatorId,driverContext,probeInputSchema,buildInputSchema,buildOutputSchema,probeHashChannels,buildHashChannels,probeOutputChannels,buildOutputChannels,lookupSourceFactory);
     }
     std::shared_ptr<void> getOperatorNonType(shared_ptr<DriverContext> driverContext) {
 
-        return std::make_shared<GPUHashJoinOperator>(driverContext,probeInputSchema,buildInputSchema,buildOutputSchema,probeHashChannels,buildHashChannels,probeOutputChannels,buildOutputChannels,lookupSourceFactory);
+        return std::make_shared<GPUHashJoinOperator>(this->operatorId,driverContext,probeInputSchema,buildInputSchema,buildOutputSchema,probeHashChannels,buildHashChannels,probeOutputChannels,buildOutputChannels,lookupSourceFactory);
     }
-    string getTypeId(){return name;}
 
+    string getLogicalOperatorId() override
+    {
+        return this->operatorId;
+    }
 
 
 };

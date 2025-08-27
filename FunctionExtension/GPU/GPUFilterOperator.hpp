@@ -18,7 +18,7 @@ class GPUFilterOperator:public Operator
     bool finished;
 
     string name = "GPUFilterOperator";
-
+    string operatorId;
 
 
     std::shared_ptr<DataPage> inputPage = NULL;
@@ -36,11 +36,12 @@ class GPUFilterOperator:public Operator
 
     int count = 0;
 public:
-    string getOperatorId() { return this->name; }
-
-    GPUFilterOperator(shared_ptr<DriverContext> driverContext,FilterDescriptor filterDesc) {
 
 
+    GPUFilterOperator(string operatorId,shared_ptr<DriverContext> driverContext,FilterDescriptor filterDesc):Operator("GPUFilterOperator") {
+
+
+        this->operatorId = operatorId;
         this->filterDesc = filterDesc;
         this->finished = false;
 
@@ -152,6 +153,10 @@ public:
         return make_shared<DataPage>(gpuFunctions.pushCPUPageToGPU(page->get()),page->get()->schema(),page->getElementsCount(),DataPage::GPU);
     }
 
+    string getOperatorId() override
+    {
+        return this->operatorId;
+    }
 
 };
 

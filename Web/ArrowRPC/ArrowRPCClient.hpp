@@ -20,11 +20,16 @@
 #include "DataPageRPCBuffer.hpp"
 class ArrowRPCClient
 {
+
+public:
+    enum ExchangeType {NORMAL,SIDEWAY};
+
+private:
     string clientBufferIp;
     string clientBufferPort;
     string path;
     string taskId;
-    string bufferId = "";
+
 
     string note;
 
@@ -33,14 +38,26 @@ class ArrowRPCClient
 
     mutex notelock;
 
+    string interTaskSourceId = "";
+    string bufferId = "";
+
+    ExchangeType exchangeType;
+
 public:
     ArrowRPCClient(string ip,string port){
         this->clientBufferIp = ip;
         this->clientBufferPort = port;
         this->note = "";
+        this->exchangeType = NORMAL;
     }
 
-
+    ArrowRPCClient(string ip,string port, string interTaskSourceId, string bufferId){
+        this->clientBufferIp = ip;
+        this->clientBufferPort = port;
+        this->interTaskSourceId = interTaskSourceId;
+        this->bufferId = bufferId;
+        this->exchangeType = SIDEWAY;
+    }
 
     arrow::Status connect()
     {
@@ -94,6 +111,7 @@ public:
         this->taskId = taskIdInput;
         this->bufferId = bufferIdInput;
     }
+
 
 
     arrow::Status getOnceBatches(DataPageRPCBuffer &buffer,int dataSize,int *tagIn)
@@ -158,15 +176,26 @@ public:
         nlohmann::json json;
 
 
-        json["ticketType"] = "normal";
-        json["taskId"] = this->taskId;
-        json["bufferId"] = this->bufferId;
-        json["pageNums"] = to_string(dataSize);
+        if(this->exchangeType == NORMAL) {
 
-        if (note != "") {
-            json["note"] = noteSend;
-            spdlog::debug("Task " + this->taskId + "set note " + noteSend + "!");
-            this->removeNote();
+            json["ticketType"] = "normal";
+            json["taskId"] = this->taskId;
+            json["bufferId"] = this->bufferId;
+            json["pageNums"] = to_string(dataSize);
+
+            if (note != "") {
+                json["note"] = noteSend;
+                spdlog::debug("Task " + this->taskId + "set note " + noteSend + "!");
+                this->removeNote();
+            }
+        }
+        else if(this->exchangeType == SIDEWAY)
+        {
+            json["ticketType"] = "interTask";
+            json["taskId"] = this->taskId;
+            json["componentId"] = this->interTaskSourceId;
+            json["bufferId"] = this->bufferId;
+            json["pageNums"] = to_string(dataSize);
         }
 
 

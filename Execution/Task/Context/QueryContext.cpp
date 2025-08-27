@@ -61,7 +61,7 @@ shared_ptr<RuntimeConfigParser> QueryContext::getRuntimeConfigs()
     return this->runtimeConfigs;
 }
 
-bool QueryContext::prepareInterTaskDataByComponentId(TaskId taskId,string componentId) {
+bool QueryContext::prepareInterTaskDataByComponentId(TaskId taskId,set<string> sourceTypes) {
 
     string queryId = taskId.getQueryId().getId();
     shared_ptr<TaskContext> context;
@@ -88,7 +88,7 @@ bool QueryContext::prepareInterTaskDataByComponentId(TaskId taskId,string compon
             physicalPipeline = driver->getDriver();
             for(auto op : *physicalPipeline)
             {
-                if(op->getOperatorId() == componentId)
+                if(sourceTypes.contains(op->getOperatorType()))
                 {
                     return op->externalEvent();
                 }
@@ -100,7 +100,7 @@ bool QueryContext::prepareInterTaskDataByComponentId(TaskId taskId,string compon
 }
 
 
-void QueryContext::inputInterTaskDataByComponentId(TaskId taskId,string componentId,vector<shared_ptr<DataPage>> pages) {
+void QueryContext::inputInterTaskDataByComponentId(TaskId taskId,string targetId,vector<shared_ptr<DataPage>> pages) {
 
     string queryId = taskId.getQueryId().getId();
     shared_ptr<TaskContext> context;
@@ -127,7 +127,7 @@ void QueryContext::inputInterTaskDataByComponentId(TaskId taskId,string componen
             physicalPipeline = driver->getDriver();
             for(auto op : *physicalPipeline)
             {
-                if(op->getOperatorId() == componentId)
+                if(op->getOperatorId() == targetId)
                 {
                     op->fulfillExternalEventWithPages(pages);
                 }

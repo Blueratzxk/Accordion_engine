@@ -828,6 +828,43 @@ public:
         return remoteTask;
     }
 
+
+    shared_ptr<HttpRemoteTask> scheduleTaskForInterDataExchange(shared_ptr<ClusterNode> node,int oldTaskId)
+    {
+
+        spdlog::debug("Stage "+to_string(this->stageId) + " starts scheduling task!");
+
+
+        shared_ptr<HttpRemoteTask> oldTaskPtr = NULL;
+        auto allTasks = this->getAllTasks();
+        for(auto task : allTasks)
+            if(task->getTaskId()->getId() == oldTaskId)
+                oldTaskPtr = task;
+
+
+        TaskId taskIdTemp;
+        MigratedBufferAddress migratedBufferAddress(taskIdTemp.Serialize(*oldTaskPtr->getTaskId()),oldTaskPtr->getIP(),"9081","-1");
+
+        shared_ptr<TaskExecutionCondition> condition = make_shared<TaskExecutionCondition>(TaskExecutionCondition::BUFFER_MIGRATION,migratedBufferAddress);
+
+
+        TaskId taskId = TaskId(this->queryId,this->stageExecutionId,this->stageId,getNextTaskId());
+        shared_ptr<TaskSource> task_Sources = this->sourceTasksTo_taskSources(taskId);
+
+        string location;
+        auto newTaskId = make_shared<TaskId>(taskId.getQueryId().getId(),taskId.getStageExecutionId().getId(),taskId.getStageId().getId(),taskId.getId());
+
+
+        shared_ptr<HttpRemoteTask> remoteTask = taskFactory.createRemoteTask(this->simpleEvent,newTaskId,fragment,node->getNodeLocation(),this->outputBufferSchema,
+                                                                             task_Sources==NULL?TaskSource::getEmptyTaskSource():task_Sources,this->session,node->getExtensions(),condition);
+
+        addNodeTaskMap(node,remoteTask);
+        addTask(node,remoteTask);
+        remoteTask->start();
+        spdlog::debug(to_string(this->stageId) + "schedules task OK!");
+        return remoteTask;
+    }
+
     shared_ptr<HttpRemoteTask> scheduleSplits(shared_ptr<ClusterNode> node,shared_ptr<TaskSource> tss)
     {
         shared_ptr<HttpRemoteTask> remoteTask = NULL;
@@ -1075,8 +1112,36 @@ public:
             shared_ptr<TaskSource> task_Sources = this->sourceTasksTo_taskSources(*ownTask->getTaskId());
             ownTask->addSplits(task_Sources);
         }
+    }
 
 
+    void replaceExchangeLocations(string planFragmentId,vector<shared_ptr<HttpRemoteTask>> source_Tasks, vector<int> taskIds) {
+
+        PlanNode *remoteSource = exchangeSources[planFragmentId];
+
+
+        for(int i = 0 ; i < taskIds.size() ; i++) {
+            for (auto &task: sourceTasks) {
+
+                auto newTask = source_Tasks[i];
+
+                string taskQueryId = newTask->getTaskId()->getStageExecutionId().getStageId().getQueryId().getId();
+                int taskStageId = newTask->getTaskId()->getStageExecutionId().getStageId().getId();
+                int taskStageExecutionId = newTask->getTaskId()->getStageExecutionId().getId();
+                int taskId = newTask->getTaskId()->getId();
+
+
+                string comparedQueryId = task.second->getTaskId()->getQueryId().getId();
+                int comparedTaskStageId = task.second->getTaskId()->getStageExecutionId().getStageId().getId();
+                int comparedTaskStageExecutionId = task.second->getTaskId()->getStageExecutionId().getId();
+                int comparedTaskId = task.second->getTaskId()->getId();
+                if(taskQueryId == comparedQueryId && taskStageExecutionId == comparedTaskStageExecutionId && taskStageId == comparedTaskStageId
+                && taskIds[i] == comparedTaskId)
+                {
+                    task.second = newTask;
+                }
+            }
+        }
     }
 
     vector<shared_ptr<HttpRemoteTask>> getAllTasks()
@@ -1153,6 +1218,36 @@ public:
     }
 
 
+    bool taskMigrationPreparation(int taskId,set<string> operatorTypes)
+    {
+
+        shared_ptr<HttpRemoteTask> target = NULL;
+        vector<shared_ptr<HttpRemoteTask>> tasks = this->getAllTasks();
+        for(auto task : tasks)
+            if(task->getTaskId()->getId() == taskId)
+                target = task;
+        if(target == NULL)
+            return NULL;
+
+
+        bool status = false;
+
+
+        string result;
+        shared_ptr<InterTaskDataHandle> handle;
+        if (target != NULL && !target->isDone()) {
+            result = target->createInterTaskMission(
+                    make_shared<InterTaskMissionDescriptor>(InterTaskMissionDescriptor::OPERATOR_MIGRATION,operatorTypes));
+            if(result == "NULL")
+                return false;
+            handle = InterTaskDataHandle::Deserialize(result);
+            return handle->getStatus();
+        }
+
+        return false;
+    }
+
+    /*
     shared_ptr<InterTaskDataHandle> prepareMoveStatefulTask(int taskId)
     {
         shared_ptr<HttpRemoteTask> target = NULL;
@@ -1187,9 +1282,10 @@ public:
 
         return NULL;
     }
-
+*/
     bool taskDataAddressNotification(int preTaskId,int newTaskId,string componentId)
     {
+        /*
         shared_ptr<HttpRemoteTask> preTask = NULL;
         shared_ptr<HttpRemoteTask> newTask = NULL;
         vector<shared_ptr<HttpRemoteTask>> tasks = getAllTasks();
@@ -1212,7 +1308,7 @@ public:
                 return false;
 
         }
-
+*/
 
 
         return false;

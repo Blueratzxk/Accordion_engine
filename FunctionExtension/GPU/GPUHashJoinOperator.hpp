@@ -17,7 +17,7 @@ class GPUHashJoinOperator :public Operator {
     bool finished;
 
     string name = "GPUHashJoinOperator";
-
+    string operatorId;
 
     bool sendEndPage = false;
 
@@ -53,12 +53,13 @@ class GPUHashJoinOperator :public Operator {
 public:
 
 
-    string getOperatorId() { return this->name; }
 
-    GPUHashJoinOperator(shared_ptr<DriverContext> driverContext, shared_ptr<arrow::Schema>probeInputSchema,shared_ptr<arrow::Schema>buildInputSchema,
+    GPUHashJoinOperator(string operatorId,
+                        shared_ptr<DriverContext> driverContext, shared_ptr<arrow::Schema>probeInputSchema,shared_ptr<arrow::Schema>buildInputSchema,
                         shared_ptr<arrow::Schema> buildOutputSchema,vector<int> probeHashChannels,vector<int> buildHashChannels,
-                        vector<int> probeOutputChannels,vector<int> buildOutputChannels,shared_ptr<LookupSourceFactory> lookupSourceFactory) {
+                        vector<int> probeOutputChannels,vector<int> buildOutputChannels,shared_ptr<LookupSourceFactory> lookupSourceFactory):Operator("GPUHashJoinOperator"){
 
+        this->operatorId = operatorId;
         this->finished = false;
         this->driverContext = driverContext;
         this->probeInputSchema = probeInputSchema;
@@ -246,6 +247,12 @@ public:
         if(page->isEndPage())
             return page;
         return make_shared<DataPage>(gpuFunctions.pushCPUPageToGPU(page->get()),page->get()->schema(),page->getElementsCount(),DataPage::GPU);
+    }
+
+
+    string getOperatorId() override
+    {
+        return this->operatorId;
     }
 };
 

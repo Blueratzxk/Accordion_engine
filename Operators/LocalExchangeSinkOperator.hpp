@@ -24,15 +24,16 @@ class LocalExchangeSinkOperator:public Operator
     shared_ptr<DriverContext> driverContext;
 
     int pageCounter = 0;
-
+    string operatorId;
 public:
-    string getOperatorId() { return this->name; }
 
-    LocalExchangeSinkOperator(shared_ptr<DriverContext> driverContext,std::shared_ptr<LocalExchangeSink> sink) {
+
+    LocalExchangeSinkOperator(string operatorId,shared_ptr<DriverContext> driverContext,std::shared_ptr<LocalExchangeSink> sink):Operator("LocalExchangeSinkOperator") {
 
         this->sink = sink;
         this->finished = false;
         this->driverContext = driverContext;
+        this->operatorId = operatorId;
     }
 
     void addInput(std::shared_ptr<DataPage> input) override {
@@ -64,7 +65,10 @@ public:
         return this->finished;
     }
 
-
+    string getOperatorId() override
+    {
+        return this->operatorId;
+    }
 };
 
 

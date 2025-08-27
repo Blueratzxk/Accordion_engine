@@ -25,31 +25,32 @@ private:
     std::shared_ptr<NestedLoopJoinBridge> joinBridge;
 
     string joinId;
+    string operatorId;
 public:
 
 
 
-    string getOperatorId() { return this->name; }
 
-    Logical_NestedLoopBuildOperator(string joinId, std::shared_ptr<NestedLoopJoinBridge> joinBridge) {
+    Logical_NestedLoopBuildOperator(string operatorId,string joinId, std::shared_ptr<NestedLoopJoinBridge> joinBridge) :LogicalOperator("Logical_NestedLoopBuildOperator"){
 
         this->joinBridge = joinBridge;
         this->joinId = joinId;
+        this->operatorId = operatorId;
 
     }
     std::shared_ptr<Operator> getOperator(shared_ptr<DriverContext> driverContext) {
 
-        return std::make_shared<NestedLoopBuildOperator>(joinId,driverContext,this->joinBridge);
+        return std::make_shared<NestedLoopBuildOperator>(this->operatorId,joinId,driverContext,this->joinBridge);
     }
     std::shared_ptr<void> getOperatorNonType(shared_ptr<DriverContext> driverContext) {
 
-        return std::make_shared<NestedLoopBuildOperator>(joinId,driverContext,this->joinBridge);
+        return std::make_shared<NestedLoopBuildOperator>(this->operatorId,joinId,driverContext,this->joinBridge);
     }
 
-    string getTypeId(){return name;}
-
-
-
+    string getLogicalOperatorId() override
+    {
+        return this->operatorId;
+    }
 };
 
 

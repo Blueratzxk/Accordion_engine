@@ -94,8 +94,6 @@ public:
                 this->childStages[i]->setOutputBuffers(schema[0]);
             }
         }
-
-
     }
 
 
@@ -143,6 +141,41 @@ public:
         if(this->parentStage != NULL) {
             this->parentStage->addExchangeLocations(currentStageFragmentId, newTasks);
         }
+
+    }
+
+    void processScheduleResultsToReplaceSourceTasks(vector<shared_ptr<HttpRemoteTask>> newTasks,vector<int> taskIds)
+    {
+        if(this->parentStage != NULL) {
+            this->parentStage->replaceExchangeLocations(currentStageFragmentId, newTasks,taskIds);
+        }
+
+        vector<OutputBufferId> newOutputBuffers ;
+        for(auto newTask : newTasks)
+        {
+            string tid = to_string(newTask->getTaskId()->getId());
+            OutputBufferId outputBufferId(tid);
+            newOutputBuffers.push_back(outputBufferId);
+        }
+
+        for(int i = 0 ; i < childOutputBufferManagers.size() ; i++)
+        {
+            auto child = childOutputBufferManagers[i];
+
+            if(this->currentStage != NULL)
+                child->getSchema()->updateTaskGroupMap(this->currentStage->getTaskGroupMap());
+
+            if(child->getOutputBufferManagerId().compare("OutputPartitioningBufferManager") == 0 || child->getOutputBufferManagerId().compare("ShuffleStageBufferManager") == 0) {
+
+
+
+                vector<shared_ptr<OutputBufferSchema>> schema = child->addOutputBuffers(newOutputBuffers);
+                if (schema.size() > 0) {
+                    this->childStages[i]->setOutputBuffers(schema[0]);
+                }
+            }
+        }
+
 
     }
 

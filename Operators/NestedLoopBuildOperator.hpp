@@ -31,7 +31,7 @@ public:
 
 private:
     bool finished = false;
-
+    string operatorId;
     string name = "NestedLoopBuildOperator";
 
     bool sendEndPage = false;
@@ -63,9 +63,8 @@ public:
 
 
 
-    string getOperatorId() { return this->name; }
 
-    NestedLoopBuildOperator(string joinId,shared_ptr<DriverContext> driverContext, std::shared_ptr<NestedLoopJoinBridge> joinBridge) {
+    NestedLoopBuildOperator(string operatorId,string joinId,shared_ptr<DriverContext> driverContext, std::shared_ptr<NestedLoopJoinBridge> joinBridge) :Operator("NestedLoopBuildOperator"){
 
         this->finished = false;
         this->joinBridge = joinBridge;
@@ -74,6 +73,7 @@ public:
         this->outputChannels = outputChannels;
 
         this->driverContext = driverContext;
+        this->operatorId = operatorId;
 
     }
     State getState()
@@ -167,6 +167,11 @@ public:
     {
 
         return this->finished;
+    }
+
+    string getOperatorId() override
+    {
+        return this->operatorId;
     }
 
 

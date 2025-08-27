@@ -14,16 +14,16 @@
 #include "arrow/compute/api_aggregate.h"
 #include "arrow/table.h"
 
-
 #include "../Operators/Operator.hpp"
 #include "GPUFunctions.h"
 #include "../../Execution/Task/Context/DriverContext.h"
+#include "Config/GPUExecutionConfig.hpp"
 class GPUBatchAssembleOperator:public Operator {
 public:
 
-
     bool finished;
     string name = "GPUBatchAssembleOperator";
+    string operatorId;
 
     std::shared_ptr<DataPage> inputPage = NULL;
     std::shared_ptr<DataPage> outPutPage = NULL;
@@ -39,26 +39,44 @@ public:
 
     vector<shared_ptr<arrow::RecordBatch>> sink;
 
-    bool sendBigChunk = false;
+    bool sendBigPage = false;
     shared_ptr<DataPage> bigPage = NULL;
 
     long totalElementCount = 0;
 
+    long totalBytes = 0;
+
+    long assembleThresholdByBytes = 0;
+
+    GPUExecutionConfig config;
 
 public:
-    string getOperatorId() { return this->name; }
 
-
-    GPUBatchAssembleOperator(shared_ptr<DriverContext> driverContext) {
+    GPUBatchAssembleOperator(string operatorId,shared_ptr<DriverContext> driverContext):Operator("GPUBatchAssembleOperator") {
 
         this->finished = false;
         this->driverContext = driverContext;
+        this->assembleThresholdByBytes = config.getGPUBatchAssembleThreshold();
+        this->operatorId = operatorId;
 
     }
 
+    int64_t GetRecordBatchSize(const std::shared_ptr<arrow::RecordBatch>& batch) {
+        int64_t total_bytes = 0;
+        for (int i = 0; i < batch->num_columns(); ++i) {
+            const auto& array = batch->column(i);
+            const auto& data  = array->data();
+            for (const auto& buffer : data->buffers) {
+                if (buffer) total_bytes += buffer->size();
+            }
+        }
+        return total_bytes;
+    }
+
+
     bool isTimeToSendBigPage()
     {
-        if(this->totalElementCount >= 10000000)
+        if(this->totalBytes >= this->assembleThresholdByBytes)
             return true;
         else
             return false;
@@ -66,20 +84,28 @@ public:
 
     void reset()
     {
-        this->sendBigChunk = false;
+        this->sendBigPage = false;
         this->totalElementCount = 0;
+        this->totalBytes = 0;
         this->sink.clear();
     }
 
 
     void makeGPUBigPageAndSend() {
 
-        auto bigChunk = arrow::ConcatenateRecordBatches(sink).ValueOrDie();
-        auto bigCPUPage = make_shared<DataPage>(bigChunk);
+        if(!this->sink.empty()) {
 
-        this->bigPage = make_shared<DataPage>(gpuFunctions.pushCPUPageToGPU(bigCPUPage->get()),
-                                             this->input_schema, bigCPUPage->getElementsCount(), DataPage::GPU);
-        this->sendBigChunk = true;
+            auto bigChunk = arrow::ConcatenateRecordBatches(this->sink).ValueOrDie();
+            auto bigCPUPage = make_shared<DataPage>(bigChunk);
+            this->bigPage = make_shared<DataPage>(gpuFunctions.pushCPUPageToGPU(bigCPUPage->get()),
+                                                  this->input_schema, bigCPUPage->getElementsCount(), DataPage::GPU);
+            this->sendBigPage = true;
+        }
+        else
+        {
+            this->bigPage = NULL;
+            this->sendBigPage = true;
+        }
     }
 
 
@@ -94,6 +120,7 @@ public:
                 this->sink.push_back(input->get());
 
                 this->totalElementCount += input->getElementsCount();
+                this->totalBytes += GetRecordBatchSize(input->get());
 
                 if(isTimeToSendBigPage())
                     makeGPUBigPageAndSend();
@@ -112,7 +139,7 @@ public:
             makeGPUBigPageAndSend();
         }
 
-        if (!sendBigChunk)
+        if (!sendBigPage)
             return NULL;
         else {
             reset();
@@ -148,6 +175,10 @@ public:
         return page;
     }
 
+    string getOperatorId() override
+    {
+        return this->operatorId;
+    }
 
 };
 

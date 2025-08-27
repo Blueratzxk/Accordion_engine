@@ -116,6 +116,30 @@ public:
         return sqlTaskPtr;
     }
 
+    void processConditionEvent(TaskId taskId,shared_ptr<TaskExecutionCondition> condition)
+    {
+
+        if(condition->getConditionType() == TaskExecutionCondition::OPERATOR_MIGRATION)
+        {
+            string sourceIp = condition->getMigratedOperators().getIP();
+            string sourcePort = condition->getMigratedOperators().getPort();
+            string preTaskId = condition->getMigratedOperators().getTaskId();
+
+            int bufferId = 0;
+            set<string> targetOperatorIds = condition->getTargetOperatorIds();
+            for(auto target : targetOperatorIds) {
+                string trueSourceId = preTaskId+"$"+target;
+                InterTaskSourceDescriptor interTaskSourceDescriptor(sourceIp,sourcePort,trueSourceId, to_string(bufferId),target);
+
+                auto mission = make_shared<InterTaskMissionDescriptor>(InterTaskMissionDescriptor::INTERTASK_EXCHANGE_SERVICE,
+                                                                       interTaskSourceDescriptor);
+
+                this->createInterTaskMission(taskId,*mission);
+                bufferId++;
+            }
+        }
+
+    }
 
     shared_ptr<TaskInfo> updateTask(TaskId taskId,shared_ptr<TaskUpdateRequest> taskUpdateRequest)
     {
@@ -130,6 +154,14 @@ public:
         shared_ptr<SqlTask> sqlTaskPtr = this->checkTask(taskId,sessionRepresentation);
 
         sqlTaskPtr->updateOrCreateTask(fragment,schema,sources,taskInterfereRequest,condition);
+
+
+
+        processConditionEvent(taskId,condition);
+
+
+
+
 
         spdlog::debug("Task manager updateTask in");
         vector<shared_ptr<PipelineDescriptor>> emptyDescs;
@@ -213,24 +245,25 @@ public:
 
         shared_ptr<SqlTask> sqlTaskPtr = this->findTask(taskId);
         if(sqlTaskPtr == NULL) {
-            return InterTaskDataHandle(false,"test","test","0");
+            return InterTaskDataHandle(false);
         }
 
         bool re = false;
-        if(interTaskMissionDescriptor.getMissionType() == "moveOperator") {
+        if(interTaskMissionDescriptor.getMissionType() == InterTaskMissionDescriptor::OPERATOR_MIGRATION) {
             re = this->queryContext->prepareInterTaskDataByComponentId(taskId,
-                                                                       interTaskMissionDescriptor.getComponentId());
+                                                                       interTaskMissionDescriptor.getSourceTypes());
         }
-        else if(interTaskMissionDescriptor.getMissionType() == "setDataLocation") {
+        else if(interTaskMissionDescriptor.getMissionType() == InterTaskMissionDescriptor::INTERTASK_EXCHANGE_SERVICE) {
             this->queryContext->releaseRemoteInterTaskDataFetcher(taskId.ToString(),
-                                                           interTaskMissionDescriptor.getComponentId(),
-                                                           interTaskMissionDescriptor.getBufferId(),
-                                                           interTaskMissionDescriptor.getIP(),
-                                                           interTaskMissionDescriptor.getPort());
-            re = true;
+                                                                  interTaskMissionDescriptor.getInterTaskSourceDescriptor().getDestinationIdOnNewTask(),
+                                                                  interTaskMissionDescriptor.getInterTaskSourceDescriptor().getInterSource_ip(),
+                                                                  interTaskMissionDescriptor.getInterTaskSourceDescriptor().getInterSource_port(),
+                                                                  interTaskMissionDescriptor.getInterTaskSourceDescriptor().getInterSourceId(),
+                                                                  interTaskMissionDescriptor.getInterTaskSourceDescriptor().getBufferId());
         }
 
-        return InterTaskDataHandle(re,taskId.ToString(),interTaskMissionDescriptor.getComponentId(),"0");
+
+        return InterTaskDataHandle(re);
     }
 
     vector<shared_ptr<DataPage>> getInterTaskPages(TaskId taskId,string componentId,string bufferId,int pageNums)
@@ -238,10 +271,6 @@ public:
         return this->queryContext->takeInterTaskPages(componentId,bufferId);
     }
 
-    string prepareInterTaskData(TaskId taskId,string componentId)
-    {
-        return InterTaskDataHandle::Serialize(InterTaskDataHandle("taskTest","test","0"));
-    }
 
 
 

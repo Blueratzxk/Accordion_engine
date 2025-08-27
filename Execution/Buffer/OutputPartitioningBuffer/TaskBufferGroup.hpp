@@ -20,6 +20,10 @@ class TaskBufferGroup
     int taskGroupChangeSize = 1;
 
     shared_ptr<tbb::concurrent_map<string,shared_ptr<ClientBuffer>>> buffers;
+
+    map<string,shared_ptr<ClientBuffer>> specialBuffers;
+    mutex specialBufferLock;
+
     shared_ptr<TaskContext> taskContext;
 
     vector<int> hashColumns;
@@ -446,15 +450,48 @@ public:
     }
 
 
+    bool isSpecialBufferId(string bufferId)
+    {
+        return atoi(bufferId.c_str()) < 0;
+    }
+    vector<shared_ptr<DataPage>> processSpecialBufferIds(string bufferId,long token,int pageNums)
+    {
+
+        vector<shared_ptr<DataPage>> result;
+
+
+        int bufferIdCount = this->specialBuffers.count(bufferId);
+
+
+        if(bufferIdCount == 0)
+        {
+            specialBufferLock.lock();
+            shared_ptr<ClientBuffer> cb = make_shared<ClientBuffer>(bufferId);
+
+            this->specialBuffers[bufferId] = cb;
+            this->specialBuffers[bufferId]->enqueuePages(allPages);
+
+            specialBufferLock.unlock();
+        }
+        else
+        {
+            result = specialBuffers[bufferId]->getPages(10000);
+
+        }
+
+        return result;
+    }
+
+
     vector<shared_ptr<DataPage>> getPages(string bufferId,long token,int pageNums) {
+
+        if(isSpecialBufferId(bufferId))
+            return processSpecialBufferIds(bufferId,token,pageNums);
 
         vector<shared_ptr<DataPage>> result;
 
 
         int bufferIdCount = this->buffers->count(bufferId);
-
-
-
 
         if(bufferIdCount == 0)
         {

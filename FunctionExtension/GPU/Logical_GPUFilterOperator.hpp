@@ -19,26 +19,28 @@ class Logical_GPUFilterOperator:public LogicalOperator
 
     FilterDescriptor filterDesc;
 
-
+    string operatorId;
 public:
 
-    Logical_GPUFilterOperator(FilterDescriptor filterDesc) {
+    Logical_GPUFilterOperator(string operatorId,FilterDescriptor filterDesc)  :LogicalOperator("Logical_GPUFilterOperator"){
         this->filterDesc = filterDesc;
-
+        this->operatorId = operatorId;
     }
 
     std::shared_ptr<Operator> getOperator(shared_ptr<DriverContext> driverContext) {
 
-        return std::make_shared<GPUFilterOperator>(driverContext,this->filterDesc);
+        return std::make_shared<GPUFilterOperator>(this->operatorId,driverContext,this->filterDesc);
     }
 
     std::shared_ptr<void> getOperatorNonType(shared_ptr<DriverContext> driverContext) {
 
-        return std::make_shared<GPUFilterOperator>(driverContext,this->filterDesc);
+        return std::make_shared<GPUFilterOperator>(this->operatorId,driverContext,this->filterDesc);
     }
 
-    string getTypeId(){return this->name;}
-
+    string getLogicalOperatorId() override
+    {
+        return this->operatorId;
+    }
 
 
 };

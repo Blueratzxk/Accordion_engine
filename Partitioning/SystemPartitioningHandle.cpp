@@ -70,7 +70,7 @@ NodePartitionMap SystemPartitioningHandle::getNodePartitionMap(NodeSelector sele
     } else if (this->partitioningType == SystemPartitioningHandle::FIXED || this->partitioningType == SystemPartitioningHandle::SCALED) {
         ExecutionConfig config;
         int stageConcur = atoi(config.getInitial_intra_stage_concurrency().c_str());
-        nodes = selector.getNodesByMinThreadNums(INITIAL_PLAN_NODES_MODE,stageConcur);//this is a config-value,this should be configured in somewhere
+        nodes = selector.getNodesByMinThreadNums(INITIAL_PLAN_NODES_MODE,stageConcur);//this is a Config-value,this should be configured in somewhere
 
         int tgCount = atoi(config.getInitial_task_group_concurrency().c_str());
         for(int i = 0 ; i < tgCount - 1; i++)
@@ -82,12 +82,12 @@ NodePartitionMap SystemPartitioningHandle::getNodePartitionMap(NodeSelector sele
     else if (this->partitioningType == SystemPartitioningHandle::HASH_SCALED) {
         ExecutionConfig config;
         int concur = atoi(config.getInitial_hash_partition_concurrency().c_str());
-        nodes = selector.getNodesByMinThreadNums(INITIAL_PLAN_NODES_MODE,concur);//this is a config-value,this should be configured in somewhere
+        nodes = selector.getNodesByMinThreadNums(INITIAL_PLAN_NODES_MODE,concur);//this is a Config-value,this should be configured in somewhere
     }
     else if (this->partitioningType == SystemPartitioningHandle::SHUFFLE) {
         ExecutionConfig config;
         int concur = atoi(config.getInitial_intra_stage_concurrency().c_str());
-        nodes = selector.getNodesByMinThreadNums(INITIAL_PLAN_NODES_MODE,concur);//this is a config-value,this should be configured in somewhere
+        nodes = selector.getNodesByMinThreadNums(INITIAL_PLAN_NODES_MODE,concur);//this is a Config-value,this should be configured in somewhere
     }
     else {
         nodes = selector.getNodesByMinThreadNums(INITIAL_PLAN_NODES_MODE,1);

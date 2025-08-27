@@ -14,14 +14,14 @@
 class InterTaskSplit : public ConnectorSplit
 {
     std::shared_ptr<TaskId> taskId;
-    string componentId;
+    string sourceId;
     std::shared_ptr<Location> location;
 
 public:
-    InterTaskSplit(std::shared_ptr<TaskId> taskId,string componentId,std::shared_ptr<Location> location): ConnectorSplit("InterTaskSplit")
+    InterTaskSplit(std::shared_ptr<TaskId> taskId,string sourceId,std::shared_ptr<Location> location): ConnectorSplit("InterTaskSplit")
     {
         this->taskId = taskId;
-        this->componentId = componentId;
+        this->sourceId = sourceId;
         this->location = location;
     }
     std::shared_ptr<TaskId> getTaskId()
@@ -32,9 +32,9 @@ public:
     {
         return this->location;
     }
-    string getComponentId()
+    string getSourceId()
     {
-        return this->componentId;
+        return this->sourceId;
     }
 
 
@@ -43,7 +43,7 @@ public:
         nlohmann::json json;
         json["taskId"] = TaskId::Serialize(*interTaskSplit.taskId);
         json["location"] = Location::Serialize(*interTaskSplit.location);
-        json["componentId"] = interTaskSplit.componentId;
+        json["componentId"] = interTaskSplit.sourceId;
 
         string result = json.dump();
         return result;

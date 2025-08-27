@@ -53,7 +53,7 @@ public:
         std::ifstream in;
         in.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         try {
-           in.open(strFileData, std::ios::in | std::ios::binary);
+            in.open(strFileData, std::ios::in | std::ios::binary);
         }
         catch (std::system_error& e) {
             std::cerr << e.code().message() << std::endl;

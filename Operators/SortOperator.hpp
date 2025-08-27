@@ -26,7 +26,7 @@ private:
     bool finished;
 
     string name = "SortOperator";
-
+    string operatorId;
 
 
 
@@ -54,10 +54,9 @@ public:
 
 
 
-    string getOperatorId() { return this->name; }
+    SortOperator(string operatorId,shared_ptr<DriverContext> driverContext,vector<string> sortKeys,vector<SortOrder> sortOrders):Operator("SortOperator")  {
 
-    SortOperator(shared_ptr<DriverContext> driverContext,vector<string> sortKeys,vector<SortOrder> sortOrders) {
-
+        this->operatorId = operatorId;
         this->sortKeys = sortKeys;
         this->sortOrders = sortOrders;
         this->driverContext = driverContext;
@@ -196,6 +195,11 @@ public:
     bool isFinished()
     {
         return this->finished;
+    }
+
+    string getOperatorId() override
+    {
+        return this->operatorId;
     }
 
 

@@ -17,33 +17,39 @@ class Logical_TableScanOperator:public LogicalOperator {
 
     string tableScanId = "NULL";
 
+    string operatorId;
 public:
 
-    Logical_TableScanOperator(std::shared_ptr<PageSourceManager> pageSourceProvider) {
+    Logical_TableScanOperator(string operatorId,std::shared_ptr<PageSourceManager> pageSourceProvider) : LogicalOperator("Logical_TableScanOperator") {
         this->PSM = pageSourceProvider;
+        this->operatorId = operatorId;
     }
 
-    Logical_TableScanOperator(string id,std::shared_ptr<PageSourceManager> pageSourceProvider) {
+    Logical_TableScanOperator(string operatorId,string id,std::shared_ptr<PageSourceManager> pageSourceProvider) : LogicalOperator("Logical_TableScanOperator"){
         this->PSM = pageSourceProvider;
         this->tableScanId = id;
+        this->operatorId = operatorId;
     }
 
     std::shared_ptr<Operator> getOperator(shared_ptr<DriverContext> driverContext) {
         if(this->tableScanId == "NULL")
-            return std::make_shared<TableScanOperator>(driverContext,this->PSM);
+            return std::make_shared<TableScanOperator>(this->operatorId,driverContext,this->PSM);
         else
-            return std::make_shared<TableScanOperator>(this->tableScanId,driverContext,this->PSM);
+            return std::make_shared<TableScanOperator>(this->operatorId,this->tableScanId,driverContext,this->PSM);
 
     }
     std::shared_ptr<void> getOperatorNonType(shared_ptr<DriverContext> driverContext) {
 
         if(this->tableScanId == "NULL")
-            return std::make_shared<TableScanOperator>(driverContext,this->PSM);
+            return std::make_shared<TableScanOperator>(this->operatorId,driverContext,this->PSM);
         else
-            return std::make_shared<TableScanOperator>(this->tableScanId,driverContext,this->PSM);
+            return std::make_shared<TableScanOperator>(this->operatorId,this->tableScanId,driverContext,this->PSM);
 
     }
-    string getTypeId(){return name;}
+    string getLogicalOperatorId() override
+    {
+        return this->operatorId;
+    }
 
 
 };

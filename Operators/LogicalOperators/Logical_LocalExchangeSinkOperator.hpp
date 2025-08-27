@@ -20,29 +20,35 @@ class Logical_LocalExchangeSinkOperator:public LogicalOperator
 
     std::shared_ptr<LocalExchangeFactory> localExchangeFactory;
 
-
+    string operatorId;
 public:
-    string getOperatorId() { return this->name; }
 
-    Logical_LocalExchangeSinkOperator(std::shared_ptr<LocalExchangeFactory> localExchangeFactory) {
+
+    Logical_LocalExchangeSinkOperator(string operatorId,std::shared_ptr<LocalExchangeFactory> localExchangeFactory)  :LogicalOperator("Logical_LocalExchangeSinkOperator"){
 
         this->localExchangeFactory = localExchangeFactory;
+        this->operatorId = operatorId;
 
     }
     std::shared_ptr<Operator> getOperator(shared_ptr<DriverContext> driverContext) {
         std::shared_ptr<LocalExchangeSink> sink = this->localExchangeFactory->getLocalExchange()->createSink();
-        return std::make_shared<LocalExchangeSinkOperator>(driverContext,sink);
+        return std::make_shared<LocalExchangeSinkOperator>(this->operatorId,driverContext,sink);
     }
     std::shared_ptr<void> getOperatorNonType(shared_ptr<DriverContext> driverContext) {
         std::shared_ptr<LocalExchangeSink> sink = this->localExchangeFactory->getLocalExchange()->createSink();
-        return std::make_shared<LocalExchangeSinkOperator>(driverContext,sink);
+        return std::make_shared<LocalExchangeSinkOperator>(this->operatorId,driverContext,sink);
     }
-    string getTypeId(){return name;}
+
 
 
     string getExchangeType()
     {
         return this->localExchangeFactory->getExchangeType();
+    }
+
+    string getLogicalOperatorId() override
+    {
+        return this->operatorId;
     }
 
 };

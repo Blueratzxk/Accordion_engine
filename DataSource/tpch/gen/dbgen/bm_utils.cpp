@@ -27,7 +27,7 @@
  *
  * Various routines that handle distributions, value selections and
  * seed value management for the DSS benchmark. Current functions:
- * tpch_env_config -- set config vars with optional environment override
+ * tpch_env_config -- set Config vars with optional environment override
  * tpch_a_rnd(min, max) -- random alphanumeric within length range
  * pick_str(size, set) -- select a string from the set of size
  * read_dist(file, name, distribution *) -- read named dist from file

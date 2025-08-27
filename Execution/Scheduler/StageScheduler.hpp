@@ -14,6 +14,7 @@ public:
     ScheduleResult(vector<shared_ptr<HttpRemoteTask>> newTasks){
         this->newTasks = newTasks;
     }
+
     vector<shared_ptr<HttpRemoteTask>> getNewTasks()
     {
         return this->newTasks;

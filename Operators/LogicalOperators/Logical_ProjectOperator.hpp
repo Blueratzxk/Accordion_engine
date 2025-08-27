@@ -18,15 +18,15 @@ class Logical_ProjectOperator:public LogicalOperator
 
 
     ProjectAssignments assignments;
-
+    string operatorId;
 
 public:
-    string getOperatorId() { return this->name; }
 
-    Logical_ProjectOperator(ProjectAssignments assignments) {
+
+    Logical_ProjectOperator(string operatorId,ProjectAssignments assignments):LogicalOperator("Logical_ProjectOperator") {
 
         this->assignments = assignments;
-
+        this->operatorId = operatorId;
 
     }
 
@@ -35,14 +35,16 @@ public:
         return this->assignments;
     }
     std::shared_ptr<Operator> getOperator(shared_ptr<DriverContext> driverContext) {
-        return std::make_shared<ProjectOperator>(driverContext,this->assignments);
+        return std::make_shared<ProjectOperator>(this->operatorId,driverContext,this->assignments);
     }
     std::shared_ptr<void> getOperatorNonType(shared_ptr<DriverContext> driverContext) {
-        return std::make_shared<ProjectOperator>(driverContext,this->assignments);
+        return std::make_shared<ProjectOperator>(this->operatorId,driverContext,this->assignments);
     }
-    string getTypeId(){return name;}
 
-
+    string getLogicalOperatorId() override
+    {
+        return this->operatorId;
+    }
 
 };
 #endif //OLVP_LOGICAL_PROJECTOPERATOR_HPP

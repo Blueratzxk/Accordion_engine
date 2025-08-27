@@ -12,7 +12,7 @@
 class LimitOperator:public Operator
 {
     int elementsCount;
-
+    string operatorId;
 
     bool finished;
 
@@ -29,15 +29,16 @@ class LimitOperator:public Operator
 
     int count = 0;
 public:
-    string getOperatorId() { return this->name; }
 
-    LimitOperator(shared_ptr<DriverContext> driverContext,int limit) {
+
+    LimitOperator(string operatorId,shared_ptr<DriverContext> driverContext,int limit):Operator("LimitOperator") {
 
         this->elementsCount = 0;
         this->finished = false;
         this->driverContext = driverContext;
         this->limit = limit;
         this->remainingLimit = limit;
+        this->operatorId = operatorId;
 
 
 
@@ -114,6 +115,10 @@ public:
         return this->finished;
     }
 
+    string getOperatorId() override
+    {
+        return this->operatorId;
+    }
 
 };
 

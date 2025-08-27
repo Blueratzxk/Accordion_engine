@@ -17,21 +17,26 @@ class Logical_GPUPartialAggregationOperator:public LogicalOperator {
     string name = "Logical_GPUPartialAggregationOperator";
     AggregationDesc desc;
 
+    string operatorId;
 public:
 
-    Logical_GPUPartialAggregationOperator(AggregationDesc desc) {
+    Logical_GPUPartialAggregationOperator(string operatorId,AggregationDesc desc)  :LogicalOperator("Logical_GPUPartialAggregationOperator"){
         this->desc = desc;
+        this->operatorId = operatorId;
     }
 
     std::shared_ptr<Operator> getOperator(shared_ptr<DriverContext> driverContext) {
 
-        return std::make_shared<GPUPartialAggregationOperator>(driverContext,this->desc);
+        return std::make_shared<GPUPartialAggregationOperator>(this->operatorId,driverContext,this->desc);
     }
     std::shared_ptr<void> getOperatorNonType(shared_ptr<DriverContext> driverContext) {
-        return std::make_shared<GPUPartialAggregationOperator>(driverContext,this->desc);
+        return std::make_shared<GPUPartialAggregationOperator>(this->operatorId,driverContext,this->desc);
     }
-    string getTypeId(){return name;}
 
+    string getLogicalOperatorId() override
+    {
+        return this->operatorId;
+    }
 
 };
 

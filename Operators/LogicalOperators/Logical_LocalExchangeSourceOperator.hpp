@@ -16,15 +16,16 @@ class Logical_LocalExchangeSourceOperator:public LogicalOperator
     string name = "Logical_LocalExchangeSourceOperator";
 
 
-
+    string operatorId;
     std::shared_ptr<LocalExchangeFactory> localExchangeFactory;
 
 public:
 
 
-    Logical_LocalExchangeSourceOperator(std::shared_ptr<LocalExchangeFactory> localExchangeFactory) {
+    Logical_LocalExchangeSourceOperator(string operatorId,std::shared_ptr<LocalExchangeFactory> localExchangeFactory) :LogicalOperator("Logical_LocalExchangeSourceOperator") {
 
         this->localExchangeFactory = localExchangeFactory;
+        this->operatorId = operatorId;
 
     }
 
@@ -35,15 +36,17 @@ public:
 
     std::shared_ptr<Operator> getOperator(shared_ptr<DriverContext> driverContext) {
         std::shared_ptr<LocalExchangeSource> source = localExchangeFactory->getLocalExchange()->getNextSource();
-        return std::make_shared<LocalExchangeSourceOperator>(driverContext,source);
+        return std::make_shared<LocalExchangeSourceOperator>(this->operatorId,driverContext,source);
     }
     std::shared_ptr<void> getOperatorNonType(shared_ptr<DriverContext> driverContext) {
         std::shared_ptr<LocalExchangeSource> source = localExchangeFactory->getLocalExchange()->getNextSource();
-        return std::make_shared<LocalExchangeSourceOperator>(driverContext,source);
+        return std::make_shared<LocalExchangeSourceOperator>(this->operatorId,driverContext,source);
     }
-    string getTypeId(){return name;}
 
-
+    string getLogicalOperatorId() override
+    {
+        return this->operatorId;
+    }
 
 };
 

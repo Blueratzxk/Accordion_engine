@@ -30,6 +30,13 @@ public:
         return "OK";
     }
 
+
+    string moveFinishedTaskDataToNewNodeForStage(int stageId,int taskId)
+    {
+        thread(SqlQueryScheduler::moveFinishedTaskDataToNewNodeForStage,this->scheduler,stageId,taskId).detach();
+        return "OK";
+    }
+
     string decreaseStageParallelism(int stageId,int degree)
     {
         thread(SqlQueryScheduler::decreaseStageParallelism,this->scheduler,stageId,degree).detach();
@@ -593,7 +600,11 @@ public:
     }
 
 
-
+    string Dynamic_moveFinishedTaskDataToNewNodeForStage(int stageId,int taskId)
+    {
+        this->dyScheduler->moveFinishedTaskDataToNewNodeForStage(stageId, taskId);
+        return "OK";
+    }
 
 };
 

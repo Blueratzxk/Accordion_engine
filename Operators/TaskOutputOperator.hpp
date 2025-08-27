@@ -26,19 +26,24 @@ class TaskOutputOperator:public Operator
 
     shared_ptr<DriverContext> driverContext;
 
+    bool ignoreTrafficControl = false;
 
+    string operatorId;
 
 public:
-    string getOperatorId() { return this->name; }
 
-    TaskOutputOperator(shared_ptr<DriverContext> driverContext,std::shared_ptr<OutputBuffer> outputBuffer) {
+
+    TaskOutputOperator(string operatorId,shared_ptr<DriverContext> driverContext,std::shared_ptr<OutputBuffer> outputBuffer, bool ignoreTrafficControl = false) : Operator("TaskOutputOperator") {
 
 
         this->outputBuffer = outputBuffer;
         this->finished = false;
         this->driverContext = driverContext;
         this->outputBuffer->regOutputOperator();
+        this->ignoreTrafficControl = ignoreTrafficControl;
+        this->operatorId = operatorId;
     }
+
 
     void addInput(std::shared_ptr<DataPage> input) override {
 
@@ -59,7 +64,7 @@ public:
         this->outputBuffer->enqueue({this->inputPage });
      //   this->driverContext->addTupleCountForTask(this->inputPage->getElementsCount());
 
-        while(this->outputBuffer->isFull())
+        while(!this->ignoreTrafficControl && this->outputBuffer->isFull())
             ;
 
         if(this->outputBuffer->isEmpty())
@@ -80,17 +85,19 @@ public:
 
     }
 
-
     bool needsInput() override {
         return true;
     }
-
 
     bool isFinished()
     {
         return this->finished;
     }
 
+    string getOperatorId() override
+    {
+        return this->operatorId;
+    }
 
 };
 

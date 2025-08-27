@@ -16,27 +16,32 @@ class Logical_TaskOutputOperator:public LogicalOperator
 
     std::shared_ptr<OutputBuffer> outputBuffer = NULL;
     string name = "Logical_TaskOutputOperator";
+    bool noTrafficControl = false;
 
+    string operatorId;
 public:
 
-    Logical_TaskOutputOperator(){
-
+    Logical_TaskOutputOperator(string operatorId):LogicalOperator("Logical_TaskOutputOperator"){
+        this->operatorId = operatorId;
     }
 
-    Logical_TaskOutputOperator(std::shared_ptr<OutputBuffer> outputBuffer) {
+    Logical_TaskOutputOperator(string operatorId,std::shared_ptr<OutputBuffer> outputBuffer,bool noTrafficControl = false) :LogicalOperator("Logical_TaskOutputOperator"){
         this->outputBuffer = outputBuffer;
-
+        this->noTrafficControl = noTrafficControl;
+        this->operatorId = operatorId;
     }
 
     std::shared_ptr<Operator> getOperator(shared_ptr<DriverContext> driverContext) {
-        return std::make_shared<TaskOutputOperator>(driverContext,this->outputBuffer);
+        return std::make_shared<TaskOutputOperator>(this->operatorId,driverContext,this->outputBuffer,this->noTrafficControl);
     }
     std::shared_ptr<void> getOperatorNonType(shared_ptr<DriverContext> driverContext) {
-        return std::make_shared<TaskOutputOperator>(driverContext,this->outputBuffer);
+        return std::make_shared<TaskOutputOperator>(this->operatorId,driverContext,this->outputBuffer,this->noTrafficControl);
     }
-    string getTypeId(){return name;}
 
-
+    string getLogicalOperatorId() override
+    {
+        return this->operatorId;
+    }
 };
 
 

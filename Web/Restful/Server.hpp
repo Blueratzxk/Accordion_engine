@@ -106,6 +106,7 @@ private:
         Routes::Get(router, "/v1/query/addStageAllTaskPipelineConcurrentExtern/:queryId/:stageId/:pipelineId", Routes::bind(&StatsEndpoint::addStageAllTaskPipelineConcurrentExtern, this));
         Routes::Get(router, "/v1/query/subStageAllTaskPipelineConcurrentExtern/:queryId/:stageId/:pipelineId", Routes::bind(&StatsEndpoint::subStageAllTaskPipelineConcurrentExtern, this));
         Routes::Get(router, "/v1/query/addStageTaskIntraExtensionPipelineConcurrentByTaskId/:queryId/:extensionType/:stageId/:taskId/:pipelineId", Routes::bind(&StatsEndpoint::addStageTaskIntraExtensionPipelineConcurrentByTaskId, this));
+        Routes::Get(router, "/v1/query/moveFinishedTaskDataToNewNodeForStage/:queryId/:stageId/:taskId", Routes::bind(&StatsEndpoint::moveFinishedTaskDataToNewNodeForStage, this));
 
 
 
@@ -274,6 +275,10 @@ private:
         response.send(Http::Code::Ok,result);
 
     }
+
+
+
+
 
     void getAllRunningQueryInfoExtern(const Rest::Request& request, Http::ResponseWriter response) {
 
@@ -511,6 +516,38 @@ private:
 
 
 
+    void moveFinishedTaskDataToNewNodeForStage(const Rest::Request& request, Http::ResponseWriter response) {
+
+
+        string queryId;
+        string stageId;
+        string taskId;
+
+        if (request.hasParam(":queryId")) {
+            auto value = request.param(":queryId");
+            queryId = value.as<string>();
+        }
+        if (request.hasParam(":stageId")) {
+            auto value = request.param(":stageId");
+            stageId = value.as<string>();
+        }
+
+        if (request.hasParam(":taskId")) {
+            auto value = request.param(":taskId");
+            taskId = value.as<string>();
+        }
+
+        QueryInterFace api;
+        string taskResponse = api.moveFinishedTaskDataToNewNodeForStage(queryId,stageId,taskId);
+        nlohmann::json responseString;
+
+        string resultString;
+
+
+        response.headers().add<Http::Header::AccessControlAllowOrigin>("*");
+        response.send(Http::Code::Ok,taskResponse);
+
+    }
     void addStageTaskGroupConcurrentExtern(const Rest::Request& request, Http::ResponseWriter response) {
 
 

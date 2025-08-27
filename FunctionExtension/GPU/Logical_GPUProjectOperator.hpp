@@ -20,25 +20,28 @@ class Logical_GPUProjectOperator:public LogicalOperator
 
     ProjectAssignments assignments;
 
-
+    string operatorId;
 public:
 
-    Logical_GPUProjectOperator(ProjectAssignments assignments) {
+    Logical_GPUProjectOperator(string operatorId,ProjectAssignments assignments) :LogicalOperator("Logical_GPUProjectOperator") {
         this->assignments = assignments;
-
+        this->operatorId = operatorId;
     }
 
     std::shared_ptr<Operator> getOperator(shared_ptr<DriverContext> driverContext) {
 
-        return std::make_shared<GPUProjectOperator>(driverContext,this->assignments);
+        return std::make_shared<GPUProjectOperator>(this->operatorId,driverContext,this->assignments);
     }
 
     std::shared_ptr<void> getOperatorNonType(shared_ptr<DriverContext> driverContext) {
 
-        return std::make_shared<GPUProjectOperator>(driverContext,this->assignments);
+        return std::make_shared<GPUProjectOperator>(this->operatorId,driverContext,this->assignments);
     }
 
-    string getTypeId(){return this->name;}
+    string getLogicalOperatorId() override
+    {
+        return this->operatorId;
+    }
 
 
 

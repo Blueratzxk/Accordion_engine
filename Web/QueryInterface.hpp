@@ -67,7 +67,10 @@ public:
         return QueryServer::queryServer->addStageTaskIntraExtensionPipelineConcurrentByTaskId(queryId,extensionType,stageId,taskId,pipelineId);
     }
 
-
+    static string moveFinishedTaskDataToNewNodeForStage(string queryId,string stageId,string taskId)
+    {
+        return QueryServer::queryServer->moveFinishedTaskDataToNewNodeForStage(queryId,stageId,taskId);
+    }
 
     static string addStageTaskGroup(string queryId,int stageId,int taskNum)
     {

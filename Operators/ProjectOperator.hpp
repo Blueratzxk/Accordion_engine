@@ -15,7 +15,7 @@ class ProjectOperator:public Operator
 {
     int elementsCount;
 
-
+    string operatorId;
     bool finished;
 
     string name = "ProjectOperator";
@@ -43,16 +43,16 @@ class ProjectOperator:public Operator
 
     int count = 0;
 public:
-    string getOperatorId() { return this->name; }
 
-    ProjectOperator(shared_ptr<DriverContext> driverContext,ProjectAssignments assignments) {
+
+    ProjectOperator(string operatorId,shared_ptr<DriverContext> driverContext,ProjectAssignments assignments) :Operator("ProjectOperator") {
 
         this->assignments = assignments;
 
         this->elementsCount = 0;
         this->finished = false;
         this->driverContext = driverContext;
-
+        this->operatorId = operatorId;
 
 
         this->generateInputSchema();
@@ -259,6 +259,10 @@ public:
         return this->finished;
     }
 
+    string getOperatorId() override
+    {
+        return this->operatorId;
+    }
 
 };
 #endif //OLVP_PROJECTOPERATOR_HPP

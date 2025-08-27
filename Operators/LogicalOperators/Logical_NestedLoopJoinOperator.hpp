@@ -26,33 +26,38 @@ class Logical_NestedLoopJoinOperator :public LogicalOperator{
 
     shared_ptr<NestedLoopJoinPagesSupplier> nestedLoopJoinPagesSupplier;
 
-
+    string operatorId;
 
 public:
 
 
-    Logical_NestedLoopJoinOperator(std::shared_ptr <arrow::Schema> probeSchema,std::shared_ptr <arrow::Schema> buildSchema,std::shared_ptr <arrow::Schema> probeOutputSchema,std::shared_ptr <arrow::Schema> buildOutputSchema,shared_ptr<NestedLoopJoinPagesSupplier> nestedLoopJoinPagesSupplier) {
+    Logical_NestedLoopJoinOperator(string operatorId,
+                                   std::shared_ptr <arrow::Schema> probeSchema,std::shared_ptr <arrow::Schema> buildSchema,
+                                   std::shared_ptr <arrow::Schema> probeOutputSchema,std::shared_ptr <arrow::Schema> buildOutputSchema,
+                                   shared_ptr<NestedLoopJoinPagesSupplier> nestedLoopJoinPagesSupplier)  :LogicalOperator("Logical_NestedLoopJoinOperator"){
 
        this->probeSchemaIn = probeSchema;
        this->buildSchemaIn = buildSchema;
        this->probeOutputSchemaIn = probeOutputSchema;
        this->buildOutputSchemaIn = buildOutputSchema;
        this->nestedLoopJoinPagesSupplier = nestedLoopJoinPagesSupplier;
+       this->operatorId = operatorId;
     }
 
 
     std::shared_ptr<Operator> getOperator(shared_ptr<DriverContext> driverContext) {
 
-        return std::make_shared<NestedLoopJoinOperator>(driverContext,this->probeSchemaIn,this->buildSchemaIn,this->probeOutputSchemaIn,this->buildOutputSchemaIn,this->nestedLoopJoinPagesSupplier);
+        return std::make_shared<NestedLoopJoinOperator>(this->operatorId,driverContext,this->probeSchemaIn,this->buildSchemaIn,this->probeOutputSchemaIn,this->buildOutputSchemaIn,this->nestedLoopJoinPagesSupplier);
     }
     std::shared_ptr<void> getOperatorNonType(shared_ptr<DriverContext> driverContext) {
 
-        return std::make_shared<NestedLoopJoinOperator>(driverContext,this->probeSchemaIn,this->buildSchemaIn,this->probeOutputSchemaIn,this->buildOutputSchemaIn,this->nestedLoopJoinPagesSupplier);
+        return std::make_shared<NestedLoopJoinOperator>(this->operatorId,driverContext,this->probeSchemaIn,this->buildSchemaIn,this->probeOutputSchemaIn,this->buildOutputSchemaIn,this->nestedLoopJoinPagesSupplier);
     }
-    string getTypeId(){return name;}
 
-
-
+    string getLogicalOperatorId() override
+    {
+        return this->operatorId;
+    }
 };
 
 

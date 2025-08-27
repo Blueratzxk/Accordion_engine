@@ -78,8 +78,10 @@ public:
 
     static vector<TaskInfo> getAllTaskInfo()
     {
-        return  TaskServer::taskResourceManager->getAllTaskInfo();
+        return TaskServer::taskResourceManager->getAllTaskInfo();
     }
+
+
 
 
     /*

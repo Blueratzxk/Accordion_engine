@@ -18,21 +18,27 @@ class Logical_LimitOperator:public LogicalOperator
 
     int limit;
 
-public:
-    string getOperatorId() { return this->name; }
+    string operatorId;
 
-    Logical_LimitOperator(int limit) {
+public:
+
+
+    Logical_LimitOperator(string operatorId,int limit) :LogicalOperator("Logical_LimitOperator") {
         this->limit = limit;
+        this->operatorId = operatorId;
     }
 
     std::shared_ptr<Operator> getOperator(shared_ptr<DriverContext> driverContext) {
-        return std::make_shared<LimitOperator>(driverContext,this->limit);
+        return std::make_shared<LimitOperator>(this->operatorId,driverContext,this->limit);
     }
     std::shared_ptr<void> getOperatorNonType(shared_ptr<DriverContext> driverContext) {
-        return std::make_shared<LimitOperator>(driverContext,this->limit);
+        return std::make_shared<LimitOperator>(this->operatorId,driverContext,this->limit);
     }
-    string getTypeId(){return name;}
 
+    string getLogicalOperatorId() override
+    {
+        return this->operatorId;
+    }
 
 
 };

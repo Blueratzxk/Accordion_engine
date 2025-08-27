@@ -135,7 +135,7 @@ public:
     {
         vector<string> pipelineIds;
         for(int i = 0 ; i < this->pipelineTemplate.size() ; i++)
-            pipelineIds.push_back(this->pipelineTemplate[i]->getTypeId());
+            pipelineIds.push_back(this->pipelineTemplate[i]->getLogicalOperatorType());
         return pipelineIds;
 
     }

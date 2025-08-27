@@ -11,6 +11,8 @@
 #include <memory>
 #include <vector>
 
+#include "GPU/Config/GPUExecutionConfig.hpp"
+
 class Logical_GPUHashJoinOperator;
 class Logical_LookupJoinOperator;
 class Logical_GPUFilterOperator;
@@ -21,10 +23,13 @@ class Logical_GPUPartialAggregationOperator;
 class Logical_PartialAggregationOperator;
 class LogicalOperator;
 
+
+
 using namespace std;
 class OperatorExtension
 {
     set<string> extensionSupport = {"Logical_LookupJoinOperator"};
+    GPUExecutionConfig gpuExecutionConfig;
 public:
 
     OperatorExtension()

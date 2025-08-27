@@ -13,7 +13,7 @@
 class GPUPartialAggregationOperator:public Operator {
 
     bool finished;
-
+    string operatorId;
     string name = "GPUPartialAggregationOperator";
 
 
@@ -46,11 +46,11 @@ class GPUPartialAggregationOperator:public Operator {
 
     shared_ptr<DriverContext> driverContext;
 public:
-    string getOperatorId() { return this->name; }
-
-    GPUPartialAggregationOperator(shared_ptr<DriverContext> driverContext,AggregationDesc desc){
 
 
+    GPUPartialAggregationOperator(string operatorId,shared_ptr<DriverContext> driverContext,AggregationDesc desc):Operator("GPUPartialAggregationOperator"){
+
+        this->operatorId = operatorId;
         this->desc = desc;
         this->finished = false;
         this->driverContext = driverContext;
@@ -212,6 +212,10 @@ public:
     }
 
 
+    string getOperatorId() override
+    {
+        return this->operatorId;
+    }
 
 };
 

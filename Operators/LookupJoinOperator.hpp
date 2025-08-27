@@ -17,7 +17,7 @@ class LookupJoinOperator :public Operator{
 
 
     bool finished;
-
+    string operatorId;
     string name = "LookupJoinOperator";
 
 
@@ -27,6 +27,7 @@ class LookupJoinOperator :public Operator{
 
     std::shared_ptr<LookupSourceProvider> lookupSourceProvider = NULL;
     std::shared_ptr<LookupSourceFactory> lookupSourceFactory = NULL;
+    atomic<bool> lookupsourceStatus = false;
 
     std::future<std::shared_ptr<LookupSourceProvider>> lookupSourceProviderFuture;
 
@@ -50,10 +51,13 @@ class LookupJoinOperator :public Operator{
 public:
 
 
-    string getOperatorId() { return this->name; }
 
-    LookupJoinOperator(shared_ptr<DriverContext> driverContext,std::shared_ptr <arrow::Schema> probeSchema,std::shared_ptr <arrow::Schema> buildOutputSchema,std::shared_ptr<JoinProbeFactory> joinProbeFactory,std::shared_ptr<LookupSourceFactory> lookupSourceFactory) {
 
+    LookupJoinOperator(string operatorId,shared_ptr<DriverContext> driverContext,std::shared_ptr <arrow::Schema> probeSchema,
+                       std::shared_ptr <arrow::Schema> buildOutputSchema,std::shared_ptr<JoinProbeFactory> joinProbeFactory,
+                       std::shared_ptr<LookupSourceFactory> lookupSourceFactory,string buildSideRemoteSourceOperatorId):Operator("LookupJoinOperator") {
+
+        this->operatorId = operatorId;
         this->finished = false;
         this->joinProbeFactory = joinProbeFactory;
         this->lookupSourceFactory = lookupSourceFactory;
@@ -64,6 +68,9 @@ public:
         this->pageBuilder = std::make_shared<LookupJoinPageBuilder>(buildOutputSchema);
         this->driverContext = driverContext;
     }
+
+
+
 
     void addInput(std::shared_ptr <DataPage> input) override {
         if (input != NULL && !input->isEndPage()) {
@@ -91,6 +98,19 @@ public:
         return provider->getSourceData();
     }
 
+    bool externalEvent() override
+    {
+        if(!this->lookupsourceStatus)
+            return false;
+        else
+        {
+            auto pages = this->getLookupSourceData()->CombineChunksToBatch().ValueOrDie();
+            this->driverContext->savePagesForInterTaskMission("LookupJoinOperator", {make_shared<DataPage>(pages)});
+        }
+        return true;
+    }
+
+
     bool tryFetchLookupSourceProvider()
     {
         if (this->lookupSourceProvider == NULL) {
@@ -106,6 +126,7 @@ public:
 
             this->lookupSourceFactory->tryGetCompletedLookupSource();
             lookupSourceProvider = this->lookupSourceProviderFuture.get();
+            lookupsourceStatus = true;
             return true;
 
             return false;
@@ -284,6 +305,11 @@ public:
 
     bool isFinished() {
         return this->finished;
+    }
+
+    string getOperatorId() override
+    {
+        return this->operatorId;
     }
 
 };

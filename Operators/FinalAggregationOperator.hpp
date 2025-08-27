@@ -30,7 +30,7 @@
 class FinalAggregationOperator:public Operator {
 
     bool finished;
-
+    string operatorId;
     string name = "FinalAggregationOperator";
 
 
@@ -108,7 +108,6 @@ class FinalAggregationOperator:public Operator {
     list<shared_ptr<DataPage>> interTaskPages;
 
 public:
-    string getOperatorId() { return this->name; }
 
 
     bool externalEvent() override
@@ -174,9 +173,10 @@ public:
         }
     }
 
-    FinalAggregationOperator(shared_ptr<DriverContext> driverContext,AggregationDesc desc) {
+    FinalAggregationOperator(string operatorId, shared_ptr<DriverContext> driverContext,AggregationDesc desc):Operator("FinalAggregationOperator"){
 
 
+        this->operatorId = operatorId;
         this->desc = desc;
         this->finished = false;
 
@@ -209,7 +209,7 @@ public:
 
     }
 
-    FinalAggregationOperator() {
+    FinalAggregationOperator():Operator("FinalAggregationOperator"){
 
         this->finished = false;
     }
@@ -359,8 +359,8 @@ public:
 
 
         if(this->operatorMigration) {
-            this->driverContext->savePagesForInterTaskMission("FinalAggregationOperator",{make_shared<DataPage>(allIntermediateOutput)});
-            this->driverContext->savePagesForInterTaskMission("FinalAggregationOperator",{DataPage::getEndPage()});
+            this->driverContext->savePagesForInterTaskMission(this->operatorId,{make_shared<DataPage>(allIntermediateOutput)});
+            this->driverContext->savePagesForInterTaskMission(this->operatorId,{DataPage::getEndPage()});
         }
         else {
             spdlog::info(allIntermediateOutput->ToString());
@@ -415,9 +415,9 @@ public:
                 batch = produceAllOutput();
                 status = arrow::Status::OK();
             }
-            else
+            else {
                 status = this->reader->ReadNext(&batch);
-
+            }
 
 
             if(status.ok()) {
@@ -428,10 +428,15 @@ public:
                     this->outPutPage = NULL;
                     this->outputResultCompeleted = true;
 
+                    if(this->operatorMigration)
+                        this->driverContext->savePagesForInterTaskMission(this->operatorId,{DataPage::getEndPage()});
                 }
                 else
                 {
-                    this->outPutPage = std::make_shared<DataPage>(batch);
+                    if(this->operatorMigration)
+                        this->driverContext->savePagesForInterTaskMission(this->operatorId,{make_shared<DataPage>(batch)});
+                    else
+                        this->outPutPage = std::make_shared<DataPage>(batch);
 
                 }
             }
@@ -496,6 +501,10 @@ public:
         return this->finished;
     }
 
+    string getOperatorId() override
+    {
+        return this->operatorId;
+    }
 
 };
 

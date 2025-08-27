@@ -32,12 +32,15 @@ class FilterOperator:public Operator
     shared_ptr<DriverContext> driverContext;
 
     int count = 0;
+
+    string operatorId;
 public:
-    string getOperatorId() { return this->name; }
-
-    FilterOperator(shared_ptr<DriverContext> driverContext,FilterDescriptor filterDesc) {
 
 
+    FilterOperator(string operatorId, shared_ptr<DriverContext> driverContext,FilterDescriptor filterDesc) :Operator("FilterOperator"){
+
+
+        this->operatorId = operatorId;
         this->filterDesc = filterDesc;
         this->finished = false;
 
@@ -138,6 +141,10 @@ public:
         return this->finished;
     }
 
+    string getOperatorId() override
+    {
+        return this->operatorId;
+    }
 
 };
 

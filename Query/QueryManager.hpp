@@ -812,6 +812,21 @@ public:
             return "NULL";
     }
 
+
+    string moveFinishedTaskDataToNewNodeForStage(string queryId,string stageId,string taskId)
+    {
+        shared_ptr<SqlQueryExecution> queryExecution = nullptr;
+        if((*this->querys).find(queryId) != (*this->querys).end()) {
+            queryExecution = (*this->querys)[queryId];
+            return queryExecution->Dynamic_moveFinishedTaskDataToNewNodeForStage(atoi(stageId.c_str()),atoi(taskId.c_str()));
+        }
+        else
+            return "NO";
+    }
+
+
+
+
     string decreaseStageParallelism(string queryId,int stageId)
     {
         shared_ptr<SqlQueryExecution> queryExecution = nullptr;

@@ -24,17 +24,21 @@ class Logical_LookupJoinOperator :public LogicalOperator{
     std::shared_ptr <arrow::Schema> buildInputSchema;
     shared_ptr<LogicalOperator> hashBuilderLogicalOperator = NULL;
 
+    string buildSideRemoteSourceOperatorId;
 
+    string operatorId;
 public:
 
 
 
-    Logical_LookupJoinOperator(std::shared_ptr <arrow::Schema> probeSchema,
+    Logical_LookupJoinOperator(string operatorId,
+                               std::shared_ptr <arrow::Schema> probeSchema,
                                std::shared_ptr <arrow::Schema> buildInputSchema,
                                std::shared_ptr <arrow::Schema> buildOutputSchema,
                                std::shared_ptr<JoinProbeFactory> joinProbeFactory,
                                std::shared_ptr<LookupSourceFactory> lookupSourceFactory,
-                               shared_ptr<LogicalOperator> hashBuilderLogicalOperator) {
+                               shared_ptr<LogicalOperator> hashBuilderLogicalOperator,
+                               string buildSideRemoteSourceOperatorId) :LogicalOperator("Logical_LookupJoinOperator")  {
 
         this->joinProbeFactory = joinProbeFactory;
         this->lookupSourceFactory = lookupSourceFactory;
@@ -42,7 +46,9 @@ public:
         this->buildOutputSchema = buildOutputSchema;
         this->buildInputSchema = buildInputSchema;
         this->hashBuilderLogicalOperator = hashBuilderLogicalOperator;
+        this->buildSideRemoteSourceOperatorId = buildSideRemoteSourceOperatorId;
 
+        this->operatorId = operatorId;
 
     }
 
@@ -64,15 +70,19 @@ public:
 
     std::shared_ptr<Operator> getOperator(shared_ptr<DriverContext> driverContext) {
 
-        return std::make_shared<LookupJoinOperator>(driverContext,this->probeSchema,this->buildOutputSchema,this->joinProbeFactory,this->lookupSourceFactory);
+        return std::make_shared<LookupJoinOperator>(this->operatorId,driverContext,this->probeSchema,this->buildOutputSchema,this->joinProbeFactory,
+                                                    this->lookupSourceFactory,this->buildSideRemoteSourceOperatorId);
     }
     std::shared_ptr<void> getOperatorNonType(shared_ptr<DriverContext> driverContext) {
 
-        return std::make_shared<LookupJoinOperator>(driverContext,this->probeSchema,this->buildOutputSchema,this->joinProbeFactory,this->lookupSourceFactory);
+        return std::make_shared<LookupJoinOperator>(this->operatorId,driverContext,this->probeSchema,this->buildOutputSchema,this->joinProbeFactory,
+                                                    this->lookupSourceFactory,this->buildSideRemoteSourceOperatorId);
     }
-    string getTypeId(){return name;}
 
-
+    string getLogicalOperatorId() override
+    {
+        return this->operatorId;
+    }
 
 };
 

@@ -83,23 +83,36 @@ class LocalExecutionPlanContext
 {
     vector<LogicalPipeline> DriverFactories;
     int nextPipelineId;
-    int nextOperatorId;
+    int nextLogicalOperatorId;
     string localExchangeType = "None";
     string downStreamProbeOrBuild = "None";
     int joinNums = 0;
+
+    string currentRemoteSourceOperatorId = "";
 public:
     LocalExecutionPlanContext(){
         this->nextPipelineId = 0;
+        this->nextLogicalOperatorId = 0;
     }
     void addLogicalPipeline(LogicalPipeline lpl)
     {
         this->DriverFactories.push_back(lpl);
     }
-    string getNextId()
+    string getNextPipelineId()
     {
         string Id = to_string(nextPipelineId);
         nextPipelineId++;
         return Id;
+    }
+
+    void updateRemoteSourceId(string id)
+    {
+        this->currentRemoteSourceOperatorId = id;
+    }
+
+    string getCurrentRemoteSourceOperatorId()
+    {
+        return this->currentRemoteSourceOperatorId;
     }
     void addJoinNum()
     {
@@ -109,10 +122,10 @@ public:
     {
         return this->joinNums;
     }
-    string getNextOperatorId()
+    string getNextLogicalOperatorId()
     {
-        string Id = to_string(nextOperatorId);
-        nextOperatorId++;
+        string Id = to_string(nextLogicalOperatorId);
+        nextLogicalOperatorId++;
         return Id;
     }
     vector<LogicalPipeline> getDriverFactories()
@@ -170,7 +183,8 @@ public:
 
         PhysicalOperation *source = (PhysicalOperation *)Visit(node->getSource(),context);
 
-         auto filter = std::make_shared<Logical_FilterOperator>(node->getFilterDesc());
+        string nextLogicalOperatorId = ((LocalExecutionPlanContext*)context)->getNextLogicalOperatorId();
+         auto filter = std::make_shared<Logical_FilterOperator>(nextLogicalOperatorId,node->getFilterDesc());
 
         return  new PhysicalOperation(filter,source);
     }
@@ -180,10 +194,17 @@ public:
         PhysicalOperation *source = (PhysicalOperation *)Visit(node->getSource(),context);
 
         bool interTaskSync = false;
-        if(condition != NULL && condition->getConditionType() == "InterTaskMission" && condition->getComponentId() == "Logical_FinalAggregationOperator")
-            interTaskSync = true;
+        if(condition != NULL && condition->getConditionType() == TaskExecutionCondition::OPERATOR_MIGRATION) {
 
-        auto fagg = std::make_shared<Logical_FinalAggregationOperator>(node->getAggregationDesc(),interTaskSync);
+            auto sourceTypes = condition->getMigratedOperators().getSourceTypes();
+            bool ok = sourceTypes.contains("FinalAggregationOperator");
+            if(ok)
+                interTaskSync = true;
+        }
+        string nextLogicalOperatorId = ((LocalExecutionPlanContext*)context)->getNextLogicalOperatorId();
+        auto fagg = std::make_shared<Logical_FinalAggregationOperator>(nextLogicalOperatorId,node->getAggregationDesc(),interTaskSync);
+
+        this->condition->addOperatorId(nextLogicalOperatorId);
 
         return new PhysicalOperation(fagg,source);
     }
@@ -205,13 +226,17 @@ public:
         ((LocalExecutionPlanContext*)context)->setDownstreamProbeOrBuild("build");
         ((LocalExecutionPlanContext*)context)->addJoinNum();
 
+
+        string nextBuildLogicalOperatorId = ((LocalExecutionPlanContext*)context)->getNextLogicalOperatorId();
         PhysicalOperation *sourceBuild = (PhysicalOperation*)Visit(node->getBuild(),context);
-        auto build = make_shared<Logical_HashBuilderOperator>(node->getId(),lookupSourceFactory,node->getLookupJoinDescriptor().getBuildOutputChannels(),node->getLookupJoinDescriptor().getBuildHashChannels());
+
+        string remoteSourceIdOfBuildSide = ((LocalExecutionPlanContext*)context)->getCurrentRemoteSourceOperatorId();
+        auto build = make_shared<Logical_HashBuilderOperator>(nextBuildLogicalOperatorId,node->getId(),lookupSourceFactory,node->getLookupJoinDescriptor().getBuildOutputChannels(),node->getLookupJoinDescriptor().getBuildHashChannels());
         PhysicalOperation *buildPipeline = new PhysicalOperation(build,sourceBuild);
 
 
 
-        string id = ((LocalExecutionPlanContext*)context)->getNextId();
+        string id = ((LocalExecutionPlanContext*)context)->getNextPipelineId();
         string buildLocalExchangeType = ((LocalExecutionPlanContext*)context)->getLocalExchangeType();
         ((LocalExecutionPlanContext*)context)->setLocalExchangeType("None");
         if(buildLocalExchangeType != "hash")
@@ -237,7 +262,10 @@ public:
         shared_ptr<JoinProbeFactory> joinProbeFactory = std::make_shared<JoinProbeFactory>(node->getLookupJoinDescriptor().getProbeOutputChannels()
                 ,node->getLookupJoinDescriptor().getProbeHashChannels());
 
-        auto hashProbe = make_shared<Logical_LookupJoinOperator>(probeInputSchema,buildInputSchema,buildOutputSchema,joinProbeFactory,lookupSourceFactory,build);
+        string nextProbeLogicalOperatorId = ((LocalExecutionPlanContext*)context)->getNextLogicalOperatorId();
+        auto hashProbe = make_shared<Logical_LookupJoinOperator>(nextProbeLogicalOperatorId,probeInputSchema,
+                                                                 buildInputSchema,buildOutputSchema,joinProbeFactory,
+                                                                 lookupSourceFactory,build,remoteSourceIdOfBuildSide);
 
 
 
@@ -261,10 +289,12 @@ public:
         ((LocalExecutionPlanContext*)context)->setDownstreamProbeOrBuild("build");
         PhysicalOperation *sourceBuild = (PhysicalOperation*)Visit(node->getBuild(),context);
 
-        auto build = make_shared<Logical_NestedLoopBuildOperator>(node->getId(),supplier);
+
+        string nextBuildLogicalOperatorId = ((LocalExecutionPlanContext*)context)->getNextLogicalOperatorId();
+        auto build = make_shared<Logical_NestedLoopBuildOperator>(nextBuildLogicalOperatorId,node->getId(),supplier);
         PhysicalOperation *buildPipeline = new PhysicalOperation(build,sourceBuild);
 
-        string id = ((LocalExecutionPlanContext*)context)->getNextId();
+        string id = ((LocalExecutionPlanContext*)context)->getNextPipelineId();
 
 
         LogicalPipeline lp = LogicalPipeline(id,buildPipeline->getPipelineTypes(),buildPipeline->getLogicalOperators());
@@ -279,8 +309,8 @@ public:
         PhysicalOperation *sourceProbe = (PhysicalOperation*)Visit(node->getProbe(),context);
 
 
-
-        auto probe = make_shared<Logical_NestedLoopJoinOperator>(probeInputSchema,buildInputSchema,probeOutputSchema,buildOutputSchema,supplier);
+        string nextProbeLogicalOperatorId = ((LocalExecutionPlanContext*)context)->getNextLogicalOperatorId();
+        auto probe = make_shared<Logical_NestedLoopJoinOperator>(nextProbeLogicalOperatorId,probeInputSchema,buildInputSchema,probeOutputSchema,buildOutputSchema,supplier);
 
 
 
@@ -291,7 +321,8 @@ public:
 
         PhysicalOperation *source = (PhysicalOperation*)Visit(node->getSource(),context);
 
-        auto sort = make_shared<Logical_SortOperator>(node->getSortDesc().getSortKeys(),node->getSortDesc().getSortOrders());
+        string nextLogicalOperatorId = ((LocalExecutionPlanContext*)context)->getNextLogicalOperatorId();
+        auto sort = make_shared<Logical_SortOperator>(nextLogicalOperatorId,node->getSortDesc().getSortKeys(),node->getSortDesc().getSortOrders());
 
         return new PhysicalOperation(sort,source);
     }
@@ -299,7 +330,8 @@ public:
 
         PhysicalOperation *source = (PhysicalOperation *)Visit(node->getSource(),context);
 
-        auto output = make_shared<Logical_TaskOutputOperator>();
+        string nextLogicalOperatorId = ((LocalExecutionPlanContext*)context)->getNextLogicalOperatorId();
+        auto output = make_shared<Logical_TaskOutputOperator>(nextLogicalOperatorId);
 
         return new PhysicalOperation(output,source);
     }
@@ -308,7 +340,8 @@ public:
 
         PhysicalOperation *source = (PhysicalOperation *)Visit(node->getSource(),context);
 
-        auto pagg = make_shared<Logical_PartialAggregationOperator>(node->getAggregationDesc());
+        string nextLogicalOperatorId = ((LocalExecutionPlanContext*)context)->getNextLogicalOperatorId();
+        auto pagg = make_shared<Logical_PartialAggregationOperator>(nextLogicalOperatorId,node->getAggregationDesc());
 
 
         return new PhysicalOperation(pagg,source);
@@ -318,7 +351,8 @@ public:
 
         PhysicalOperation *source = (PhysicalOperation *)Visit(node->getSource(),context);
 
-        auto proj = make_shared<Logical_ProjectOperator>(node->getProjectAssignments());
+        string nextLogicalOperatorId = ((LocalExecutionPlanContext*)context)->getNextLogicalOperatorId();
+        auto proj = make_shared<Logical_ProjectOperator>(nextLogicalOperatorId,node->getProjectAssignments());
 
         return new PhysicalOperation(proj,source);
     }
@@ -327,7 +361,8 @@ public:
 
         PhysicalOperation *source = (PhysicalOperation *)Visit(node->getSource(),context);
 
-        auto limit = make_shared<Logical_LimitOperator>(node->getLimit());
+        string nextLogicalOperatorId = ((LocalExecutionPlanContext*)context)->getNextLogicalOperatorId();
+        auto limit = make_shared<Logical_LimitOperator>(nextLogicalOperatorId,node->getLimit());
 
         return new PhysicalOperation(limit,source);
     }
@@ -337,7 +372,11 @@ public:
 
         string probeOrBuild = ((LocalExecutionPlanContext *) context)->getDownstreamProbeOrBuild();
 
-        auto remote = make_shared<Logical_RemoteSourceOperator>(probeOrBuild);
+        string nextLogicalOperatorId = ((LocalExecutionPlanContext*)context)->getNextLogicalOperatorId();
+        auto remote = make_shared<Logical_RemoteSourceOperator>(nextLogicalOperatorId,probeOrBuild);
+
+        ((LocalExecutionPlanContext *) context)->updateRemoteSourceId(nextLogicalOperatorId);
+
         PhysicalOperation *re = new PhysicalOperation(remote);
         re->addType(PIPELINE_TYPE_REMOTESOURCE);
         re->setSourceId(node->getId());
@@ -354,7 +393,8 @@ public:
 
 
 
-        auto tableScan = make_shared<Logical_TableScanOperator>(node->getId(),PSM);
+        string nextLogicalOperatorId = ((LocalExecutionPlanContext*)context)->getNextLogicalOperatorId();
+        auto tableScan = make_shared<Logical_TableScanOperator>(nextLogicalOperatorId,node->getId(),PSM);
 
         PhysicalOperation *po = new PhysicalOperation(tableScan);
 
@@ -366,7 +406,8 @@ public:
 
         PhysicalOperation *source = (PhysicalOperation *)Visit(node->getSource(),context);
 
-        auto topk = make_shared<Logical_TopKOperator>(node->getTopKDescriptor().getK(),node->getTopKDescriptor().getSortKeysTopk(),node->getTopKDescriptor().getSortOrdersTopKey());
+        string nextLogicalOperatorId = ((LocalExecutionPlanContext*)context)->getNextLogicalOperatorId();
+        auto topk = make_shared<Logical_TopKOperator>(nextLogicalOperatorId,node->getTopKDescriptor().getK(),node->getTopKDescriptor().getSortKeysTopk(),node->getTopKDescriptor().getSortOrdersTopKey());
 
         return new PhysicalOperation(topk,source);
 
@@ -377,12 +418,13 @@ public:
 
         std::shared_ptr<LocalExchangeFactory> localExchangeFactory = std::make_shared<LocalExchangeFactory>(1,1,node->getExchangeType(),node->gethashExchangeChannels());
 
-        auto sink = std::make_shared<Logical_LocalExchangeSinkOperator>(localExchangeFactory);
+        string nextSinkLogicalOperatorId = ((LocalExecutionPlanContext*)context)->getNextLogicalOperatorId();
+        auto sink = std::make_shared<Logical_LocalExchangeSinkOperator>(nextSinkLogicalOperatorId,localExchangeFactory);
 
         PhysicalOperation *sinkPipeline = new PhysicalOperation(sink,source);
         sinkPipeline->addType(PIPELINE_TYPE_SINK);
 
-        string id = ((LocalExecutionPlanContext*)context)->getNextId();
+        string id = ((LocalExecutionPlanContext*)context)->getNextPipelineId();
 
         LogicalPipeline lp = LogicalPipeline(id,sinkPipeline->getPipelineTypes(),sinkPipeline->getLogicalOperators());
         if(sinkPipeline->hasSourceId()) {
@@ -394,7 +436,8 @@ public:
         ((LocalExecutionPlanContext*)context)->setLocalExchangeType(node->getExchangeType());
 
 
-        auto sourceOp = std::make_shared<Logical_LocalExchangeSourceOperator>(localExchangeFactory);
+        string nextSourceLogicalOperatorId = ((LocalExecutionPlanContext*)context)->getNextLogicalOperatorId();
+        auto sourceOp = std::make_shared<Logical_LocalExchangeSourceOperator>(nextSourceLogicalOperatorId,localExchangeFactory);
 
 
         PhysicalOperation *po = new PhysicalOperation(sourceOp);
@@ -477,16 +520,45 @@ public:
         return this->root;
     }
 
-    void analyze() {
-        PhysicalOperation *op = (PhysicalOperation *) visitor->Visit(root, context);
+    void conditionAnalyze()
+    {
+        RemoteSourceNode *remote = new RemoteSourceNode(condition->getMigratedBufferAddress().getTaskId());
+        PhysicalOperation *op = (PhysicalOperation *) visitor->Visit(remote, context);
 
         if (this->buffer != NULL) {
-            auto output = make_shared<Logical_TaskOutputOperator>(buffer);
+
+            string nextLogicalOperatorId = ((LocalExecutionPlanContext*)context)->getNextLogicalOperatorId();
+            auto output = make_shared<Logical_TaskOutputOperator>(nextLogicalOperatorId,buffer,true);
             op->addOperator(output);
 
         }
         op->addType(PIPELINE_TYPE_OUTPUT);
-        string Id = context->getNextId();
+        string Id = context->getNextPipelineId();
+
+        LogicalPipeline lp = LogicalPipeline(Id, op->getPipelineTypes(), op->getLogicalOperators());
+        if (op->hasSourceId()) {
+            lp.setSourceId(op->getSourceId());
+            op->clearSourceId();
+        }
+        context->addLogicalPipeline(lp);
+        delete (op);
+        delete remote;
+    }
+
+    void analyze() {
+
+
+        PhysicalOperation *op = (PhysicalOperation *) visitor->Visit(root, context);
+
+        if (this->buffer != NULL) {
+
+            string nextLogicalOperatorId = ((LocalExecutionPlanContext*)context)->getNextLogicalOperatorId();
+            auto output = make_shared<Logical_TaskOutputOperator>(nextLogicalOperatorId,buffer);
+            op->addOperator(output);
+
+        }
+        op->addType(PIPELINE_TYPE_OUTPUT);
+        string Id = context->getNextPipelineId();
 
         LogicalPipeline lp = LogicalPipeline(Id, op->getPipelineTypes(), op->getLogicalOperators());
         if (op->hasSourceId()) {
@@ -500,7 +572,10 @@ public:
 
     std::shared_ptr<LocalExecutionPlan> plan()
     {
-        this->analyze();
+        if(this->condition->getConditionType() == TaskExecutionCondition::BUFFER_MIGRATION)
+            this->conditionAnalyze();
+        else
+            this->analyze();
 
         vector<LogicalPipeline> lps = this->context->getDriverFactories();
 
@@ -511,6 +586,7 @@ public:
 
         return std::make_shared<LocalExecutionPlan>(llps);
     }
+
 
 
 

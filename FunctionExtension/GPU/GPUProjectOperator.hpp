@@ -23,7 +23,7 @@ class GPUProjectOperator:public Operator
     bool finished;
 
     string name = "GPUProjectOperator";
-
+    string operatorId;
 
 
     std::shared_ptr<DataPage> inputPage = NULL;
@@ -50,12 +50,12 @@ class GPUProjectOperator:public Operator
 
     int count = 0;
 public:
-    string getOperatorId() { return this->name; }
 
-    GPUProjectOperator(shared_ptr<DriverContext> driverContext,ProjectAssignments assignments) {
+
+    GPUProjectOperator(string operatorId,shared_ptr<DriverContext> driverContext,ProjectAssignments assignments):Operator("GPUProjectOperator") {
 
         this->assignments = assignments;
-
+        this->operatorId = operatorId;
         this->elementsCount = 0;
         this->finished = false;
         this->driverContext = driverContext;
@@ -269,6 +269,12 @@ public:
         if(page->isEndPage())
             return page;
         return make_shared<DataPage>(gpuFunctions.pushCPUPageToGPU(page->get()),page->get()->schema(),page->getElementsCount(),DataPage::GPU);
+    }
+
+
+    string getOperatorId() override
+    {
+        return this->operatorId;
     }
 
 

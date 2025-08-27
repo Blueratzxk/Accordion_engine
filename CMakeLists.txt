@@ -515,12 +515,12 @@ add_executable(OLVP main.cpp
         Utils/ColumnCompute.hpp
         Split/InterTaskSplit.hpp
         Execution/Buffer/InterTaskSimpleOutputBuffer.hpp
-        Execution/Task/InterTaskDataExchangeManager.hpp
+        Execution/Task/SidewayExchangeSystem/InterTaskDataExchangeManager.hpp
         Web/ArrowRPC/InterTaskRPCClient.hpp
         Web/ArrowRPC/InterTaskDataPageRPCBuffer.hpp
         Web/ArrowRPC/InterTaskArrowRPCClient.hpp
         Descriptor/InterTaskMissionDescriptor.hpp
-        Execution/Task/TaskExecutionCondition.hpp
+        Execution/Task/SidewayExchangeSystem/TaskExecutionCondition.hpp
         FunctionExtension/GPU/GPUFilterOperator.hpp
         FunctionExtension/GPU/GPUFilterExprEvaluator.hpp
         FunctionExtension/GPU/Logical_GPUFilterOperator.hpp
@@ -536,6 +536,8 @@ add_executable(OLVP main.cpp
         TpchTest/Querys/SimpleTest/Query5_GPUFilter.hpp
         FunctionExtension/GPU/GPUBatchAssembleOperator.hpp
         FunctionExtension/GPU/Logical_GPUBatchAssembleOperator.hpp
+        FunctionExtension/GPU/Config/GPUExecutionConfig.hpp
+        Execution/Task/SidewayExchangeSystem/SidewayDataExchangeScheduler.hpp
 
 
 )
