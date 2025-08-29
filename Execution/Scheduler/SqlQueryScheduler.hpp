@@ -805,7 +805,7 @@ public:
         return result;
     }
 
-    static bool moveTaskOperatorTest(shared_ptr<SqlQueryScheduler> scheduler)
+    static bool moveTaskOperatorTest(shared_ptr<SqlQueryScheduler> scheduler,string para)
     {
         if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
             return false;
@@ -814,43 +814,69 @@ public:
 
         vector<StageExecutionAndScheduler> executions = scheduler->stageExeSchedulers;
 
-        for (int i = 0; i < executions.size(); i++) {
-            auto handle = executions[i].getStageExecution()->getFragment()->getPartitionHandle();
-            if (handle != NULL && handle->getConnectorHandle()->getHandleId().compare("SystemPartitioningHandle") == 0) {
-                if (static_pointer_cast<SystemPartitioningHandle>((handle)->getConnectorHandle())->partitioningType ==
-                    SystemPartitioningHandle::SINGLE) {
+        if(para == "move") {
+            for (int i = 0; i < executions.size(); i++) {
+                auto handle = executions[i].getStageExecution()->getFragment()->getPartitionHandle();
+                if (handle != NULL &&
+                    handle->getConnectorHandle()->getHandleId().compare("SystemPartitioningHandle") == 0) {
+                    if (static_pointer_cast<SystemPartitioningHandle>(
+                            (handle)->getConnectorHandle())->partitioningType ==
+                        SystemPartitioningHandle::SINGLE) {
 
-                    if(executions[i].getStageExecution()->getStageId().getId() == 0) {
-                        SidewayDataExchangeScheduler scheduler(executions[i].getStageExecution(),executions[i].getStageScheduler(),executions[i].getStageLinkage(),0);
-                        scheduler.schedule();
-                        return true;
+                        if (executions[i].getStageExecution()->getStageId().getId() == 0) {
+                            SidewayDataExchangeScheduler scheduler(SidewayDataExchangeScheduler::OPERATOR_MIGRATION,
+                                                                   executions[i].getStageExecution(),
+                                                                   executions[i].getStageScheduler(),
+                                                                   executions[i].getStageLinkage(), 0);
+                            scheduler.schedule();
+                            return true;
+                        }
+
+
                     }
+                }
+            }
+        }
+        else if(para == "moveh")
+        {
+            for (int i = 0; i < executions.size(); i++) {
 
-
+                if (executions[i].getStageExecution()->getStageId().getId() == 1) {
+                    SidewayDataExchangeScheduler scheduler(SidewayDataExchangeScheduler::OPERATOR_MIGRATION,
+                                                           executions[i].getStageExecution(),
+                                                           executions[i].getStageScheduler(),
+                                                           executions[i].getStageLinkage(), 0);
+                    scheduler.schedule();
+                    return true;
                 }
             }
         }
 
+
     }
+
+
 
     static void moveFinishedTaskDataToNewNodeForStage(shared_ptr<SqlQueryScheduler> scheduler,int stageId,int taskId)
     {
         if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
             return;
-        /*
+
         auto executions = scheduler->stageExeSchedulers;
 
         for (int i = 0; i < executions.size(); i++) {
 
             if (executions[i].getStageExecution()->getStageId().getId() == stageId) {
 
-                TaskId taskIdTemp;
-                ScheduleResult result = (static_pointer_cast<NormalStageScheduler>(executions[i].getStageScheduler()))->moveFinishedTaskToNewNodeForStage({taskId});
-                vector<shared_ptr<HttpRemoteTask>> newTasks = result.getNewTasks();
-                executions[i].getStageLinkage()->processScheduleResultsToReplaceSourceTasks(newTasks,{taskId});
+                SidewayDataExchangeScheduler scheduler(SidewayDataExchangeScheduler::BUFFER_MIGRATION,
+                                                       executions[i].getStageExecution(),
+                                                       executions[i].getStageScheduler(),
+                                                       executions[i].getStageLinkage(),
+                                                       taskId);
+                scheduler.schedule();
             }
 
-        }*/
+        }
     }
 
 

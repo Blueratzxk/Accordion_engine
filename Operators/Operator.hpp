@@ -19,7 +19,7 @@ public:
     virtual string getOperatorId() =0;
     virtual void addInput(std::shared_ptr<DataPage> input) {}
     virtual std::shared_ptr<DataPage> getOutput() { return NULL; }
-    virtual bool externalEvent(){return false;}
+    virtual list<string> externalEvent(){return {};}
     virtual void fulfillExternalEventWithPages(vector<std::shared_ptr<DataPage>> pages){}
     virtual bool isFinished() { return true; }
     virtual bool needsInput() { return true; }

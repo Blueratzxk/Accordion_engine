@@ -68,6 +68,8 @@ class MigratedOperators
     string IP;
     string Port;
 
+    map<string,set<string>> operator_Type_Id_Map;
+
 public:
     MigratedOperators()
     {
@@ -77,14 +79,14 @@ public:
 
     }
 
-    MigratedOperators(set<string> sourceTypes,set<string> operatorsNeedInterTaskExchange,string TaskId, string IP, string Port)
+    MigratedOperators(set<string> sourceTypes,map<string,set<string>> operator_Type_Id_Map,set<string> operatorsNeedInterTaskExchange,string TaskId, string IP, string Port)
     {
         this->TaskId = TaskId;
         this->IP = IP;
         this->Port = Port;
         this->sourceTypes = sourceTypes;
         this->operatorsNeedInterTaskExchange = operatorsNeedInterTaskExchange;
-
+        this->operator_Type_Id_Map = operator_Type_Id_Map;
     }
 
     string getTaskId(){return TaskId;}
@@ -93,6 +95,7 @@ public:
 
     set<string> getSourceTypes(){return this->sourceTypes;}
     set<string> getOperatorsNeedInterTaskExchange(){return this->operatorsNeedInterTaskExchange;}
+    map<string,set<string>> getOperator_Type_Id_Map(){return this->operator_Type_Id_Map;}
 
     static string Serialize(MigratedOperators migratedOperators)
     {
@@ -103,7 +106,7 @@ public:
         json["Port"] = migratedOperators.Port;
         json["SourceTypes"] = migratedOperators.sourceTypes;
         json["operatorsNeedInterTaskExchange"] = migratedOperators.operatorsNeedInterTaskExchange;
-
+        json["operator_Type_Id_Map"] = migratedOperators.operator_Type_Id_Map;
         string result = json.dump();
 
         return result;
@@ -112,7 +115,7 @@ public:
     static MigratedOperators Deserialize(string migratedBufferAddress)
     {
         nlohmann::json json = nlohmann::json::parse(migratedBufferAddress);
-        return MigratedOperators(json["SourceTypes"],json["operatorsNeedInterTaskExchange"],json["TaskId"],json["IP"],json["Port"]);
+        return MigratedOperators(json["SourceTypes"],json["operator_Type_Id_Map"],json["operatorsNeedInterTaskExchange"],json["TaskId"],json["IP"],json["Port"]);
     }
 
 
@@ -144,7 +147,6 @@ private:
     MigratedBufferAddress migratedBufferAddress;
     MigratedOperators migratedOperators;
 
-    ConditionExecutionResult conditionExecutionResults;
 public:
 
     TaskExecutionCondition(){
@@ -168,15 +170,6 @@ public:
     TaskExecutionCondition(ConditionType conditionType, MigratedBufferAddress migratedBufferAddress){
         this->migratedBufferAddress = migratedBufferAddress;
         this->conditionType = conditionType;
-    }
-
-    void addOperatorId(string id){
-        this->conditionExecutionResults.addOperatorId(id);
-    }
-
-    set<string> getTargetOperatorIds()
-    {
-        return this->conditionExecutionResults.getOperatorIds();
     }
 
 

@@ -480,7 +480,7 @@ public:
 
     }
 
-    bool processConditionExecution(shared_ptr<TaskExecutionCondition> condition)
+    bool processConditionExecution(shared_ptr<TaskSource> taskSource,shared_ptr<TaskExecutionCondition> condition)
     {
 
         if(condition->getConditionType() == TaskExecutionCondition::BUFFER_MIGRATION) {
@@ -510,6 +510,73 @@ public:
         }
         else if(condition->getConditionType() == TaskExecutionCondition::OPERATOR_MIGRATION)
         {
+            auto sourceTypes = condition->getMigratedOperators().getSourceTypes();
+
+            for(auto source : sourceTypes)
+            {
+                if(source == "FinalAggregationOperator")
+                    return false;
+                else if(source == "LookupJoinOperator")
+                {
+                    auto typeIdMap = condition->getMigratedOperators().getOperator_Type_Id_Map();
+                    set<string> targetOperatorIds;
+                    for(auto item : typeIdMap)
+                        if(item.first == source)
+                            targetOperatorIds.insert(item.second.begin(),item.second.end());
+
+                    string oldTaskId = condition->getMigratedOperators().getTaskId();
+                    string ip = condition->getMigratedOperators().getIP();
+
+                    set<shared_ptr<ScheduledSplit>> tableScanSplits;
+                    set<shared_ptr<ScheduledSplit>> remoteSplits;
+
+                    for(auto split : taskSource->getSplits())
+                    {
+                        PlanNodeId planNodeId = split->getPlanNodeId();
+                        if(this->sourcePlanNodeId_To_LPipeline.find(planNodeId) != this->sourcePlanNodeId_To_LPipeline.end()) {
+
+                            auto lpipeline = sourcePlanNodeId_To_LPipeline[planNodeId];
+
+                            auto logicalPipeline = this->remoteSourceLogicalPipelineRegister[lpipeline];
+                            auto loperators = logicalPipeline.first->getLogicalPipelines();
+
+                            shared_ptr<InterTaskSplit> interTaskSplit = NULL;
+                            for(auto op : loperators)
+                            {
+                                if(targetOperatorIds.contains(op->getLogicalOperatorId()))
+                                {
+                                    interTaskSplit = make_shared<InterTaskSplit>(this->taskId,
+                                                                                      oldTaskId+"$"+op->getLogicalOperatorId(),
+                                                                                      make_shared<Location>(ip,"9081","0"));
+                                }
+                            }
+
+                            shared_ptr<ScheduledSplit> newSplit = split;
+                            if(interTaskSplit != NULL) {
+                                newSplit = make_shared<ScheduledSplit>(split->getPlanNodeId(),
+                                                                       make_shared<Split>(ConnectorId("interTask"),
+                                                                                          interTaskSplit));
+                                interTaskSplit = NULL;
+                            }
+                            if(planNodeId.get().find("RemoteSource") == string::npos)
+                                tableScanSplits.insert(newSplit);
+                            else
+                                remoteSplits.insert(newSplit);
+                        }
+                    }
+
+                    if(!tableScanSplits.empty())
+                        startTableScanTask(tableScanSplits);
+                    if(!remoteSplits.empty())
+                        startRemoteTask(remoteSplits);
+
+
+                    return true;
+                }
+            }
+
+
+
             return false;
         }
     }
@@ -527,7 +594,7 @@ public:
 
         if(condition->getConditionType() != TaskExecutionCondition::NO_CONDITION)
         {
-            if(processConditionExecution(condition))
+            if(processConditionExecution(taskSource,condition))
                 return;
         }
 

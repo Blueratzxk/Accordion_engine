@@ -540,13 +540,13 @@ public:
 
     }
 
-    void moveAllQueryOperatorTest() {
+    void moveAllQueryOperatorTest(string para) {
 
         nlohmann::json queryInfos;
         for(auto query : (*this->querys))
         {
             if(query.second->getState()->getState() == QueryStateMachine::RUNNING) {
-                query.second->moveTaskOperatorTest();
+                query.second->moveTaskOperatorTest(para);
             }
         }
     }

@@ -61,7 +61,7 @@ shared_ptr<RuntimeConfigParser> QueryContext::getRuntimeConfigs()
     return this->runtimeConfigs;
 }
 
-bool QueryContext::prepareInterTaskDataByComponentId(TaskId taskId,set<string> sourceTypes) {
+bool QueryContext::prepareInterTaskDataByComponentId(TaskId taskId,set<string> sourceTypes,map<string,set<string>> &sourceIdMap) {
 
     string queryId = taskId.getQueryId().getId();
     shared_ptr<TaskContext> context;
@@ -81,6 +81,8 @@ bool QueryContext::prepareInterTaskDataByComponentId(TaskId taskId,set<string> s
         for (auto driver :pipeline.second->getDriverContexts())
             allDrivers.push_back(driver);
     }
+
+    set<bool> results;
     for(auto driver : allDrivers)
     {
         shared_ptr<vector<shared_ptr<Operator>>> physicalPipeline;
@@ -90,12 +92,19 @@ bool QueryContext::prepareInterTaskDataByComponentId(TaskId taskId,set<string> s
             {
                 if(sourceTypes.contains(op->getOperatorType()))
                 {
-                    return op->externalEvent();
+                    list<string> ids = op->externalEvent();
+                    results.insert(!ids.empty());
+                    if(!ids.empty())
+                        sourceIdMap[op->getOperatorType()].insert(ids.front());
                 }
             }
         }
     }
-    return false;
+
+    for(auto re : results)
+        if(!re)
+            return false;
+    return true;
 
 }
 

@@ -53,7 +53,7 @@ public:
     }
 
 
-    bool prepareInterTaskDataByComponentId(TaskId taskId,set<string> sourceTypes);
+    bool prepareInterTaskDataByComponentId(TaskId taskId,set<string> sourceTypes,map<string,set<string>> &sourceIdMap);
     void inputInterTaskDataByComponentId(TaskId taskId,string componentId,vector<shared_ptr<DataPage>> pages);
 };
 

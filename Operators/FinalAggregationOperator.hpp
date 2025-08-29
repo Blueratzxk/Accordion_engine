@@ -110,18 +110,18 @@ class FinalAggregationOperator:public Operator {
 public:
 
 
-    bool externalEvent() override
+    list<string> externalEvent() override
     {
         return migrateOperator();
     }
 
-    bool migrateOperator()
+    list<string> migrateOperator()
     {
         if(this->finished)
-            return false;
+            return {};
 
         operatorMigration = true;
-        return true;
+        return {this->getOperatorId()};
     }
 
     string  transformIntermiediate(string functionName,string outputName,string inputKey)
@@ -505,6 +505,7 @@ public:
     {
         return this->operatorId;
     }
+
 
 };
 

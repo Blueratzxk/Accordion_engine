@@ -82,7 +82,8 @@ public:
             shared_ptr<ArrowRPCClient> client;
             string bufferId;
             bufferId = remote->getLocation()->getBufferId();
-            client = make_shared<ArrowRPCClient>(remote->getLocation()->getIp(),remote->getLocation()->getPort(),remote->getSourceId(),bufferId);
+            client = make_shared<ArrowRPCClient>(remote->getLocation()->getIp(),remote->getLocation()->getPort(),remote->getSourceId());
+            client->setBufferTarget(taskId,bufferId,"0");
             this->allClients[taskId] = client;
 
         }

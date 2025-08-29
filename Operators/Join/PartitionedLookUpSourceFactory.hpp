@@ -101,6 +101,7 @@ public:
         return table.ValueOrDie();
     }
 
+
     int getPartitionAssign()
     {
         return this->partitionAssign++;

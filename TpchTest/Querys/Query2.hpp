@@ -147,7 +147,7 @@ public:
         ExchangeNode *tableScanSupplier = createTableScanSupplierToProbe();
 
 
-        vector<FieldDesc> supplierProbeSchema = {FieldDesc("s_suppkey","int64"),FieldDesc("s_name","string"),FieldDesc("s_address","int64"),FieldDesc("s_nationkey","int64"),FieldDesc("s_phone","string"),FieldDesc("s_acctbal","double"),FieldDesc("s_comment","string")};
+        vector<FieldDesc> supplierProbeSchema = {FieldDesc("s_suppkey","int64"),FieldDesc("s_name","string"),FieldDesc("s_address","string"),FieldDesc("s_nationkey","int64"),FieldDesc("s_phone","string"),FieldDesc("s_acctbal","double"),FieldDesc("s_comment","string")};
         vector<FieldDesc> regionNationBuildSchema = {FieldDesc("n_nationkey","int64"),FieldDesc("r_regionkey","int64")};
         vector<FieldDesc> regionNationBuildOutputSchema = {FieldDesc("n_nationkey","int64"),FieldDesc("r_regionkey","int64")};
         vector<int> sprobeOutputChannels = {0};
@@ -260,7 +260,7 @@ public:
         ExchangeNode *tableScanSupplier = createTableScanSupplierToProbe();
 
 
-        vector<FieldDesc> supplierProbeSchema = {FieldDesc("s_suppkey","int64"),FieldDesc("s_name","string"),FieldDesc("s_address","int64"),FieldDesc("s_nationkey","int64"),FieldDesc("s_phone","string"),FieldDesc("s_acctbal","double"),FieldDesc("s_comment","string")};
+        vector<FieldDesc> supplierProbeSchema = {FieldDesc("s_suppkey","int64"),FieldDesc("s_name","string"),FieldDesc("s_address","string"),FieldDesc("s_nationkey","int64"),FieldDesc("s_phone","string"),FieldDesc("s_acctbal","double"),FieldDesc("s_comment","string")};
         vector<FieldDesc> regionNationBuildSchema = {FieldDesc("n_nationkey","int64"),FieldDesc("n_name","string"),FieldDesc("r_regionkey","int64")};
         vector<FieldDesc> regionNationBuildOutputSchema = {FieldDesc("n_nationkey","int64"),FieldDesc("n_name","string"),FieldDesc("r_regionkey","int64")};
         vector<int> sprobeOutputChannels = {0,1,2,4,5,6};

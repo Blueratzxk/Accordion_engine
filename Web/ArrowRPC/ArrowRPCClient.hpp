@@ -51,11 +51,10 @@ public:
         this->exchangeType = NORMAL;
     }
 
-    ArrowRPCClient(string ip,string port, string interTaskSourceId, string bufferId){
+    ArrowRPCClient(string ip,string port, string interTaskSourceId){
         this->clientBufferIp = ip;
         this->clientBufferPort = port;
         this->interTaskSourceId = interTaskSourceId;
-        this->bufferId = bufferId;
         this->exchangeType = SIDEWAY;
     }
 
@@ -229,6 +228,8 @@ public:
 
         vector<std::shared_ptr<arrow::RecordBatch>> batches;
         ARROW_ASSIGN_OR_RAISE(batches, stream->ToRecordBatches());
+
+
 
         ArrowTableToDataPage a2d;
         int tag = 0;

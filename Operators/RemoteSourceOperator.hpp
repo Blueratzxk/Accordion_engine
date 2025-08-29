@@ -69,17 +69,27 @@ public:
         if(abortTransmission)
             return;
 
+        set<shared_ptr<Split>> regSplits;
+
         if(this->concurrentCount < Splits.size())
             this->concurrentCount = Splits.size();
         for(auto split : Splits)
         {
-            this->client->addLocation(static_pointer_cast<RemoteSplit>(split->getConnectorSplit()));
+            if(split->getConnectorSplit()->getId() == "RemoteSplit") {
+                this->client->addLocation(static_pointer_cast<RemoteSplit>(split->getConnectorSplit()));
+                regSplits.insert(split);
+            }
+            else if(split->getConnectorSplit()->getId() == "InterTaskSplit")
+                this->client->addLocation(static_pointer_cast<InterTaskSplit>(split->getConnectorSplit()));
+            else
+                spdlog::critical("RemoteSourceOperator: Unknown spilt type "+split->getConnectorSplit()->getId()+"!");
+
         }
         //  startScheduleAllClient();
         //  this->client.scheduleAllClientOneRound(this->pagesOneRound);
 
 
-        this->driverContexts->regRemoteSplit(Splits);
+        this->driverContexts->regRemoteSplit(regSplits);
     }
 
 

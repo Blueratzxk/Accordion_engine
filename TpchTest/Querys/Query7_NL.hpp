@@ -581,7 +581,7 @@ public:
 
         vector<FieldDesc> supplierProbeSchema = {FieldDesc("s_suppkey","int64"),
                                                  FieldDesc("s_name","string"),
-                                                 FieldDesc("s_address","int64"),
+                                                 FieldDesc("s_address","string"),
                                                  FieldDesc("s_nationkey","int64"),
                                                  FieldDesc("s_phone","string"),
                                                  FieldDesc("s_acctbal","double"),

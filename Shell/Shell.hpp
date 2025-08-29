@@ -215,7 +215,11 @@ public:
             }
             else if(cmd == "move")
             {
-                QueryServer::getQueryServer()->moveAllQueryOperatorTest();
+                QueryServer::getQueryServer()->moveAllQueryOperatorTest(cmd);
+            }
+            else if(cmd == "moveh")
+            {
+                QueryServer::getQueryServer()->moveAllQueryOperatorTest(cmd);
             }
            // else if(cmd == "filter")
           //  {

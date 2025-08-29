@@ -15,10 +15,10 @@ using namespace std;
 class InterTaskDataHandle
 {
     bool status;
+    map<string,set<string>> sourceIdMap;
 public:
     InterTaskDataHandle()
     {
-
         this->status = true;
     }
     InterTaskDataHandle(bool status)
@@ -27,14 +27,21 @@ public:
 
     }
 
-    bool getStatus(){return this->status;}
+    InterTaskDataHandle(bool status, map<string,set<string>> sourceIdMap)
+    {
+        this->status = status;
+        this->sourceIdMap = sourceIdMap;
+    }
 
+    bool getStatus(){return this->status;}
+    map<string,set<string>> getSourceIdMap(){return this->sourceIdMap;}
 
     static string Serialize(InterTaskDataHandle interTaskDataHandle)
     {
         nlohmann::json json;
 
         json["status"] = interTaskDataHandle.status;
+        json["sourceIdMap"] = interTaskDataHandle.sourceIdMap;
 
         string result = json.dump();
         return result;
@@ -45,7 +52,7 @@ public:
         nlohmann::json json = nlohmann::json::parse(interTaskDataHandle);
 
 
-        auto result = make_shared<InterTaskDataHandle>(json["status"]);
+        auto result = make_shared<InterTaskDataHandle>(json["status"],json["sourceIdMap"]);
 
         return  result;
     }
@@ -64,6 +71,9 @@ public:
 
 
     void savePages(string componentId, vector<shared_ptr<DataPage>> pages) {
+
+
+
         if (!pageCaches.contains(componentId)) {
             pageCaches[componentId] = make_shared<InterTaskSimpleOutputBuffer>();
             pageCaches[componentId]->enqueue(pages);
@@ -77,9 +87,12 @@ public:
             return {};
 
         auto re = pageCaches[componentId]->getPages(bufferId, 0, pageNums);
-        for(auto rePage : re)
-            if(rePage->isEndPage())
+        for(auto rePage : re) {
+
+
+            if (rePage->isEndPage())
                 pageCaches.erase(componentId);
+        }
 
         return re;
     }

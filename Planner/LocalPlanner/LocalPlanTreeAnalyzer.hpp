@@ -204,7 +204,7 @@ public:
         string nextLogicalOperatorId = ((LocalExecutionPlanContext*)context)->getNextLogicalOperatorId();
         auto fagg = std::make_shared<Logical_FinalAggregationOperator>(nextLogicalOperatorId,node->getAggregationDesc(),interTaskSync);
 
-        this->condition->addOperatorId(nextLogicalOperatorId);
+
 
         return new PhysicalOperation(fagg,source);
     }

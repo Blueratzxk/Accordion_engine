@@ -103,7 +103,13 @@ public:
             }
             else {
                 pages = TaskServerInterFace::getInterTaskPages(taskId, componentId, bufferId, pageNums);
+
+
+
                 batches = d2a.ToBatches(pages);
+
+
+
                 spdlog::debug("Get page from inter-task "+taskId+"---->"+bufferId+".Got " +to_string(batches[0]->num_columns())+" Pages");
             }
 

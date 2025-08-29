@@ -332,9 +332,9 @@ public:
         thread(this->scheduler->schedule,scheduler).detach();
     }
 
-    void moveTaskOperatorTest()
+    void moveTaskOperatorTest(string para)
     {
-        thread(this->scheduler->moveTaskOperatorTest,scheduler).detach();
+        thread(this->scheduler->moveTaskOperatorTest,scheduler,para).detach();
     }
 
 

@@ -126,7 +126,18 @@ public:
             string preTaskId = condition->getMigratedOperators().getTaskId();
 
             int bufferId = 0;
-            set<string> targetOperatorIds = condition->getTargetOperatorIds();
+            set<string> targetOperatorIds;
+            set<string> operatorsNeedTransferService;
+            operatorsNeedTransferService = condition->getMigratedOperators().getOperatorsNeedInterTaskExchange();
+            auto idmaps = condition->getMigratedOperators().getOperator_Type_Id_Map();
+
+            for(auto op : operatorsNeedTransferService)
+            {
+                auto ids = idmaps[op];
+                targetOperatorIds.insert(ids.begin(),ids.end());
+            }
+
+
             for(auto target : targetOperatorIds) {
                 string trueSourceId = preTaskId+"$"+target;
                 InterTaskSourceDescriptor interTaskSourceDescriptor(sourceIp,sourcePort,trueSourceId, to_string(bufferId),target);
@@ -247,11 +258,12 @@ public:
         if(sqlTaskPtr == NULL) {
             return InterTaskDataHandle(false);
         }
-
+        map<string,set<string>> sourceIdMap;
         bool re = false;
         if(interTaskMissionDescriptor.getMissionType() == InterTaskMissionDescriptor::OPERATOR_MIGRATION) {
+
             re = this->queryContext->prepareInterTaskDataByComponentId(taskId,
-                                                                       interTaskMissionDescriptor.getSourceTypes());
+                                                                       interTaskMissionDescriptor.getSourceTypes(),sourceIdMap);
         }
         else if(interTaskMissionDescriptor.getMissionType() == InterTaskMissionDescriptor::INTERTASK_EXCHANGE_SERVICE) {
             this->queryContext->releaseRemoteInterTaskDataFetcher(taskId.ToString(),
@@ -263,7 +275,7 @@ public:
         }
 
 
-        return InterTaskDataHandle(re);
+        return InterTaskDataHandle(re,sourceIdMap);
     }
 
     vector<shared_ptr<DataPage>> getInterTaskPages(TaskId taskId,string componentId,string bufferId,int pageNums)

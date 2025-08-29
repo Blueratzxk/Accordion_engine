@@ -10,8 +10,13 @@
 #include "Join/PartitionedLookUpSourceFactory.hpp"
 #include "Join/JoinProbe.hpp"
 #include "Join/LookupJoinPageBuilder.hpp"
-
-
+#include <arrow/io/api.h>
+#include "arrow/csv/api.h"
+#include "arrow/csv/writer.h"
+#include <arrow/io/file.h>
+#include <arrow/table.h>
+#include "arrow/ipc/writer.h"
+#include "../Utils/TimeCommon.hpp"
 
 class LookupJoinOperator :public Operator{
 
@@ -48,6 +53,10 @@ class LookupJoinOperator :public Operator{
     bool currentProbePositionProducedRow = true;
 
     shared_ptr<DriverContext> driverContext;
+
+    string buildSideRemoteSourceOperatorId;
+
+    long inputPageCounter = 0;
 public:
 
 
@@ -67,6 +76,8 @@ public:
         this->lookupSourceProviderFuture = this->lookupSourceFactory->createLookUpSourceProvider();
         this->pageBuilder = std::make_shared<LookupJoinPageBuilder>(buildOutputSchema);
         this->driverContext = driverContext;
+
+        this->buildSideRemoteSourceOperatorId = buildSideRemoteSourceOperatorId;
     }
 
 
@@ -82,7 +93,7 @@ public:
 
             this->joinPosition = -1;
             this->probe = this->joinProbeFactory->createJoinProbe(this->inputPage);
-
+            inputPageCounter++;
 
 
         } else {
@@ -98,16 +109,22 @@ public:
         return provider->getSourceData();
     }
 
-    bool externalEvent() override
+
+    list<string> externalEvent() override
     {
         if(!this->lookupsourceStatus)
-            return false;
+            return {};
         else
         {
-            auto pages = this->getLookupSourceData()->CombineChunksToBatch().ValueOrDie();
-            this->driverContext->savePagesForInterTaskMission("LookupJoinOperator", {make_shared<DataPage>(pages)});
+            auto batches =  getLookupSourceData()->CombineChunksToBatch();
+            if(!batches.ok())
+                return {};
+
+            this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId, {make_shared<DataPage>(batches.ValueOrDie())});
+            this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId, {DataPage::getEndPage()});
+
         }
-        return true;
+        return {this->buildSideRemoteSourceOperatorId};
     }
 
 
@@ -274,8 +291,10 @@ public:
 
         if (this->sendEndPage) {
             this->finished = true;
+
+
             return DataPage::getEndPage();
-        }
+           }
 
 
 
