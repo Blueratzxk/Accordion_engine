@@ -30,7 +30,7 @@ public:
     virtual void changeBufferSize(){};
     virtual int getFillSize(){return 0;}
     virtual void addTaskContext(shared_ptr<TaskContext> taskContext){}
-    virtual void triggerNoteEvent(string taskId,string bufferId,string note){}
+    virtual void triggerNoteEvent(string taskId,string bufferId,string taskGeneration,string note){}
     virtual void regOutputOperator() {};
 };
 

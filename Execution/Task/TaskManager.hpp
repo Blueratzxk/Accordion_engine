@@ -56,6 +56,7 @@ public:
         return tcs;
     }
 
+
     shared_ptr<SqlTask> checkTask(TaskId taskId,shared_ptr<SessionRepresentation> sessionRepresentation)
     {
         shared_ptr<SqlTask> sqlTaskPtr = NULL;
@@ -183,24 +184,24 @@ public:
 
     }
 
-    vector<shared_ptr<DataPage>> getTaskResults(TaskId taskId, OutputBufferId bufferId, int maxSize)
+    vector<shared_ptr<DataPage>> getTaskResults(TaskId taskId, OutputBufferId bufferId, int upstreamTaskGeneration, int maxSize)
     {
         shared_ptr<SqlTask> sqlTaskPtr = this->findTask(taskId);
         if(sqlTaskPtr == NULL)
             return {};
         else
-            return sqlTaskPtr->getTaskResults(bufferId.get(),"0",maxSize);
+            return sqlTaskPtr->getTaskResults(bufferId.get(),upstreamTaskGeneration,maxSize);
     }
 
 
 
-    void triggerTaskBufferNoteEvent(TaskId taskId,OutputBufferId bufferId,string note)
+    void triggerTaskBufferNoteEvent(TaskId taskId,OutputBufferId bufferId,string taskGeneration,string note)
     {
         shared_ptr<SqlTask> sqlTaskPtr = this->findTask(taskId);
         if(sqlTaskPtr == NULL)
             return ;
         else
-            return sqlTaskPtr->triggerTaskBufferNoteEvent(taskId.ToString(),bufferId.get(),note);
+            return sqlTaskPtr->triggerTaskBufferNoteEvent(taskId.ToString(),bufferId.get(),taskGeneration,note);
     }
 
     TaskInfo getTaskInfo(TaskId taskId){

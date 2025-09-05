@@ -56,7 +56,9 @@ public:
         for(auto pipeline : ls)
             this->lpipelines.push_back(pipeline);
 
-        shared_ptr<TaskContext> taskContext = make_shared<TaskContext>(this->tasksRuntimeStats,this->queryContext,taskId,taskStateMachine,outputBuffer);
+
+        int taskGeneration = taskId->getStageExecutionId().getId();
+        shared_ptr<TaskContext> taskContext = make_shared<TaskContext>(this->tasksRuntimeStats,this->queryContext,taskId,taskGeneration,taskStateMachine,outputBuffer);
 
         taskContext->setJoinNum(joinNum);
 

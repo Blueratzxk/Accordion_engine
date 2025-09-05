@@ -166,4 +166,8 @@ void DriverContext::savePagesForInterTaskMission(string componentId,vector<share
     this->pipelineContext.lock()->savePagesForInterTaskMission(componentId,pages);
 }
 
+int DriverContext::getTaskGeneration() {
+    return this->pipelineContext.lock()->getTaskGeneration();
+}
+
 #endif //OLVP_DRIVERCONTEXT_CPP

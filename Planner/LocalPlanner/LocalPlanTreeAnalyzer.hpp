@@ -522,7 +522,7 @@ public:
 
     void conditionAnalyze()
     {
-        RemoteSourceNode *remote = new RemoteSourceNode(condition->getMigratedBufferAddress().getTaskId());
+        RemoteSourceNode *remote = new RemoteSourceNode(condition->getMigratedBufferAddress().getTaskId(0));
         PhysicalOperation *op = (PhysicalOperation *) visitor->Visit(remote, context);
 
         if (this->buffer != NULL) {

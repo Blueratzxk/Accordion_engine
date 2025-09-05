@@ -69,18 +69,18 @@ public:
         std::vector<std::shared_ptr<arrow::RecordBatch>> batches;
 
 
-        string taskId, bufferId,note;
+        string taskId, bufferId,note,taskGeneration;
         string componentId;
         int pageNums = 0;
 
         string ticketType = getTicketType(request.ticket);
 
         if(ticketType == "normal") {
-            getTaskBufferInfo(request.ticket, taskId, bufferId, note);
+            getTaskBufferInfo(request.ticket, taskId, bufferId,note,taskGeneration);
             pageNums = getPageNums(request.ticket);
 
             if (note != "") {
-                TaskServerInterFace::triggerTaskBufferNoteEvent(taskId, bufferId, note);
+                TaskServerInterFace::triggerTaskBufferNoteEvent(taskId, bufferId, taskGeneration,note);
             }
         }
         else
@@ -97,7 +97,7 @@ public:
 
             vector<shared_ptr<DataPage>> pages;
             if(ticketType == "normal") {
-                pages = TaskServerInterFace::getTaskResults(taskId, bufferId, pageNums);
+                pages = TaskServerInterFace::getTaskResults(taskId, bufferId,atol(taskGeneration.c_str()),pageNums);
                 batches = d2a.ToBatches(pages);
                 spdlog::debug("Get page from task "+taskId+"---->"+bufferId+".Got " +to_string(batches[0]->num_columns())+" Pages");
             }
@@ -148,10 +148,12 @@ public:
 
 private:
 
-    void getTaskBufferInfo(string ticket, string &taskId, string &bufferId,string &note) {
+    void getTaskBufferInfo(string ticket, string &taskId, string &bufferId,string &note,string &taskGeneration) {
         nlohmann::json info = nlohmann::json::parse(ticket);
         taskId = info["taskId"];
         bufferId = info["bufferId"];
+        taskGeneration = info["taskGeneration"];
+
         if(info.contains("note"))
             note = info["note"];
         else

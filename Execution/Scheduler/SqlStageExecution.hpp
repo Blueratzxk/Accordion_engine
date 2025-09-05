@@ -56,7 +56,7 @@ class SqlStageExecution:public enable_shared_from_this<SqlStageExecution>
     vector<TaskId> finishedTasks;
     atomic<int> nextTaskId = -1;
     multimap<PlanNodeId,shared_ptr<HttpRemoteTask>> sourceTasks;//newest sourceTasks for every own task
-    map<shared_ptr<ClusterNode>, vector<shared_ptr<HttpRemoteTask>>> tasks;//one node maybe runs multi task for a stage
+    map<shared_ptr<ClusterNode>, vector<shared_ptr<HttpRemoteTask>>> tasks;//one node maybe runs multitasks for a stage
     map<string,PlanNode*> exchangeSources;
 
     map<int,list<TaskId>> taskGroups;
@@ -75,6 +75,7 @@ class SqlStageExecution:public enable_shared_from_this<SqlStageExecution>
 
     shared_ptr<TaskResultFetcher> taskResultFetcher = NULL;
 
+    map<int,int> taskGenerations;
 
 public:
     SqlStageExecution(){}
@@ -358,6 +359,17 @@ public:
         {
             if(!task->isTaskDependenciesSatisfied())
                 return false;
+        }
+        return true;
+    }
+
+    bool isTaskDependenciesSatisfied(string taskId)
+    {
+        auto allTasks = this->getAllTasks();
+        for(auto task : allTasks)
+        {
+            if(task->getTaskId()->ToString() == taskId)
+                return task->isTaskDependenciesSatisfied();
         }
         return true;
     }
@@ -733,6 +745,11 @@ public:
         return (this->nextTaskId);
     }
 
+    int getMaxTaskId()
+    {
+        return this->nextTaskId;
+    }
+
     void addNodeTaskMap(shared_ptr<ClusterNode> node,shared_ptr<HttpRemoteTask> remote)
     {
         if(this->NodeTaskNap.find(node) == this->NodeTaskNap.end())
@@ -828,31 +845,23 @@ public:
         return remoteTask;
     }
 
-
-    shared_ptr<HttpRemoteTask> scheduleTaskForInterDataExchange(shared_ptr<ClusterNode> node,int oldTaskId)
+    shared_ptr<HttpRemoteTask> cloneTask(shared_ptr<ClusterNode> node,int originTaskId,shared_ptr<TaskExecutionCondition> condition = NULL)
     {
 
         spdlog::debug("Stage "+to_string(this->stageId) + " starts scheduling task!");
+        TaskId taskId = TaskId(this->queryId,this->stageExecutionId,this->stageId,originTaskId);
+
+        if(!this->taskGenerations.contains(originTaskId))
+            this->taskGenerations[originTaskId] = 1;
+        else
+            this->taskGenerations[originTaskId]++;
 
 
-        shared_ptr<HttpRemoteTask> oldTaskPtr = NULL;
-        auto allTasks = this->getAllTasks();
-        for(auto task : allTasks)
-            if(task->getTaskId()->getId() == oldTaskId)
-                oldTaskPtr = task;
 
-
-        TaskId taskIdTemp;
-        MigratedBufferAddress migratedBufferAddress(taskIdTemp.Serialize(*oldTaskPtr->getTaskId()),oldTaskPtr->getIP(),"9081","-1");
-
-        shared_ptr<TaskExecutionCondition> condition = make_shared<TaskExecutionCondition>(TaskExecutionCondition::BUFFER_MIGRATION,migratedBufferAddress);
-
-
-        TaskId taskId = TaskId(this->queryId,this->stageExecutionId,this->stageId,getNextTaskId());
         shared_ptr<TaskSource> task_Sources = this->sourceTasksTo_taskSources(taskId);
 
         string location;
-        auto newTaskId = make_shared<TaskId>(taskId.getQueryId().getId(),taskId.getStageExecutionId().getId(),taskId.getStageId().getId(),taskId.getId());
+        auto newTaskId = make_shared<TaskId>(taskId.getQueryId().getId(),this->taskGenerations[originTaskId],taskId.getStageId().getId(),taskId.getId());
 
 
         shared_ptr<HttpRemoteTask> remoteTask = taskFactory.createRemoteTask(this->simpleEvent,newTaskId,fragment,node->getNodeLocation(),this->outputBufferSchema,
@@ -877,7 +886,7 @@ public:
 
 
             string location;
-            remoteTask = taskFactory.createRemoteTask(this->simpleEvent,newTaskId, fragment, node->getNodeLocation(),this->outputBufferSchema,TaskSource::getEmptyTaskSource(),this->session,node->getExtensions());
+            remoteTask = taskFactory.createRemoteTask(this->simpleEvent,newTaskId,fragment, node->getNodeLocation(),this->outputBufferSchema,TaskSource::getEmptyTaskSource(),this->session,node->getExtensions());
             addNodeTaskMap(node, remoteTask);
             addTask(node, remoteTask);
             remoteTask->start();
@@ -964,7 +973,7 @@ public:
 
 
                 string location;
-                remoteTask = taskFactory.createRemoteTask(this->simpleEvent,newTaskId, fragment, node[i]->getNodeLocation(),this->outputBufferSchema,tss[i],this->session,node[i]->getExtensions());
+                remoteTask = taskFactory.createRemoteTask(this->simpleEvent,newTaskId,fragment, node[i]->getNodeLocation(),this->outputBufferSchema,tss[i],this->session,node[i]->getExtensions());
                 addNodeTaskMap(node[i], remoteTask);
                 addTask(node[i], remoteTask);
                 remoteTask->start();
@@ -1052,6 +1061,16 @@ public:
         return StageId(QueryId(this->queryId),this->stageId);
     }
 
+    bool isTaskFinished(string taskId)
+    {
+        auto allTasks = this->getAllTasks();
+        for(auto task : allTasks)
+            if(task->getTaskId()->ToString() == taskId)
+                return task->isDone();
+
+        return true;
+    }
+
     shared_ptr<StageExecutionStateMachine> getState()
     {
         return this->state;
@@ -1119,29 +1138,50 @@ public:
 
         PlanNode *remoteSource = exchangeSources[planFragmentId];
 
+        auto newTask = source_Tasks[0];
+        PlanNodeId planNodeId;
 
-        for(int i = 0 ; i < taskIds.size() ; i++) {
-            for (auto &task: sourceTasks) {
+        set<int> taskIdSet;
+        for(auto taskId : taskIds)
+            taskIdSet.insert(taskId);
 
-                auto newTask = source_Tasks[i];
+        for (auto &task: sourceTasks) {
 
-                string taskQueryId = newTask->getTaskId()->getStageExecutionId().getStageId().getQueryId().getId();
-                int taskStageId = newTask->getTaskId()->getStageExecutionId().getStageId().getId();
-                int taskStageExecutionId = newTask->getTaskId()->getStageExecutionId().getId();
-                int taskId = newTask->getTaskId()->getId();
+            string taskQueryId = newTask->getTaskId()->getStageExecutionId().getStageId().getQueryId().getId();
+            int taskStageId = newTask->getTaskId()->getStageExecutionId().getStageId().getId();
+            int taskStageExecutionId = newTask->getTaskId()->getStageExecutionId().getId();
+            int taskId = newTask->getTaskId()->getId();
 
 
-                string comparedQueryId = task.second->getTaskId()->getQueryId().getId();
-                int comparedTaskStageId = task.second->getTaskId()->getStageExecutionId().getStageId().getId();
-                int comparedTaskStageExecutionId = task.second->getTaskId()->getStageExecutionId().getId();
-                int comparedTaskId = task.second->getTaskId()->getId();
-                if(taskQueryId == comparedQueryId && taskStageExecutionId == comparedTaskStageExecutionId && taskStageId == comparedTaskStageId
-                && taskIds[i] == comparedTaskId)
-                {
-                    task.second = newTask;
-                }
+            string comparedQueryId = task.second->getTaskId()->getQueryId().getId();
+            int comparedTaskStageId = task.second->getTaskId()->getStageExecutionId().getStageId().getId();
+            int comparedTaskStageExecutionId = task.second->getTaskId()->getStageExecutionId().getId();
+            int comparedTaskId = task.second->getTaskId()->getId();
+            if (taskQueryId == comparedQueryId && taskStageExecutionId == comparedTaskStageExecutionId &&
+                taskStageId == comparedTaskStageId
+                && taskIds[0] == comparedTaskId) {
+                planNodeId = task.first;
             }
         }
+
+        if(planNodeId.get() == "NULL")
+            spdlog::critical("replaceExchangeLocations: Plan node id is NULL!");
+
+
+        for (auto it = sourceTasks.begin(); it != sourceTasks.end(); ) {
+            PlanNodeId plid = it->first;
+            if (plid.get() == planNodeId.get() && taskIdSet.contains(it->second->getTaskId()->getId())) {
+                it = sourceTasks.erase(it);
+            } else {
+                ++it;
+            }
+        }
+
+        for(auto newTask : source_Tasks)
+        {
+            this->sourceTasks.emplace(PlanNodeId(planNodeId.get()),newTask);
+        }
+
     }
 
     vector<shared_ptr<HttpRemoteTask>> getAllTasks()

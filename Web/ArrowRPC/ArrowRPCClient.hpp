@@ -42,16 +42,19 @@ private:
     string bufferId = "";
 
     ExchangeType exchangeType;
+    shared_ptr<DriverContext> driverContext;
 
 public:
-    ArrowRPCClient(string ip,string port){
+    ArrowRPCClient(shared_ptr<DriverContext> driverContext, string ip,string port){
+        this->driverContext = driverContext;
         this->clientBufferIp = ip;
         this->clientBufferPort = port;
         this->note = "";
         this->exchangeType = NORMAL;
     }
 
-    ArrowRPCClient(string ip,string port, string interTaskSourceId){
+    ArrowRPCClient(shared_ptr<DriverContext> driverContext, string ip,string port, string interTaskSourceId){
+        this->driverContext = driverContext;
         this->clientBufferIp = ip;
         this->clientBufferPort = port;
         this->interTaskSourceId = interTaskSourceId;
@@ -180,6 +183,11 @@ public:
             json["ticketType"] = "normal";
             json["taskId"] = this->taskId;
             json["bufferId"] = this->bufferId;
+
+            if(this->driverContext != NULL)
+                json["taskGeneration"] = to_string(this->driverContext->getTaskGeneration());
+            else
+                json["taskGeneration"] = "0";
             json["pageNums"] = to_string(dataSize);
 
             if (note != "") {

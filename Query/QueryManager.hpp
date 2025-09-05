@@ -97,6 +97,8 @@
 #include "../TpchTest/Querys/Query2Join2TwoShuffleStage.hpp"
 #include "../TpchTest/Querys/Query2Join2ShuffleStage.hpp"
 
+#include "../TpchTest/Querys/SimpleTest/Query_OperatorMigration.hpp"
+
 
 #include "../TpchTest/Querys/SimpleTest/Query_SupplierJoinSupplier.hpp"
 
@@ -237,6 +239,8 @@ public:
         regQueryList["Q2_SJ"] = make_shared<Query2_SJoin>();
 
         regQueryList["Q_SupplierJoinSupplier"] = make_shared<Query_SupplierJoinSupplier>();
+
+        regQueryList["Q_OM"] = make_shared<Query_OperatorMigration>();
 
 
   //      regQueryList["test1"] = this->getATestTree();

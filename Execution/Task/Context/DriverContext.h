@@ -102,6 +102,8 @@ public:
     void addExchangeBufferTurnDownCounter();
 
     void savePagesForInterTaskMission(string componentId,vector<shared_ptr<DataPage>> pages);
+
+    int getTaskGeneration();
 };
 
 #endif //OLVP_DRIVERCONTEXT_H

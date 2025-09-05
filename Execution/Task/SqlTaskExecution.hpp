@@ -35,6 +35,7 @@ class SqlTaskExecution {
 
     shared_ptr<Session> session;
     std::shared_ptr<TaskId> taskId = NULL;
+
     std::shared_ptr<TaskStateMachine> taskStateMachine = NULL;
     std::shared_ptr<TaskContext> taskContext = NULL;
     std::shared_ptr<OutputBuffer> outputBuffer = NULL;
@@ -85,6 +86,7 @@ public:
         ExecutionConfig config;
         int concur = atoi(config.getInitial_intra_task_concurrency().c_str());
         this->initial_runtime_scalable_pipeline_concurrent = concur;
+
     }
     //-------------------------------------------------------------------------------------------------------------//
     void setClock()
@@ -480,6 +482,8 @@ public:
 
     }
 
+
+
     bool processConditionExecution(shared_ptr<TaskSource> taskSource,shared_ptr<TaskExecutionCondition> condition)
     {
 
@@ -487,20 +491,23 @@ public:
 
             MigratedBufferAddress migratedBufferAddress = condition->getMigratedBufferAddress();
 
-            TaskId taskIdTemp;
-            auto remoteSplit = make_shared<RemoteSplit>(taskIdTemp.Deserialize(migratedBufferAddress.getTaskId()),
-                                                        make_shared<Location>(migratedBufferAddress.getIP(),
-                                                                              migratedBufferAddress.getPort(),
-                                                                              migratedBufferAddress.getBufferId()));
-
-            auto scheSplit = make_shared<ScheduledSplit>(PlanNodeId(migratedBufferAddress.getTaskId()),
-                                                         make_shared<Split>(ConnectorId("remote"), remoteSplit));
-
             set<shared_ptr<ScheduledSplit>> remoteSplits;
+            TaskId taskIdTemp;
+            for(int i = 0 ; i < migratedBufferAddress.getNumAddresses() ; i++) {
+                auto remoteSplit = make_shared<RemoteSplit>(taskIdTemp.Deserialize(migratedBufferAddress.getTaskId(i)),
+                                                            make_shared<Location>(migratedBufferAddress.getIP(i),
+                                                                                  migratedBufferAddress.getPort(i),
+                                                                                  migratedBufferAddress.getBufferId(i)));
 
-            PlanNodeId planNodeId = PlanNodeId(migratedBufferAddress.getTaskId());
-            if (this->sourcePlanNodeId_To_LPipeline.find(planNodeId) != this->sourcePlanNodeId_To_LPipeline.end()) {
-                remoteSplits.insert(scheSplit);
+                auto scheSplit = make_shared<ScheduledSplit>(PlanNodeId(migratedBufferAddress.getTaskId(0)),
+                                                             make_shared<Split>(ConnectorId("remote"), remoteSplit));
+
+
+
+                PlanNodeId planNodeId = PlanNodeId(migratedBufferAddress.getTaskId(0));
+                if (this->sourcePlanNodeId_To_LPipeline.find(planNodeId) != this->sourcePlanNodeId_To_LPipeline.end()) {
+                    remoteSplits.insert(scheSplit);
+                }
             }
 
             if (!remoteSplits.empty())
@@ -547,7 +554,8 @@ public:
                                 {
                                     interTaskSplit = make_shared<InterTaskSplit>(this->taskId,
                                                                                       oldTaskId+"$"+op->getLogicalOperatorId(),
-                                                                                      make_shared<Location>(ip,"9081","0"));
+                                                                                      make_shared<Location>(ip,"9081",
+                                                                                                            to_string(this->taskId->getId())));
                                 }
                             }
 
@@ -579,6 +587,7 @@ public:
 
             return false;
         }
+        return false;
     }
 
     void updateSources(shared_ptr<TaskSource> taskSource, shared_ptr<TaskExecutionCondition> condition = NULL)

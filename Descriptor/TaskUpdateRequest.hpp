@@ -33,6 +33,7 @@ public:
         this->taskInterfereRequest = taskInterfereRequest;
         this->sessionRepresentation = sessionRepresentation;
         this->taskExecutionCondition = taskExecutionCondition;
+
     }
 
     TaskUpdateRequest( shared_ptr<TaskSource> taskSource,shared_ptr<PlanFragment> fragment){
@@ -95,6 +96,7 @@ public:
         return this->taskExecutionCondition;
     }
 
+
     static string Serialize(TaskUpdateRequest taskUpdateRequest)
     {
         nlohmann::json json;
@@ -129,6 +131,7 @@ public:
             json["taskExecutionCondition"] = "NULL";
         else
             json["taskExecutionCondition"] = TaskExecutionCondition::Serialize(taskUpdateRequest.taskExecutionCondition);
+
 
         string result = json.dump();
 

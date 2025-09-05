@@ -167,6 +167,8 @@ public:
                 this->client->scheduleAllClientOneRoundByBufferCapacity();
             }
             outputData = this->client->pollPage();
+
+
         }
 
         if (outputData->isEndPage()) {

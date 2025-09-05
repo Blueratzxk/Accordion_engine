@@ -37,6 +37,7 @@ class TaskContext:public std::enable_shared_from_this<TaskContext>
     shared_ptr<OutputBuffer> outputBuffer = NULL;
 
     shared_ptr<TaskId> taskId;
+    int taskGeneration;
     atomic<long> currentTotalTupleCount = 0;
     atomic<long> remainingTableTupleCount = 0;
     atomic<long> bufferRemainingTupleCount = 0;
@@ -78,7 +79,7 @@ class TaskContext:public std::enable_shared_from_this<TaskContext>
     atomic<long> allBuildProgress = 0;
 
 public:
-    TaskContext(shared_ptr<TasksRuntimeStats> tasksRuntimeStats,weak_ptr<QueryContext> queryContext,shared_ptr<TaskId> taskId,shared_ptr<TaskStateMachine> stateMachine,shared_ptr<OutputBuffer> outputBuffer);
+    TaskContext(shared_ptr<TasksRuntimeStats> tasksRuntimeStats,weak_ptr<QueryContext> queryContext,shared_ptr<TaskId> taskId,int generation,shared_ptr<TaskStateMachine> stateMachine,shared_ptr<OutputBuffer> outputBuffer);
     shared_ptr<PipelineContext> addPipelineContext(PipelineId pipelineId);
     void finishPipelineContext(PipelineId pipelineId);
     map<PipelineId,shared_ptr<PipelineContext>> getPipelineContexts();
@@ -98,6 +99,10 @@ public:
         return this->totalInputBytes;
     }
 
+    int getTaskGeneration()
+    {
+        return this->taskGeneration;
+    }
 
 
     atomic<long>& getAllBuildCount();

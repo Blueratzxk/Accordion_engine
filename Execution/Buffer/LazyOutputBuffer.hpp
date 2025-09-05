@@ -148,11 +148,11 @@ public:
         else
             return this->delegate->isEmpty();
     }
-    void triggerNoteEvent(string taskId,string bufferId,string note) {
+    void triggerNoteEvent(string taskId,string bufferId,string taskGeneration,string note) {
         if(this->delegate == NULL)
             return;
         else
-            return this->delegate->triggerNoteEvent(taskId,bufferId,note);
+            return this->delegate->triggerNoteEvent(taskId,bufferId,taskGeneration,note);
     }
     void destoryPages()
     {

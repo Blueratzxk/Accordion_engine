@@ -270,25 +270,25 @@ public:
 
     }
 
-    vector<shared_ptr<DataPage>> getTaskResults(string bufferId,string token,int size) {
+    vector<shared_ptr<DataPage>> getTaskResults(string bufferId,long token,int size) {
 
         if(this->buffer == NULL)
             return {DataPage::getEndPage()};
 
         this->bufferUsing++;
-        vector<shared_ptr<DataPage>> re = this->buffer->getPages(bufferId,atol(token.c_str()),size);
+        vector<shared_ptr<DataPage>> re = this->buffer->getPages(bufferId,token,size);
         this->bufferUsing--;
 
         return re;
     }
 
-    void triggerTaskBufferNoteEvent(string taskId,string bufferId,string note) {
+    void triggerTaskBufferNoteEvent(string taskId,string bufferId,string taskGeneration,string note) {
 
         if(this->buffer == NULL)
             return;
 
         this->bufferUsing++;
-        this->buffer->triggerNoteEvent(taskId,bufferId,note);
+        this->buffer->triggerNoteEvent(taskId,bufferId,taskGeneration,note);
         this->bufferUsing--;
     
     }

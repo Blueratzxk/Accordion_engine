@@ -199,6 +199,10 @@ void PipelineContext::reportBuildComputingTime(string joinId,double time){
 
 void PipelineContext::savePagesForInterTaskMission(string componentId, vector<shared_ptr<DataPage>> pages) {
     this->taskContext.lock()->savePagesForInterTaskMission(componentId,pages);
+}
+
+int PipelineContext::getTaskGeneration() {
+    return this->taskContext.lock()->getTaskGeneration();
 };
 
 #endif //OLVP_PIPELINECONTEXT_CPP

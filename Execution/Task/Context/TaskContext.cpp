@@ -10,12 +10,13 @@
 #include "QueryContext.h"
 
 
-TaskContext::TaskContext(shared_ptr<TasksRuntimeStats> tasksRuntimeStats,weak_ptr<QueryContext> queryContext,shared_ptr<TaskId> taskId,shared_ptr<TaskStateMachine> stateMachine,shared_ptr<OutputBuffer> outputBuffer){
+TaskContext::TaskContext(shared_ptr<TasksRuntimeStats> tasksRuntimeStats,weak_ptr<QueryContext> queryContext,shared_ptr<TaskId> taskId,int generation, shared_ptr<TaskStateMachine> stateMachine,shared_ptr<OutputBuffer> outputBuffer){
     this->stateMachine = stateMachine;
     this->queryContext = queryContext;
     this->taskId = taskId;
     this->outputBuffer = outputBuffer;
     this->tasksRuntimeStats = tasksRuntimeStats;
+    this->taskGeneration = generation;
 
 }
 

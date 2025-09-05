@@ -213,11 +213,7 @@ public:
                 spdlog::info("schemas          ---> show the schema in the configuration file.");
 
             }
-            else if(cmd == "move")
-            {
-                QueryServer::getQueryServer()->moveAllQueryOperatorTest(cmd);
-            }
-            else if(cmd == "moveh")
+            else if(cmd == "move" || cmd == "moveh" || cmd == "clone" || cmd == "buffer")
             {
                 QueryServer::getQueryServer()->moveAllQueryOperatorTest(cmd);
             }

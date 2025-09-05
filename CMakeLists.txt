@@ -538,6 +538,8 @@ add_executable(OLVP main.cpp
         FunctionExtension/GPU/Logical_GPUBatchAssembleOperator.hpp
         FunctionExtension/GPU/Config/GPUExecutionConfig.hpp
         Execution/Task/SidewayExchangeSystem/SidewayDataExchangeScheduler.hpp
+        TpchTest/Querys/SimpleTest/Query_OperatorMigration.hpp
+        Execution/Task/SidewayExchangeSystem/SidewayExchangeSystem.hpp
 
 
 )

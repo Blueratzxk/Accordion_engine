@@ -27,10 +27,10 @@ public:
         return  TaskServer::taskResourceManager->createInterTaskMission(*TaskId::Deserialize(taskId),*InterTaskMissionDescriptor::Deserialize(request));
     }
 
-    static vector<shared_ptr<DataPage>> getTaskResults(string taskId,string bufferId,int size)
+    static vector<shared_ptr<DataPage>> getTaskResults(string taskId,string bufferId,long upstreamTaskGeneration,int size)
     {
         TaskId id;
-        return  TaskServer::taskResourceManager->getTaskResults(*id.StringToObject(taskId),OutputBufferId(bufferId),size);
+        return  TaskServer::taskResourceManager->getTaskResults(*id.StringToObject(taskId),OutputBufferId(bufferId),upstreamTaskGeneration,size);
     }
 
     static vector<shared_ptr<DataPage>> getInterTaskPages(string taskId,string componentId,string bufferId,int size)
@@ -40,10 +40,10 @@ public:
     }
 
 
-    static void triggerTaskBufferNoteEvent(string taskId,string bufferId,string note)
+    static void triggerTaskBufferNoteEvent(string taskId,string bufferId,string taskGeneration,string note)
     {
         TaskId id;
-        return  TaskServer::taskResourceManager->triggerTaskBufferNoteEvent(*id.StringToObject(taskId),OutputBufferId(bufferId),note);
+        return  TaskServer::taskResourceManager->triggerTaskBufferNoteEvent(*id.StringToObject(taskId),OutputBufferId(bufferId),taskGeneration,note);
     }
 
 

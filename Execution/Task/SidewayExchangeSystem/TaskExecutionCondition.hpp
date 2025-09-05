@@ -8,31 +8,48 @@
 
 class MigratedBufferAddress
 {
-    string TaskId;
-    string IP;
-    string Port;
-    string BufferId;
+    vector<string> TaskId;
+    vector<string> IP;
+    vector<string> Port;
+    vector<string> BufferId;
+
+    int numAddresses = 0;
 public:
     MigratedBufferAddress()
     {
-        this->TaskId = "";
-        this->IP = "";
-        this->Port = "";
-        this->BufferId = "";
     }
 
-    MigratedBufferAddress(string TaskId, string IP, string Port, string BufferId)
+
+    MigratedBufferAddress(vector<string> TaskId, vector<string> IP, vector<string> Port,vector<string> BufferId)
     {
         this->TaskId = TaskId;
         this->IP = IP;
         this->Port = Port;
         this->BufferId = BufferId;
+
+        this->numAddresses = TaskId.size();
     }
 
-    string getTaskId(){return TaskId;}
-    string getIP(){return IP;}
-    string getPort(){return Port;}
-    string getBufferId(){return BufferId;}
+    int getNumAddresses()
+    {
+        return this->numAddresses;
+    }
+
+    void addMigratedBufferAddress(string TaskId,string IP,string Port,string BufferId)
+    {
+        this->TaskId.push_back(TaskId);
+        this->IP.push_back(IP);
+        this->Port.push_back(Port);
+        this->BufferId.push_back(BufferId);
+
+        this->numAddresses++;
+    }
+
+
+    string getTaskId(int index){return TaskId[index];}
+    string getIP(int index){return IP[index];}
+    string getPort(int index){return Port[index];}
+    string getBufferId(int index){return BufferId[index];}
 
     static string Serialize(MigratedBufferAddress migratedBufferAddress)
     {

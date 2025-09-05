@@ -292,7 +292,7 @@ public:
         if (this->sendEndPage) {
             this->finished = true;
 
-
+            spdlog::info("lookupjoin process "+ to_string(this->inputPageCounter)+ " pages");
             return DataPage::getEndPage();
            }
 

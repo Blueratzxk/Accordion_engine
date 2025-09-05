@@ -121,7 +121,27 @@ public:
         return sR;
     }
 
-    ScheduleResult addOneConcurrentForInterTaskMission(shared_ptr<TaskExecutionCondition> condition)
+    ScheduleResult addConcurrentForInterTaskMission(shared_ptr<TaskExecutionCondition> condition,int taskNums = 1)
+    {
+        vector<shared_ptr<HttpRemoteTask>> newTasks;
+
+
+        NodeSelector aSelector;
+        vector<shared_ptr<ClusterNode>> aNode = aSelector.getNodesByMinThreadNums(taskNums);
+        for(int i = 0 ; i < aNode.size() ; i++) {
+            this->partitionToNode.push_back(aNode[i]);
+        }
+        for(int i = 0 ; i < aNode.size() ; i++) {
+            shared_ptr<HttpRemoteTask> task = stageExecutor->scheduleTask(aNode[i],condition);
+            newTasks.push_back(task);
+        }
+        ScheduleResult sR(newTasks);
+        stageExecutor->recordTaskGroup(sR.getTaskIds());
+
+        return sR;
+    }
+
+    ScheduleResult cloneTask(int taskId,shared_ptr<TaskExecutionCondition> condition)
     {
         vector<shared_ptr<HttpRemoteTask>> newTasks;
 
@@ -133,7 +153,7 @@ public:
             this->partitionToNode.push_back(aNode[i]);
         }
         for(int i = 0 ; i < aNode.size() ; i++) {
-            shared_ptr<HttpRemoteTask> task = stageExecutor->scheduleTask(aNode[i],condition);
+            shared_ptr<HttpRemoteTask> task = stageExecutor->cloneTask(aNode[i],taskId,condition);
             newTasks.push_back(task);
         }
         ScheduleResult sR(newTasks);

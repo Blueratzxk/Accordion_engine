@@ -28,9 +28,9 @@ public:
         return *this->taskManager->updateTask(taskId,taskUpdateRequest);
     }
 
-    vector<shared_ptr<DataPage>> getTaskResults(TaskId taskId, OutputBufferId bufferId, int maxSize)
+    vector<shared_ptr<DataPage>> getTaskResults(TaskId taskId, OutputBufferId bufferId, int upstreamTaskGeneration, int maxSize)
     {
-        return this->taskManager->getTaskResults(taskId,bufferId,maxSize);
+        return this->taskManager->getTaskResults(taskId,bufferId,upstreamTaskGeneration,maxSize);
     }
 
     InterTaskDataHandle createInterTaskMission(TaskId taskId,InterTaskMissionDescriptor interTaskMissionDescriptor)
@@ -44,9 +44,9 @@ public:
     }
 
 
-    void triggerTaskBufferNoteEvent(TaskId taskId, OutputBufferId bufferId,string note)
+    void triggerTaskBufferNoteEvent(TaskId taskId, OutputBufferId bufferId,string taskGeneration, string note)
     {
-        this->taskManager->triggerTaskBufferNoteEvent(taskId,bufferId.get(),note);
+        this->taskManager->triggerTaskBufferNoteEvent(taskId,bufferId.get(),taskGeneration,note);
     }
 
     TaskInfo getTaskInfo(TaskId taskId)

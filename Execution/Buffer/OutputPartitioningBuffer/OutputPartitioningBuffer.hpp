@@ -55,6 +55,7 @@ class OutputPartitioningBuffer: public OutputBuffer
     mutex enqueueLock;
 
 
+    map<int,int> taskIdToGeneration;
 public:
 
 
@@ -141,6 +142,8 @@ public:
 
 
     vector<shared_ptr<DataPage>> getPages(string bufferId,long token,int pageNums) {
+
+
 
         vector<shared_ptr<DataPage>> pages = this->tbg->getPages(bufferId,token,pageNums);
 
@@ -257,9 +260,9 @@ public:
 
     }
 
-    void triggerNoteEvent(string taskId,string bufferId,string note) {
+    void triggerNoteEvent(string taskId,string bufferId,string taskGeneration,string note) {
         spdlog::debug(taskId+" 's OutputPartitioningBuffer BufferId "+bufferId+" NoteEvent Detected! Note is "+note);
-        tbg->reportDownStreamTaskBuildCompletedInfo(bufferId);
+        tbg->reportDownStreamTaskBuildCompletedInfo(bufferId,taskGeneration);
     }
 
 

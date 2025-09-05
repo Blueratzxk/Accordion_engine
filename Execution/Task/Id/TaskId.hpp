@@ -17,6 +17,7 @@ class TaskId
     StageExecutionId stageExecutionId;
     int id;
 
+
 public:
     TaskId(){
 
@@ -32,6 +33,7 @@ public:
         this->stageExecutionId = stageExecutionId;
         this->id = id;
     }
+
 
     StageExecutionId getStageExecutionId()
     {
@@ -72,6 +74,7 @@ public:
         string tid = to_string(this->id);
         result = queryId+"$"+stageExecutionId+"$"+stagId+"$"+tid;
 
+
         return result;
     }
     void splitStringTaskId(const std::string& s, std::vector<std::string>& tokens, const std::string& delimiters = " ")
@@ -93,6 +96,8 @@ public:
             return NULL;
 
         shared_ptr<TaskId> result = make_shared<TaskId>(ids[0],atoi(ids[1].c_str()),atoi(ids[2].c_str()),atoi(ids[3].c_str()));
+
+
         return result;
     }
 
@@ -105,13 +110,17 @@ public:
         json["id"] = taskId.id;
         json["stageExecutionId"] = StageExecutionId::Serialize(taskId.stageExecutionId);
 
+
+
         string result = json.dump();
         return result;
     }
     static shared_ptr<TaskId> Deserialize(string taskId)
     {
         nlohmann::json json = nlohmann::json::parse(taskId);
-        return make_shared<TaskId>(*StageExecutionId::Deserialize(json["stageExecutionId"]),json["id"]);
+        auto re = make_shared<TaskId>(*StageExecutionId::Deserialize(json["stageExecutionId"]),json["id"]);
+
+        return re;
     }
 
 

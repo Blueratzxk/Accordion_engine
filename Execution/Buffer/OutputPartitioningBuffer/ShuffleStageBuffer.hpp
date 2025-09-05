@@ -240,9 +240,9 @@ public:
         //  this->pageNumsLimit = 10;
         spdlog::debug("Shuffle Buffer size is changed! Now the size is "+ to_string(this->pageNumsLimit)+"!");
     }
-    void triggerNoteEvent(string taskId,string bufferId,string note) {
+    void triggerNoteEvent(string taskId,string bufferId,string taskGeneration,string note) {
         spdlog::debug(taskId+" 's OutputPartitioningBuffer BufferId "+bufferId+" NoteEvent Detected! Note is "+note);
-        tbg->reportDownStreamTaskBuildCompletedInfo(bufferId);
+        tbg->reportDownStreamTaskBuildCompletedInfo(bufferId,taskGeneration);
     }
 
     bool isEmpty()

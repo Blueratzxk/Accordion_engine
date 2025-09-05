@@ -457,6 +457,8 @@ public:
         if(this->sendEndPage)
         {
             if(this->outputResultCompeleted) {
+
+                spdlog::info("Final agg process "+ to_string(this->totalElementCount)+ " pages");
                 this->finished = true;
                 return DataPage::getEndPage();
             }

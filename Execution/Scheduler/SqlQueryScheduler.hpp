@@ -20,7 +20,7 @@
 #include "../../Query/QueryStateMachine.hpp"
 #include "QueryInfos/StageProcessingTimeCollector.hpp"
 
-#include "../Task/SidewayExchangeSystem/SidewayDataExchangeScheduler.hpp"
+#include "../Task/SidewayExchangeSystem/SidewayExchangeSystem.hpp"
 
 
 class SqlQueryScheduler : public enable_shared_from_this<SqlQueryScheduler>{
@@ -48,6 +48,8 @@ class SqlQueryScheduler : public enable_shared_from_this<SqlQueryScheduler>{
     double executionTime = 0.0;
     shared_ptr<StageProcessingTimeCollector> stageProcessingTimeCollector;
 
+    shared_ptr<SidewayExchangeSystem> sidewayExchangeSystem;
+
 
 public:
     SqlQueryScheduler(PlanNode * rawTree,shared_ptr<SubPlan> tree,shared_ptr<Session> session,shared_ptr<QueryStateMachine> stateMachine)
@@ -57,6 +59,7 @@ public:
         this->session = session;
         this->stateMachine = stateMachine;
         this->executionFactory = make_shared<StageTreeExecutionFactory>(this->session);
+
 
         this->stageExeSchedulers = this->executionFactory->createStageTreeExecutions(this->rootStage, this->root);
 
@@ -69,6 +72,8 @@ public:
         list<shared_ptr<SqlStageExecution>> stageExecutions;
         for(auto exe : this->stageExeSchedulers)
             stageExecutions.push_back(exe.getStageExecution());
+
+        this->sidewayExchangeSystem = make_shared<SidewayExchangeSystem>(this->stageExeSchedulers);
 
         this->stageProcessingTimeCollector = make_shared<StageProcessingTimeCollector>(stageExecutions);
         this->stageProcessingTimeCollector->start();
@@ -815,41 +820,25 @@ public:
         vector<StageExecutionAndScheduler> executions = scheduler->stageExeSchedulers;
 
         if(para == "move") {
-            for (int i = 0; i < executions.size(); i++) {
-                auto handle = executions[i].getStageExecution()->getFragment()->getPartitionHandle();
-                if (handle != NULL &&
-                    handle->getConnectorHandle()->getHandleId().compare("SystemPartitioningHandle") == 0) {
-                    if (static_pointer_cast<SystemPartitioningHandle>(
-                            (handle)->getConnectorHandle())->partitioningType ==
-                        SystemPartitioningHandle::SINGLE) {
 
-                        if (executions[i].getStageExecution()->getStageId().getId() == 0) {
-                            SidewayDataExchangeScheduler scheduler(SidewayDataExchangeScheduler::OPERATOR_MIGRATION,
-                                                                   executions[i].getStageExecution(),
-                                                                   executions[i].getStageScheduler(),
-                                                                   executions[i].getStageLinkage(), 0);
-                            scheduler.schedule();
-                            return true;
-                        }
-
-
-                    }
-                }
-            }
+            scheduler->sidewayExchangeSystem->submitSidewayExchangeTask(0,{0},SidewayDataExchangeScheduler::OPERATOR_MIGRATION);
+            return true;
         }
         else if(para == "moveh")
         {
-            for (int i = 0; i < executions.size(); i++) {
 
-                if (executions[i].getStageExecution()->getStageId().getId() == 1) {
-                    SidewayDataExchangeScheduler scheduler(SidewayDataExchangeScheduler::OPERATOR_MIGRATION,
-                                                           executions[i].getStageExecution(),
-                                                           executions[i].getStageScheduler(),
-                                                           executions[i].getStageLinkage(), 0);
-                    scheduler.schedule();
-                    return true;
-                }
-            }
+            scheduler->sidewayExchangeSystem->submitSidewayExchangeTask(1,{0},SidewayDataExchangeScheduler::OPERATOR_MIGRATION);
+            return true;
+        }
+        else if(para == "clone")
+        {
+            scheduler->sidewayExchangeSystem->submitSidewayExchangeTask(1,{0,1},SidewayDataExchangeScheduler::OPERATOR_MIGRATION_PARTITIONED_HASH_JOIN);
+            return true;
+        }
+        else if(para == "buffer")
+        {
+            scheduler->sidewayExchangeSystem->submitSidewayExchangeTask(3,{0,1},SidewayDataExchangeScheduler::BUFFER_MIGRATION,SidewayDataExchangeScheduler::MANY_TO_MANY,3);
+            return true;
         }
 
 
@@ -872,7 +861,7 @@ public:
                                                        executions[i].getStageExecution(),
                                                        executions[i].getStageScheduler(),
                                                        executions[i].getStageLinkage(),
-                                                       taskId);
+                                                       {taskId});
                 scheduler.schedule();
             }
 

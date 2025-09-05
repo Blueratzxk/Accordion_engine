@@ -69,6 +69,11 @@ class TaskBufferGroup
     map<int,shared_ptr<PartitionCount_BuffersMap>> bufferIdToGroupId;
 
 
+    mutex taskGenLock;
+    map<string,int> taskIdToGeneration;
+    set<string> taskIdGenerationBuildStates;
+
+
 public:
     TaskBufferGroup(){
 
@@ -128,14 +133,17 @@ public:
         this->forceShuffleExecutorNum = num;
     }
 
-    void reportDownStreamTaskBuildCompletedInfo(string bufferId)
+    void reportDownStreamTaskBuildCompletedInfo(string bufferId,string taskGeneration)
     {
         shared_ptr<PartitionCount_BuffersMap> group = NULL;
 
+        this->taskGenLock.lock();
+        this->taskIdGenerationBuildStates.insert(bufferId+taskGeneration);
+        this->taskGenLock.unlock();
+
+
         int groupId = -1;
         groupLock.lock();
-
-
 
         for(auto pt : this->partitionCount_taskGroupMap)
         {
@@ -475,7 +483,7 @@ public:
         }
         else
         {
-            result = specialBuffers[bufferId]->getPages(10000);
+            result = specialBuffers[bufferId]->getPages(pageNums);
 
         }
 
@@ -483,10 +491,40 @@ public:
     }
 
 
+    void recordGenerationTask(string bufferId,long token)
+    {
+        taskGenLock.lock();
+        if(!this->taskIdToGeneration.contains(bufferId))
+            this->taskIdToGeneration[bufferId] = token;
+        else
+        if(token > this->taskIdToGeneration[bufferId])
+            this->taskIdToGeneration[bufferId] = token;
+        taskGenLock.unlock();
+    }
+    bool isCloseOldGenerationTask(string bufferId,long token)
+    {
+        taskGenLock.lock();
+
+        if(token < this->taskIdToGeneration[bufferId]) {
+            if(!this->taskIdGenerationBuildStates.contains(bufferId+to_string(this->taskIdToGeneration[bufferId])))
+            {
+                taskGenLock.unlock();
+                return false;
+            }
+            taskGenLock.unlock();
+            return true;
+        }
+        taskGenLock.unlock();
+        return false;
+    }
+
+
     vector<shared_ptr<DataPage>> getPages(string bufferId,long token,int pageNums) {
 
         if(isSpecialBufferId(bufferId))
             return processSpecialBufferIds(bufferId,token,pageNums);
+        else
+            recordGenerationTask(bufferId,token);
 
         vector<shared_ptr<DataPage>> result;
 
@@ -505,8 +543,12 @@ public:
        //         this->processSomePagesByBufferId(atoi(bufferId.c_str()),pageNums*100);
        //     else
        //         this->processSomePagesByBufferId(atoi(bufferId.c_str()),pageNums*100);
-            if(!this->repeatable)
+            if(!this->repeatable) {
+                if(isCloseOldGenerationTask(bufferId,token))
+                    return {DataPage::getEndPage()};
+
                 result = (*buffers)[bufferId]->getPages(pageNums);
+            }
             else
                 result =  (*buffers)[bufferId]->getPages();
         }
