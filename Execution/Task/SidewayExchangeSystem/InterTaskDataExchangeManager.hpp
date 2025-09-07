@@ -15,26 +15,28 @@ using namespace std;
 class InterTaskDataHandle
 {
     bool status;
+    string message;
     map<string,set<string>> sourceIdMap;
 public:
     InterTaskDataHandle()
     {
         this->status = true;
     }
-    InterTaskDataHandle(bool status)
-    {
+    InterTaskDataHandle(bool status, string message) {
         this->status = status;
-
+        this->message = message;
     }
 
-    InterTaskDataHandle(bool status, map<string,set<string>> sourceIdMap)
+    InterTaskDataHandle(bool status, string message, map<string,set<string>> sourceIdMap)
     {
         this->status = status;
+        this->message = message;
         this->sourceIdMap = sourceIdMap;
     }
 
     bool getStatus(){return this->status;}
     map<string,set<string>> getSourceIdMap(){return this->sourceIdMap;}
+    string getMessage(){return this->message;}
 
     static string Serialize(InterTaskDataHandle interTaskDataHandle)
     {
@@ -42,6 +44,7 @@ public:
 
         json["status"] = interTaskDataHandle.status;
         json["sourceIdMap"] = interTaskDataHandle.sourceIdMap;
+        json["message"] = interTaskDataHandle.message;
 
         string result = json.dump();
         return result;
@@ -52,7 +55,7 @@ public:
         nlohmann::json json = nlohmann::json::parse(interTaskDataHandle);
 
 
-        auto result = make_shared<InterTaskDataHandle>(json["status"],json["sourceIdMap"]);
+        auto result = make_shared<InterTaskDataHandle>(json["status"],json["message"],json["sourceIdMap"]);
 
         return  result;
     }
@@ -72,8 +75,7 @@ public:
 
     void savePages(string componentId, vector<shared_ptr<DataPage>> pages) {
 
-
-
+        spdlog::info("Save page" + componentId+"!");
         if (!pageCaches.contains(componentId)) {
             pageCaches[componentId] = make_shared<InterTaskSimpleOutputBuffer>();
             pageCaches[componentId]->enqueue(pages);
@@ -83,10 +85,13 @@ public:
 
     vector<shared_ptr<DataPage>> takePages(string componentId, string bufferId, int pageNums) {
 
+        spdlog::info("Take page" + componentId+"!");
         if (!pageCaches.contains(componentId))
             return {};
 
         auto re = pageCaches[componentId]->getPages(bufferId, 0, pageNums);
+
+        spdlog::info("Take page" + componentId+" ok!");
         for(auto rePage : re) {
 
 

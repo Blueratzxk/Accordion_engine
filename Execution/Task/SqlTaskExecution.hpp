@@ -338,11 +338,18 @@ public:
 
 
 
-    void startTask()
+    void startTask(shared_ptr<TaskExecutionCondition> condition)
     {
 
         this->taskStateMachine->start();
         this->taskHandle = this->taskExecutor->addTask(this->taskId);
+
+
+        if(condition->getConditionType() != TaskExecutionCondition::NO_CONDITION)
+        {
+            if(processConditionExecution(NULL,condition))
+                return;
+        }
 
         vector<std::shared_ptr<SplitRunner>> runners;
         for(auto source : this->sourcePipelineFactory)
@@ -483,6 +490,31 @@ public:
     }
 
 
+    set<shared_ptr<ScheduledSplit>> deduplicateInterTasks(set<shared_ptr<ScheduledSplit>> remoteSplits){
+
+        set<string> info;
+        set<shared_ptr<ScheduledSplit>> result;
+        for(auto split : remoteSplits)
+        {
+            if(split->getSplit()->getConnectorSplit()->getId() == "InterTaskSplit")
+            {
+                auto interSplit = static_pointer_cast<InterTaskSplit>(split->getSplit()->getConnectorSplit());
+
+                string tid = interSplit->getTaskId()->ToString();
+                string ip = interSplit->getLocation()->getIp();
+                string port = interSplit->getLocation()->getPort();
+                string bid = interSplit->getLocation()->getBufferId();
+
+                if(!info.contains(tid+ip+port+bid)) {
+                    info.insert(tid + ip + port + bid);
+                    result.insert(split);
+                }
+            }
+            else
+                result.insert(split);
+        }
+        return result;
+    }
 
     bool processConditionExecution(shared_ptr<TaskSource> taskSource,shared_ptr<TaskExecutionCondition> condition)
     {
@@ -525,6 +557,9 @@ public:
                     return false;
                 else if(source == "LookupJoinOperator")
                 {
+                    if(taskSource == NULL)
+                        return false;
+
                     auto typeIdMap = condition->getMigratedOperators().getOperator_Type_Id_Map();
                     set<string> targetOperatorIds;
                     for(auto item : typeIdMap)
@@ -556,7 +591,8 @@ public:
                                                                                       oldTaskId+"$"+op->getLogicalOperatorId(),
                                                                                       make_shared<Location>(ip,"9081",
                                                                                                             to_string(this->taskId->getId())));
-                                }
+
+                                     }
                             }
 
                             shared_ptr<ScheduledSplit> newSplit = split;
@@ -572,6 +608,9 @@ public:
                                 remoteSplits.insert(newSplit);
                         }
                     }
+
+                    remoteSplits = deduplicateInterTasks(remoteSplits);
+                    spdlog::info("InterTask split nums:"+ to_string(remoteSplits.size()));
 
                     if(!tableScanSplits.empty())
                         startTableScanTask(tableScanSplits);

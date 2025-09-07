@@ -67,7 +67,7 @@ public:
         this->sqlTaskExecution = make_shared<SqlTaskExecution>(session,taskId,taskStateMachine,taskContext,outputBuffer,this->taskExecutor);
         this->createPattern();
         this->sqlTaskExecution->createLogicalRunnerFactories();
-        this->sqlTaskExecution->startTask();
+        this->sqlTaskExecution->startTask(condition);
 
 
 

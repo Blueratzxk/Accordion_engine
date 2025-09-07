@@ -837,7 +837,7 @@ public:
         }
         else if(para == "buffer")
         {
-            scheduler->sidewayExchangeSystem->submitSidewayExchangeTask(3,{0,1},SidewayDataExchangeScheduler::BUFFER_MIGRATION,SidewayDataExchangeScheduler::MANY_TO_MANY,3);
+            scheduler->sidewayExchangeSystem->submitSidewayExchangeTask(3,{0},SidewayDataExchangeScheduler::BUFFER_MIGRATION,SidewayDataExchangeScheduler::MANY_TO_MANY,3);
             return true;
         }
 
@@ -995,7 +995,9 @@ public:
 
 
             if(scheduler->stateMachine->isFinished()) {
-                    auto taskResultFetcher = scheduler->rootStage->getTaskResultFetcher();
+                    shared_ptr<TaskResultFetcher> taskResultFetcher = NULL;
+
+                    taskResultFetcher = scheduler->rootStage->getTaskResultFetcher();
                     taskResultFetcher->schedule();
                     result = taskResultFetcher->pollPage();
 

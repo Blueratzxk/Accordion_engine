@@ -229,9 +229,29 @@ public:
 
 
 
-
         stageExecutor->addStageExecutionFinishStateListener();
         ScheduleResult sR(newTasks);
+        stageExecutor->recordTaskGroup(sR.getTaskIds());
+
+        return sR;
+    }
+
+
+    ScheduleResult addConcurrentForInterTaskMission(shared_ptr<TaskExecutionCondition> condition,int taskNums = 1)
+    {
+        vector<shared_ptr<HttpRemoteTask>> newTasks;
+
+
+        NodeSelector aSelector;
+        vector<shared_ptr<ClusterNode>> aNode = aSelector.getNodesByMinThreadNums(taskNums);
+
+        for(int i = 0 ; i < aNode.size() ; i++) {
+            shared_ptr<HttpRemoteTask> task = stageExecutor->scheduleTask(aNode[i],condition);
+            newTasks.push_back(task);
+        }
+        ScheduleResult sR(newTasks);
+        stageExecutor->recordTaskGroup(sR.getTaskIds());
+
         return sR;
     }
 

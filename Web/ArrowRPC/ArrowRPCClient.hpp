@@ -244,8 +244,13 @@ public:
         vector<shared_ptr<DataPage>> pages = a2d.ToPages(batches,&tag);
         *tagIn = tag;
 
+        if(this->exchangeType == SIDEWAY)
+            spdlog::debug("SIDEWAY! Get "+ to_string(pages.size())+" pages");
         if(tag == 2)
         {
+            if(this->exchangeType == SIDEWAY)
+                spdlog::debug("SIDEWAY! Get end page!");
+
             spdlog::debug("Get end page from "+this->taskId+"_"+this->bufferId+"\n");
         }
 

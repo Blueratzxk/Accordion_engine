@@ -93,11 +93,17 @@ public:
             return false;
 
         auto result = sqlStageExecution->taskMigrationPreparation(taskId,opsNeededToMigrate);
+        if(result == NULL) {
+            spdlog::info("Migrate operator preparation: rejected!");
+            return false;
+        }
+        spdlog::info(result->getMessage());
+
         this->sourceIdMap = result->getSourceIdMap();
         return result->getStatus();
     }
 
-    void addTasksWithConditionExecution(int taskId)
+    bool addTasksWithConditionExecution(int taskId)
     {
 
         opsNeededToMigrate = analyzeTaskMigratableOperators();
@@ -118,6 +124,11 @@ public:
             }
 
         MigratedOperators migratedOperators(opsNeededToMigrate,this->sourceIdMap,needExchangeService,taskIdString,ip,port);
+
+        if(this->stageScheduler->getSchedulerType() != "NormalStageScheduler") {
+            spdlog::error("MigrateBuffers: don't support migrating buffers for " + this->stageScheduler->getSchedulerType() + "!");
+            return false;
+        }
 
         ScheduleResult result = (static_pointer_cast<NormalStageScheduler>(stageScheduler))->addConcurrentForInterTaskMission(
                 make_shared<TaskExecutionCondition>(TaskExecutionCondition::OPERATOR_MIGRATION,migratedOperators));
@@ -127,10 +138,30 @@ public:
             this->monitoredTaskIds.push_back(task->getTaskId()->ToString());
 
         this->stageLinkage->processScheduleResultsToAddConcurrent(newTasks);
+
+        return true;
     }
 
+    shared_ptr<HttpRemoteTask> findMaxGenerationTask(int taskId)
+    {
+        shared_ptr<HttpRemoteTask> result;
+        int maxGen = -100;
 
-    void cloneTasksWithConditionExecution(int taskId)
+        vector<shared_ptr<HttpRemoteTask>> tasks = sqlStageExecution->getAllTasks();
+
+        for(auto task : tasks)
+            if(task->getTaskId()->getId() == taskId) {
+                if(task->getTaskId()->getStageExecutionId().getId() > maxGen)
+                {
+                    maxGen = task->getTaskId()->getStageExecutionId().getId();
+                    result = task;
+                }
+            }
+
+        return result;
+    }
+
+    bool cloneTasksWithConditionExecution(int taskId)
     {
 
         opsNeededToMigrate = analyzeTaskMigratableOperators();
@@ -143,14 +174,21 @@ public:
         string ip;
         string port;
         vector<shared_ptr<HttpRemoteTask>> tasks = sqlStageExecution->getAllTasks();
-        for(auto task : tasks)
-            if(task->getTaskId()->getId() == taskId) {
-                taskIdString = task->getTaskId()->ToString();
-                ip = task->getIP();
-                port = task->getPORT();
-            }
+
+
+        auto task = findMaxGenerationTask(taskId);
+        spdlog::info("Clone task id:"+task->getTaskId()->ToString());
+        taskIdString = task->getTaskId()->ToString();
+        ip = task->getIP();
+        port = task->getPORT();
+
 
         MigratedOperators migratedOperators(opsNeededToMigrate,this->sourceIdMap,needExchangeService,taskIdString,ip,port);
+
+        if(this->stageScheduler->getSchedulerType() != "NormalStageScheduler") {
+            spdlog::error("MigrateBuffers: don't support migrating buffers for " + this->stageScheduler->getSchedulerType() + "!");
+            return false;
+        }
 
         ScheduleResult result = (static_pointer_cast<NormalStageScheduler>(stageScheduler))->cloneTask(taskId,
                 make_shared<TaskExecutionCondition>(TaskExecutionCondition::OPERATOR_MIGRATION,migratedOperators));
@@ -160,13 +198,14 @@ public:
             this->monitoredTaskIds.push_back(task->getTaskId()->ToString());
 
         this->stageLinkage->processScheduleResultsToAddConcurrent(newTasks);
+
+        return true;
     }
 
     bool migrateOperators(int taskId)
     {
         if(migratedOperatorPreparation(taskId)) {
-            addTasksWithConditionExecution(taskId);
-            return true;
+            return addTasksWithConditionExecution(taskId);
         }
         return false;
     }
@@ -186,6 +225,11 @@ public:
         MigratedBufferAddress migratedBufferAddress({taskIdTemp.Serialize(*oldTaskPtr->getTaskId())},{oldTaskPtr->getIP()},{"9081"},{"-1"});
         shared_ptr<TaskExecutionCondition> condition = make_shared<TaskExecutionCondition>(TaskExecutionCondition::BUFFER_MIGRATION,migratedBufferAddress);
 
+
+        if(this->stageScheduler->getSchedulerType() != "NormalStageScheduler") {
+            spdlog::error("MigrateBuffers: don't support migrating buffers for " + this->stageScheduler->getSchedulerType() + "!");
+            return false;
+        }
 
         ScheduleResult result = (static_pointer_cast<NormalStageScheduler>(this->stageScheduler)->addConcurrentForInterTaskMission(condition));
         vector<shared_ptr<HttpRemoteTask>> newTasks = result.getNewTasks();
@@ -217,18 +261,27 @@ public:
         TaskId taskIdTemp;
         MigratedBufferAddress migratedBufferAddress;
 
-        int bufferId = -1;
-
         for(auto originTask : originTaskPtrs) {
-            migratedBufferAddress.addMigratedBufferAddress({ taskIdTemp.Serialize(*originTask->getTaskId()) }, {originTask->getIP()}, {"9081"}, {to_string(bufferId)});
-            bufferId--;
+            migratedBufferAddress.addMigratedBufferAddress({ taskIdTemp.Serialize(*originTask->getTaskId()) }, {originTask->getIP()}, {"9081"}, {to_string(-1)});
+
         }
 
         shared_ptr<TaskExecutionCondition> condition = make_shared<TaskExecutionCondition>(TaskExecutionCondition::BUFFER_MIGRATION,migratedBufferAddress);
 
 
-        ScheduleResult result = (static_pointer_cast<NormalStageScheduler>(this->stageScheduler)->addConcurrentForInterTaskMission(condition,targetTaskNumber));
-        vector<shared_ptr<HttpRemoteTask>> newTasks = result.getNewTasks();
+        vector<shared_ptr<HttpRemoteTask>> newTasks;
+
+        if(this->stageScheduler->getSchedulerType() == "SourcePartitionedScheduler") {
+            ScheduleResult result = (static_pointer_cast<SourcePartitionedScheduler>(this->stageScheduler)->addConcurrentForInterTaskMission(condition,targetTaskNumber));
+            newTasks = result.getNewTasks();
+        }
+        else
+        {
+            ScheduleResult result = (static_pointer_cast<NormalStageScheduler>(this->stageScheduler)->addConcurrentForInterTaskMission(condition,targetTaskNumber));
+            newTasks = result.getNewTasks();
+        }
+
+
 
         for(auto task : newTasks)
             this->monitoredTaskIds.push_back(task->getTaskId()->ToString());

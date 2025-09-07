@@ -180,7 +180,7 @@ public:
         if(this->started) {
             return sendUpdateAndGetResult(this->httpRequestLocation, path,updateString);
         }
-        return "NULL";
+        return InterTaskDataHandle::Serialize(InterTaskDataHandle(false,"Task "+this->taskId->ToString()+" is not started!"));
     }
 
     void sendUpdate(string location,string path,string updateString)

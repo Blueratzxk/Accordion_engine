@@ -78,11 +78,19 @@ public:
             if (!checkTaskIds(stageId, tid, rightId))
                 tid = rightId;
         }
-        auto sidewayTask = make_shared<SidewayDataExchangeScheduler>(type,stageExe,stageSche,stageLink,taskIds);
+
+        list<TaskId> newestTaskIds = stageExe->getNewestTaskGroup();
+        vector<int> taskGroupIds;
+        for(auto id : newestTaskIds)
+            taskGroupIds.push_back(id.getId());
+
+        auto sidewayTask = make_shared<SidewayDataExchangeScheduler>(type,stageExe,stageSche,stageLink,taskGroupIds);
         this->sidewayExchangeTasks.push_back(sidewayTask);
 
         if(mode == SidewayDataExchangeScheduler::MANY_TO_MANY)
             sidewayTask->setManyToManyMode(targetTaskNumber);
+
+
 
         if(sidewayTask->schedule())
             sidewayTask->releaseMonitor();

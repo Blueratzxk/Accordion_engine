@@ -257,7 +257,7 @@ public:
 
         shared_ptr<SqlTask> sqlTaskPtr = this->findTask(taskId);
         if(sqlTaskPtr == NULL) {
-            return InterTaskDataHandle(false);
+            return InterTaskDataHandle(false,"Task not exist!");
         }
         map<string,set<string>> sourceIdMap;
         bool re = false;
@@ -274,9 +274,10 @@ public:
                                                                   interTaskMissionDescriptor.getInterTaskSourceDescriptor().getInterSourceId(),
                                                                   interTaskMissionDescriptor.getInterTaskSourceDescriptor().getBufferId());
         }
-
-
-        return InterTaskDataHandle(re,sourceIdMap);
+        string message = "No problem!";
+        if(re == false)
+            message = "PrepareInterTaskDataByComponentId failed!";
+        return InterTaskDataHandle(re,message,sourceIdMap);
     }
 
     vector<shared_ptr<DataPage>> getInterTaskPages(TaskId taskId,string componentId,string bufferId,int pageNums)

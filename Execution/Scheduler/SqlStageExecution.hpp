@@ -74,6 +74,7 @@ class SqlStageExecution:public enable_shared_from_this<SqlStageExecution>
 
 
     shared_ptr<TaskResultFetcher> taskResultFetcher = NULL;
+    shared_ptr<HttpRemoteTask> lastAddTask = NULL;
 
     map<int,int> taskGenerations;
 
@@ -770,13 +771,25 @@ public:
             this->tasks[node] = tasks;
             this->tasks[node].push_back(remote);
             allTasks.push_back(*remote->getTaskId());
+            this->lastAddTask = remote;
         }
         else {
             this->tasks[node].push_back(remote);
             allTasks.push_back(*remote->getTaskId());
+            this->lastAddTask = remote;
         }
         tasksLock.unlock();
 
+    }
+
+    shared_ptr<HttpRemoteTask> getLastAddTask()
+    {
+        shared_ptr<HttpRemoteTask> result;
+        tasksLock.lock();
+        result = this->lastAddTask;
+        tasksLock.unlock();
+
+        return result;
     }
 
 
@@ -1007,6 +1020,11 @@ public:
         }
 
         this->nextTaskGroupId++;
+    }
+
+    list<TaskId> getNewestTaskGroup()
+    {
+        return this->taskGroups[this->nextTaskGroupId - 1];
     }
 
     void closeATaskGroup()
@@ -1267,7 +1285,7 @@ public:
             if(task->getTaskId()->getId() == taskId)
                 target = task;
         if(target == NULL)
-            return NULL;
+            return make_shared<InterTaskDataHandle>(false,"Task is not exist in task map!");
 
 
         bool status = false;
@@ -1356,9 +1374,13 @@ public:
 
     shared_ptr<TaskResultFetcher> getTaskResultFetcher()
     {
+
+        int maxTaskId = this->getMaxTaskId();
+
         if(this->taskResultFetcher == NULL) {
-            auto tasks = this->getAllTasks();
-            taskResultFetcher = make_shared<TaskResultFetcher>(tasks.back()->getTaskId(), tasks.back()->getIP(), "9081","0");
+
+            auto task = getLastAddTask();
+            taskResultFetcher = make_shared<TaskResultFetcher>(task->getTaskId(), task->getIP(), "9081", "0");
             return taskResultFetcher;
         }
         else
