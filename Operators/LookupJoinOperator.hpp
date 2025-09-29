@@ -28,6 +28,8 @@ class LookupJoinOperator :public Operator{
 
     bool sendEndPage = false;
 
+    bool aborted = false;
+
 
 
     std::shared_ptr<LookupSourceProvider> lookupSourceProvider = NULL;
@@ -57,6 +59,10 @@ class LookupJoinOperator :public Operator{
     string buildSideRemoteSourceOperatorId;
 
     long inputPageCounter = 0;
+
+    bool operatorMigration = false;
+
+
 public:
 
 
@@ -112,17 +118,20 @@ public:
 
     list<string> externalEvent() override
     {
-        if(!this->lookupsourceStatus)
-            return {};
+        if(!this->lookupsourceStatus) {
+            this->operatorMigration = true;
+            return {"NotBuildCompleteYet",this->buildSideRemoteSourceOperatorId};
+        }
         else
         {
-            auto batches =  getLookupSourceData()->CombineChunksToBatch();
-            if(!batches.ok())
-                return {};
-
-            this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId, {make_shared<DataPage>(batches.ValueOrDie())});
-            this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId, {DataPage::getEndPage()});
-
+            auto table = getLookupSourceData();
+            if(table == NULL)
+                this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId, {DataPage::getEndPage()});
+            else {
+                auto batches = table->CombineChunksToBatch();
+                this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId,{make_shared<DataPage>(batches.ValueOrDie())});
+                this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId,{DataPage::getEndPage()});
+            }
         }
         return {this->buildSideRemoteSourceOperatorId};
     }
@@ -144,6 +153,17 @@ public:
             this->lookupSourceFactory->tryGetCompletedLookupSource();
             lookupSourceProvider = this->lookupSourceProviderFuture.get();
             lookupsourceStatus = true;
+            if(this->operatorMigration)
+            {
+                auto table = getLookupSourceData();
+                if(table == NULL)
+                    this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId, {DataPage::getEndPage()});
+                else {
+                    auto batches = table->CombineChunksToBatch();
+                    this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId,{make_shared<DataPage>(batches.ValueOrDie())});
+                    this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId,{DataPage::getEndPage()});
+                }
+            }
             return true;
 
             return false;
@@ -258,8 +278,8 @@ public:
             return NULL;
         }
 
-        if(!tryFetchLookupSourceProvider())
-            return NULL;
+        //if(!tryFetchLookupSourceProvider())
+        //    return NULL;
 
 
         if(!this->lookupSourceProvider->isLookupSourceExist())
@@ -286,6 +306,13 @@ public:
     }
 
 
+    void waitingBuildSideAndCheckAborted()
+    {
+        tryFetchLookupSourceProvider();
+        if(this->lookupSourceFactory->isAborted())
+            this->aborted = true;
+    }
+
     std::shared_ptr <DataPage> getOutput() override {
 
 
@@ -297,6 +324,7 @@ public:
            }
 
 
+        waitingBuildSideAndCheckAborted();
 
         if(this->inputPage != NULL) {
 
@@ -321,6 +349,10 @@ public:
 
     }
 
+    bool isAborted() override
+    {
+        return this->aborted;
+    }
 
     bool isFinished() {
         return this->finished;

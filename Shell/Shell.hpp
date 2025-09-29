@@ -5,7 +5,7 @@
 #ifndef OLVP_SHELL_HPP
 #define OLVP_SHELL_HPP
 
-
+#include <charconv>
 #include "../Frontend/FrontEnd.h"
 //#include "../FunctionExtension/GPU/GPUExprFilter.hpp"
 class Shell
@@ -79,6 +79,7 @@ public:
             getline(cin, cmd);
 
             string run("run ");
+            string drainNode("dn ");
             if(cmd.compare(0,run.length(),run) == 0)
             {
                 int offset = cmd.length() - run.length();
@@ -93,6 +94,27 @@ public:
                 else
                     spdlog::info("Script is running!");
 
+                continue;
+            }
+
+            if(cmd.compare(0,drainNode.length(),drainNode) == 0)
+            {
+                int offset = cmd.length() - drainNode.length();
+                if(offset <= 0) {
+                    spdlog::error("Need Node Id.");
+                    continue;
+                }
+                string nodeId = cmd.substr(drainNode.length(),offset);
+
+                auto begin = nodeId.data();
+                auto end   = nodeId.data() + nodeId.size();
+
+                int nId;
+                auto result = std::from_chars(begin, end, nId);
+                if(result.ec == std::errc{} && result.ptr == end)
+                    ClusterServer::nodeDraining(nId);
+                else
+                    spdlog::info("Node id must be a number!");
                 continue;
             }
             if(cmd == "s")
@@ -201,6 +223,10 @@ public:
                 if(QueryServer::getQueryServer()->getPPM()->isStart()) {
                     QueryServer::getQueryServer()->getPPM()->test();
                 }
+            }
+            else if(cmd == "drain")
+            {
+                ClusterServer::cleanTheNode();
             }
             else if(cmd == "h")
             {

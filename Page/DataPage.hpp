@@ -69,6 +69,15 @@ public:
         else
             return false;
     }
+
+    bool isAbortPage()
+    {
+        if(this->page == NULL && this->elementsCount == -3)
+            return true;
+        else
+            return false;
+    }
+
     bool isEmptyPage()
     {
         if(this->page != NULL && this->elementsCount == 0)
@@ -91,6 +100,11 @@ public:
     static std::shared_ptr<DataPage> getShuffleExecutorExitPage()
     {
         return std::make_shared<DataPage>(-2);
+    }
+
+    static std::shared_ptr<DataPage> getAbortPage()
+    {
+        return std::make_shared<DataPage>(-3);
     }
     int64_t getElementsCount()
     {

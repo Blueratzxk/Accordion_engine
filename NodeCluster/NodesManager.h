@@ -17,10 +17,14 @@
 #include "spdlog/spdlog.h"
 #include "../Config/NodeTypeConfig.hpp"
 #include "../Config/ExecutionConfig.hpp"
+
+
+
 using namespace  std;
 
 class NodesManager
 {
+    atomic<int> nodeId = 0;
     vector<shared_ptr<ClusterNode>> allNodes;
     map<string,shared_ptr<ClusterNode>> allClusterNodes;
 
@@ -36,6 +40,7 @@ class NodesManager
     bool useStorageNode = true;
 
     bool outputScheduleNodesLog = false;
+
 
 public:
     NodesManager();
@@ -60,11 +65,28 @@ public:
         return allRatio;
     }
 
+    int getNextNodeId(){
+        int id = this->nodeId;
+        this->nodeId++;
+        return id;
+    }
+
     shared_ptr<ClusterNode> getCoordinator()
     {
         return this->coordinator;
     }
-    void resolveHeartbeat(Heartbeat heartbeat);
+    string resolveHeartbeat(Heartbeat heartbeat);
+
+    string getNodeUrlByNodeId(int nodeId)
+    {
+        for(auto node : this->getAllComputeNodes())
+        {
+            if(node.second->getNodeId() == nodeId)
+                return node.second->getNodeLocation();
+        }
+
+        return "NULL";
+    }
 
     void displayAllNodesInfo()
     {
@@ -109,6 +131,35 @@ public:
         nodesLock.unlock();
         return all;
     }
+
+    map<string,shared_ptr<ClusterNode>> getAllAliveClusterNodes()
+    {
+        nodesLock.lock();
+        map<string,shared_ptr<ClusterNode>> all = this->allClusterNodes;
+
+        for (auto it = all.begin(); it != all.end(); ) {
+            if (it->second->status() != ClusterNode::ALIVE) {
+                all.erase(it++);
+            } else {
+                ++it;
+            }
+        }
+
+        nodesLock.unlock();
+        return all;
+    }
+
+    void resetNodeAliveStatus(string nodeUrl)
+    {
+        auto nodes = getAllClusterNodes();
+
+        for(auto node : nodes)
+        {
+            if(node.second->getNodeLocation() == nodeUrl)
+                node.second->transitionToAlive();
+        }
+    }
+
     map<string,shared_ptr<ClusterNode>> getAllComputeNodes()
     {
         map<string,shared_ptr<ClusterNode>> computeNodes;

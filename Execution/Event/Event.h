@@ -10,6 +10,7 @@ class Event
 public:
     virtual void listen() = 0;
     virtual void notify() = 0;
+    virtual void notify(std::string source,std::string info) {}
 };
 
 #endif //OLVP_EVENT_H

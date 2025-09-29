@@ -826,7 +826,6 @@ public:
         }
         else if(para == "moveh")
         {
-
             scheduler->sidewayExchangeSystem->submitSidewayExchangeTask(1,{0},SidewayDataExchangeScheduler::OPERATOR_MIGRATION);
             return true;
         }
@@ -841,10 +840,8 @@ public:
             return true;
         }
 
-
+        return false;
     }
-
-
 
     static void moveFinishedTaskDataToNewNodeForStage(shared_ptr<SqlQueryScheduler> scheduler,int stageId,int taskId)
     {
@@ -868,6 +865,13 @@ public:
         }
     }
 
+    static void drainNode(shared_ptr<SqlQueryScheduler> scheduler,string nodeUrl)
+    {
+        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
+            return;
+        scheduler->sidewayExchangeSystem->processNodeDraining(nodeUrl);
+
+    }
 
     static void schedule(shared_ptr<SqlQueryScheduler> scheduler) {
 
@@ -995,6 +999,7 @@ public:
 
 
             if(scheduler->stateMachine->isFinished()) {
+
                     shared_ptr<TaskResultFetcher> taskResultFetcher = NULL;
 
                     taskResultFetcher = scheduler->rootStage->getTaskResultFetcher();

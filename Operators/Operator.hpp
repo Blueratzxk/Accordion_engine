@@ -22,6 +22,8 @@ public:
     virtual list<string> externalEvent(){return {};}
     virtual void fulfillExternalEventWithPages(vector<std::shared_ptr<DataPage>> pages){}
     virtual bool isFinished() { return true; }
+    virtual bool isAborted() { return false; }
+    virtual void abort() {}
     virtual bool needsInput() { return true; }
     virtual int extensionToken() {return 0;}
     virtual int isExtension() {return false;}

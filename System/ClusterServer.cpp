@@ -6,11 +6,11 @@
 #include "../System/TaskServer.h"
 #include "../Utils/Random.hpp"
 
-void ClusterServer::start()
+void ClusterServer::start(shared_ptr<ParameterizedEvent> monitor)
 {
     nodesManager = make_shared<NodesManager>();
     nodesManager->initialNodes();
-
+    eventMonitor = monitor;
 }
 
 void ClusterServer::startHeartbeat(){
@@ -24,8 +24,18 @@ shared_ptr<NodesManager> ClusterServer::getNodesManager()
 
 void ClusterServer::resolveHeartbeat(std::string heartbeat) {
 
-    nodesManager->resolveHeartbeat(Heartbeat::Deserialize(heartbeat));
+    string event = nodesManager->resolveHeartbeat(Heartbeat::Deserialize(heartbeat));
+    if(event != "")
+        eventMonitor->notify("cluster",event);
+}
 
+void ClusterServer::nodeDraining(int nodeId)
+{
+    auto nodeUrl = nodesManager->getNodeUrlByNodeId(nodeId);
+    if(nodeUrl != "NULL")
+        eventMonitor->notify("cluster",nodeUrl);
+    else
+        spdlog::info("Cannot find the node " + to_string(nodeId)+"!");
 }
 
 void ClusterServer::checkExtensions() {
@@ -54,7 +64,10 @@ void ClusterServer::sendHeartbeat() {
                         nodesManager->hasStorage(),ClusterServer::netInfoCollector->getReceivedRate(),
                         ClusterServer::netInfoCollector->getTransmittedRate(),
                         ClusterServer::netInfoCollector->getNICSpeed(),
-                        extensions);
+                        extensions,ClusterServer::drainNode);
+    if(ClusterServer::drainNode)
+        ClusterServer::drainNode = false;
+
     ClusterServer::post_getResult_sync(coordinatorIp,coordinatorIp+"/v1/cluster/reportHeartbeat",{Heartbeat::Serialize(heartbeat)});
 
 }
@@ -67,6 +80,11 @@ shared_ptr<NetInfoCollector> ClusterServer::getNetInfoCollector()
         ClusterServer::netInfoCollector = make_shared<NetInfoCollector>(webConfig.getNIC_Name());
     }
     return ClusterServer::netInfoCollector;
+}
+
+void ClusterServer::cleanTheNode()
+{
+    ClusterServer::drainNode = true;
 }
 
 void ClusterServer::heartbeatSender() {
@@ -108,7 +126,9 @@ shared_ptr<NodesManager> ClusterServer::nodesManager = NULL;
 int ClusterServer::heartbeatFreq = 2000;
 shared_ptr<NetInfoCollector> ClusterServer::netInfoCollector = NULL;
 bool ClusterServer::showInfos = false;
+atomic<bool> ClusterServer::drainNode = false;
 shared_ptr<RestfulClient> ClusterServer::restfulClient = make_shared<RestfulClient>();
 shared_ptr<mutex> ClusterServer::clientLock = make_shared<mutex>();
 set<string> ClusterServer::extensions = {};
-
+list<string> ClusterServer::events = {};
+shared_ptr<ParameterizedEvent> ClusterServer::eventMonitor = NULL;

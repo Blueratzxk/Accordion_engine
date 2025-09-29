@@ -3,6 +3,7 @@
 //
 
 
+#include <list>
 #include "NodesManager.h"
 #include "../Config/ExecutionConfig.hpp"
 
@@ -56,7 +57,7 @@ void NodesManager::initialNodes() {
     string Arrow_RPC_Server_IP = wconfig.getCoordinatorRPCServerIp();
     string Arrow_RPC_Server_Port = wconfig.getCoordinatorRPCServerPort();
 
-    shared_ptr<ClusterNode> node = make_shared<ClusterNode>("coordinator",
+    shared_ptr<ClusterNode> node = make_shared<ClusterNode>(this->getNextNodeId(),"coordinator",
                                                             Restful_Web_Server_IP + ":" + Restful_Web_Server_Port,
                                                             false);
     coordinator = node;
@@ -69,11 +70,12 @@ void NodesManager::initialNodes() {
     this->useStorageNode = config.ifDoNotUseStorageNode() == "true" ? false : true;
 }
 
- void NodesManager::resolveHeartbeat(Heartbeat heartbeat){
+ string NodesManager::resolveHeartbeat(Heartbeat heartbeat){
 
+    string eventStr = "";
     nodesLock.lock();
     if(this->allClusterNodes.count(heartbeat.getNodeHttpURL()) == 0) {
-        this->allClusterNodes[heartbeat.getNodeHttpURL()] = make_shared<ClusterNode>(heartbeat.getNodeHttpURL(),
+        this->allClusterNodes[heartbeat.getNodeHttpURL()] = make_shared<ClusterNode>(this->getNextNodeId(),heartbeat.getNodeHttpURL(),
                                                                                      heartbeat.getNodeHttpURL(),heartbeat.ifHasStorgae());
         spdlog::info("New worker joined! Ip => ["+heartbeat.getNodeHttpURL()+"]");
 
@@ -83,6 +85,10 @@ void NodesManager::initialNodes() {
         }
 
         this->allClusterNodes[heartbeat.getNodeHttpURL()]->setNetSpeed(heartbeat.getNet_speed());
+
+        if(heartbeat.isNeedClean()) {
+            this->allClusterNodes[heartbeat.getNodeHttpURL()]->drainNode();
+        }
 
     }
     else
@@ -94,6 +100,11 @@ void NodesManager::initialNodes() {
         this->allClusterNodes[heartbeat.getNodeHttpURL()]->updateNetRecRate(heartbeat.getNet_receiveRate());
         this->allClusterNodes[heartbeat.getNodeHttpURL()]->updateNetTransRate(heartbeat.getNet_transRate());
         this->allClusterNodes[heartbeat.getNodeHttpURL()]->updateExtensions(heartbeat.getExtensions());
+
+        if(heartbeat.isNeedClean()) {
+            this->allClusterNodes[heartbeat.getNodeHttpURL()]->drainNode();
+            eventStr = heartbeat.getNodeHttpURL();
+        }
     }
 
 
@@ -103,6 +114,8 @@ void NodesManager::initialNodes() {
                                                               + " hasStorage:"+(heartbeat.ifHasStorgae() == true?"true":"false"));
 
     nodesLock.unlock();
+
+    return eventStr;
 }
 
 

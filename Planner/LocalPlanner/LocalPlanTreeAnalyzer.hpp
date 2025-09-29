@@ -193,16 +193,16 @@ public:
 
         PhysicalOperation *source = (PhysicalOperation *)Visit(node->getSource(),context);
 
-        bool interTaskSync = false;
+        bool sidewayDataSync = false;
         if(condition != NULL && condition->getConditionType() == TaskExecutionCondition::OPERATOR_MIGRATION) {
 
             auto sourceTypes = condition->getMigratedOperators().getSourceTypes();
             bool ok = sourceTypes.contains("FinalAggregationOperator");
             if(ok)
-                interTaskSync = true;
+                sidewayDataSync = true;
         }
         string nextLogicalOperatorId = ((LocalExecutionPlanContext*)context)->getNextLogicalOperatorId();
-        auto fagg = std::make_shared<Logical_FinalAggregationOperator>(nextLogicalOperatorId,node->getAggregationDesc(),interTaskSync);
+        auto fagg = std::make_shared<Logical_FinalAggregationOperator>(nextLogicalOperatorId,node->getAggregationDesc(),sidewayDataSync);
 
 
 
@@ -370,10 +370,24 @@ public:
 
     void* VisitRemoteSourceNode(RemoteSourceNode* node,void *context) override {
 
+
         string probeOrBuild = ((LocalExecutionPlanContext *) context)->getDownstreamProbeOrBuild();
 
         string nextLogicalOperatorId = ((LocalExecutionPlanContext*)context)->getNextLogicalOperatorId();
-        auto remote = make_shared<Logical_RemoteSourceOperator>(nextLogicalOperatorId,probeOrBuild);
+
+
+        bool sidewayDataSync = false;
+        if(condition != NULL && condition->getConditionType() == TaskExecutionCondition::OPERATOR_MIGRATION) {
+
+            auto sourceTypes = condition->getMigratedOperators().getOperator_Type_Id_Map();
+            for(auto source : sourceTypes)
+                if(source.first == "LookupJoinOperator" && source.second.contains("NotBuildCompleteYet") && source.second.contains(nextLogicalOperatorId))
+                    sidewayDataSync = true;
+        }
+
+
+
+        auto remote = make_shared<Logical_RemoteSourceOperator>(nextLogicalOperatorId,probeOrBuild,sidewayDataSync);
 
         ((LocalExecutionPlanContext *) context)->updateRemoteSourceId(nextLogicalOperatorId);
 

@@ -20,10 +20,11 @@ class Heartbeat
     double net_transRate;
     int net_speed;
     set<string> extensions;
+    bool needClean = false;
 
 public:
     Heartbeat(string nodeHttpURL,int activeTaskNums,int activeThreadNums, int nodeCpuCoreNums,float nodeCpuUsage,bool hasStorage,
-              double net_receiveRate,double net_transRate,int net_speed,set<string> extensions)
+              double net_receiveRate,double net_transRate,int net_speed,set<string> extensions, bool needClean)
     {
         this->nodeHttpURL = nodeHttpURL;
 
@@ -36,6 +37,7 @@ public:
         this->net_transRate = net_transRate;
         this->net_speed = net_speed;
         this->extensions = extensions;
+        this->needClean = needClean;
     }
 
     string getNodeHttpURL(){return this->nodeHttpURL;}
@@ -48,6 +50,7 @@ public:
     double getNet_transRate(){return this->net_transRate;}
     int getNet_speed(){return this->net_speed;}
 
+    bool isNeedClean(){return this->needClean;}
     bool ifHasStorgae(){return this->hasStorage;}
     set<string> getExtensions(){return this->extensions;}
     static string Serialize(Heartbeat heartbeat)
@@ -65,13 +68,14 @@ public:
         json["net_transRate"] = heartbeat.net_transRate;
         json["net_speed"] = heartbeat.net_speed;
         json["extensions"] = heartbeat.extensions;
+        json["needClean"] = heartbeat.needClean;
         return json.dump();
     }
     static Heartbeat Deserialize(string heartbeat)
     {
         nlohmann::json json = nlohmann::json::parse(heartbeat);
         return Heartbeat(json["nodeHttpURL"],json["activeTaskNums"],json["activeThreadNums"],json["nodeCpuCoreNums"],
-                         json["nodeCpuUsage"],json["hasStorage"],json["net_receiveRate"],json["net_transRate"],json["net_speed"],json["extensions"]);
+                         json["nodeCpuUsage"],json["hasStorage"],json["net_receiveRate"],json["net_transRate"],json["net_speed"],json["extensions"],json["needClean"]);
     }
 
 

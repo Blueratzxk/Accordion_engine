@@ -188,7 +188,7 @@ public:
 
     }
 
-    void waitInterTaskDataSync()
+    void waitSidewayDataSync()
     {
         this->waitInterTaskSync = true;
     }
@@ -222,9 +222,9 @@ public:
             if (this->input_schema == NULL) {
                 if(this->inputPage->isEndPage())
                 {
-
-
                     this->outputResultCompeleted = true;
+                    if(this->operatorMigration)
+                        this->driverContext->savePagesForInterTaskMission(this->operatorId,{DataPage::getEndPage()});
                     return;
                 }
                 else {

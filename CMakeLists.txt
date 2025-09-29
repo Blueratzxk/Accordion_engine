@@ -540,6 +540,8 @@ add_executable(OLVP main.cpp
         Execution/Task/SidewayExchangeSystem/SidewayDataExchangeScheduler.hpp
         TpchTest/Querys/SimpleTest/Query_OperatorMigration.hpp
         Execution/Task/SidewayExchangeSystem/SidewayExchangeSystem.hpp
+        System/SystemEventMonitor.hpp
+        Execution/Event/ParameterizedEvent.hpp
 
 
 )

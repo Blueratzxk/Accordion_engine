@@ -9,11 +9,13 @@
 class SidewayDataExchangeScheduler : enable_shared_from_this<SidewayDataExchangeScheduler>
 {
 
+
 public:
     enum MissionType {
         OPERATOR_MIGRATION,
         BUFFER_MIGRATION,
-        OPERATOR_MIGRATION_PARTITIONED_HASH_JOIN
+        OPERATOR_MIGRATION_PARTITIONED_HASH_JOIN,
+        CLOSE_AND_CREATE
     };
 
     enum DataExchangeMode
@@ -21,6 +23,68 @@ public:
         ONE_TO_ONE,
         MANY_TO_MANY
     };
+
+    class SidewayMonitorPanel
+    {
+        MissionType missionType;
+        set<string> newTaskIds;
+        set<string> originTaskIds;
+
+        SidewayDataExchangeScheduler *scheduler;
+
+    public:
+        SidewayMonitorPanel(SidewayDataExchangeScheduler *scheduler,MissionType missionType,set<string> newTaskIds,set<string> originTaskIds){
+
+            this->missionType = missionType;
+            this->newTaskIds = newTaskIds;
+            this->originTaskIds = originTaskIds;
+            this->scheduler = scheduler;
+        }
+
+        bool isSchedulingFinished()
+        {
+            if(this->missionType == OPERATOR_MIGRATION) {
+                if (this->scheduler->opsNeededToMigrate.contains("LookupJoinOperator")) {
+                    for (auto task: this->newTaskIds)
+                        if (!this->scheduler->sqlStageExecution->isTaskDependenciesSatisfied(task))
+                            return false;
+                } else if (this->scheduler->opsNeededToMigrate.contains("FinalAggregationOperator")) {
+                    for (auto task: this->originTaskIds)
+                        if (!this->scheduler->sqlStageExecution->isTaskFinished(task))
+                            return false;
+                }
+            }
+            else if(this->missionType == BUFFER_MIGRATION)
+            {
+                for (auto task: this->newTaskIds)
+                    if (!this->scheduler->sqlStageExecution->isTaskFinished(task))
+                        return false;
+            }
+            else if(this->missionType == CLOSE_AND_CREATE)
+            {
+                for (auto task: this->originTaskIds)
+                    if (!this->scheduler->sqlStageExecution->isTaskFinished(task))
+                        return false;
+            }
+
+            return true;
+        }
+
+        static void stateMonitor(SidewayDataExchangeScheduler* scheduler)
+        {
+            while(1)
+            {
+                if(scheduler->isSchedulingFinished()) {
+                    scheduler->schedulingFinished = true;
+                    spdlog::info("Sideway exchange schedule finished!");
+                    break;
+                }
+                sleep_for(std::chrono::milliseconds(500));
+            }
+        }
+
+    };
+
 
 private:
     MissionType missionType;
@@ -34,6 +98,8 @@ private:
     bool schedulingFinished = false;
 
     list<string> monitoredTaskIds;
+
+    shared_ptr<SidewayMonitorPanel> sidewayMonitorPanel;
 
     map<string,string> migratableOperators = {
             {"FinalAggregationOperator","FinalAggregationNode"},
@@ -100,6 +166,9 @@ public:
         spdlog::info(result->getMessage());
 
         this->sourceIdMap = result->getSourceIdMap();
+
+
+
         return result->getStatus();
     }
 
@@ -112,10 +181,17 @@ public:
             if(this->opsNeedInterTaskExchangeService.contains(op))
                 needExchangeService.insert(op);
 
+        for(auto source : this->sourceIdMap)
+            if (source.second.contains("NotBuildCompleteYet"))
+                needExchangeService.insert(source.first);
+
+
+
         string taskIdString = "";
         string ip;
         string port;
         vector<shared_ptr<HttpRemoteTask>> tasks = sqlStageExecution->getAllTasks();
+
         for(auto task : tasks)
             if(task->getTaskId()->getId() == taskId) {
                 taskIdString = task->getTaskId()->ToString();
@@ -134,10 +210,58 @@ public:
                 make_shared<TaskExecutionCondition>(TaskExecutionCondition::OPERATOR_MIGRATION,migratedOperators));
         vector<shared_ptr<HttpRemoteTask>> newTasks = result.getNewTasks();
 
-        for(auto task : newTasks)
+        set<string> newTaskIdStrs;
+        set<string> originTaskIdStrs;
+        originTaskIdStrs.insert(taskIdString);
+
+        for(auto task : newTasks) {
             this->monitoredTaskIds.push_back(task->getTaskId()->ToString());
+            newTaskIdStrs.insert(task->getTaskId()->ToString());
+        }
+
 
         this->stageLinkage->processScheduleResultsToAddConcurrent(newTasks);
+
+        this->sqlStageExecution->finishTaskByTaskId(taskId);
+
+        this->sidewayMonitorPanel = make_shared<SidewayMonitorPanel>(this,this->missionType,newTaskIdStrs,originTaskIdStrs);
+
+        return true;
+    }
+
+    bool closeOriginAndCreateNewOne(int taskId)
+    {
+
+        string taskIdString = "";
+        string ip;
+        string port;
+        vector<shared_ptr<HttpRemoteTask>> tasks = sqlStageExecution->getAllTasks();
+
+        for(auto task : tasks)
+            if(task->getTaskId()->getId() == taskId) {
+                taskIdString = task->getTaskId()->ToString();
+                ip = task->getIP();
+                port = task->getPORT();
+            }
+
+        ScheduleResult result = (static_pointer_cast<NormalStageScheduler>(stageScheduler))->addOneConcurrent();
+        vector<shared_ptr<HttpRemoteTask>> newTasks = result.getNewTasks();
+
+        set<string> newTaskIdStrs;
+        set<string> originTaskIdStrs;
+        originTaskIdStrs.insert(taskIdString);
+
+        for(auto task : newTasks) {
+            this->monitoredTaskIds.push_back(task->getTaskId()->ToString());
+            newTaskIdStrs.insert(task->getTaskId()->ToString());
+        }
+
+
+        this->stageLinkage->processScheduleResultsToAddConcurrent(newTasks);
+
+        this->sqlStageExecution->finishTaskByTaskId(taskId);
+
+        this->sidewayMonitorPanel = make_shared<SidewayMonitorPanel>(this,CLOSE_AND_CREATE,newTaskIdStrs,originTaskIdStrs);
 
         return true;
     }
@@ -170,6 +294,10 @@ public:
             if(this->opsNeedInterTaskExchangeService.contains(op))
                 needExchangeService.insert(op);
 
+        for(auto source : this->sourceIdMap)
+            if (source.second.contains("NotBuildCompleteYet"))
+                needExchangeService.insert(source.first);
+
         string taskIdString = "";
         string ip;
         string port;
@@ -194,10 +322,19 @@ public:
                 make_shared<TaskExecutionCondition>(TaskExecutionCondition::OPERATOR_MIGRATION,migratedOperators));
         vector<shared_ptr<HttpRemoteTask>> newTasks = result.getNewTasks();
 
-        for(auto task : newTasks)
+
+        set<string> newTaskIdStrs;
+        set<string> originTaskIdStrs;
+        originTaskIdStrs.insert(taskIdString);
+
+        for(auto task : newTasks) {
             this->monitoredTaskIds.push_back(task->getTaskId()->ToString());
+            newTaskIdStrs.insert(task->getTaskId()->ToString());
+        }
 
         this->stageLinkage->processScheduleResultsToAddConcurrent(newTasks);
+
+        this->sidewayMonitorPanel = make_shared<SidewayMonitorPanel>(this,this->missionType,newTaskIdStrs,originTaskIdStrs);
 
         return true;
     }
@@ -206,6 +343,11 @@ public:
     {
         if(migratedOperatorPreparation(taskId)) {
             return addTasksWithConditionExecution(taskId);
+        }
+        else
+        {
+            if(opsNeededToMigrate.empty())
+                return closeOriginAndCreateNewOne(taskId);
         }
         return false;
     }
@@ -304,8 +446,6 @@ public:
 
     bool schedule(int taskId)
     {
-        spdlog::info("Sideway exchange schedule start!");
-
         if(this->missionType == OPERATOR_MIGRATION)
             return migrateOperators(taskId);
         else if(this->missionType == BUFFER_MIGRATION)
@@ -332,38 +472,9 @@ public:
         return true;
     }
 
-    void releaseMonitor()
-    {
-        thread monitor(stateMonitor,this);
-        monitor.detach();
-    }
-    static void stateMonitor(SidewayDataExchangeScheduler* scheduler)
-    {
-        while(1)
-        {
-            if(scheduler->isSchedulingFinished()) {
-                scheduler->schedulingFinished = true;
-                spdlog::info("Sideway exchange schedule finished!");
-                break;
-            }
-            sleep_for(std::chrono::milliseconds(500));
-        }
-    }
-
     bool isSchedulingFinished()
     {
-        for(auto task : this->monitoredTaskIds) {
-            if(this->opsNeededToMigrate.contains("LookupJoinOperator")) {
-                if (!this->sqlStageExecution->isTaskDependenciesSatisfied(task))
-                    return false;
-            }
-            else{
-                if (!this->sqlStageExecution->isTaskFinished(task))
-                    return false;
-            }
-        }
-
-        return true;
+        return this->sidewayMonitorPanel->isSchedulingFinished();
     }
 
 

@@ -9,13 +9,14 @@
 #include "TaskServer.h"
 #include "QueryServer.hpp"
 #include "../Shell/Shell.hpp"
-#include "ClusterServer.h"
+
 #include "../Web/Restful/Server.hpp"
 #include "../Web/ArrowRPC/ArrowRPCServer.hpp"
 #include "../Web/HttpServer/HttpServer.h"
 
 #include "../Utils/WebCommon.hpp"
 
+#include "SystemEventMonitor.hpp"
 
 #include <signal.h>
 
@@ -25,17 +26,19 @@ class System
     static shared_ptr<arrow::flight::FlightServerBase> serv;
     static bool shutdown;
     static shared_ptr<Shell> shell;
+    static shared_ptr<SystemEventMonitor> systemEventMonitor;
 public:
-
-
 
     static void start()
     {
         signal(SIGINT, sigint_handler);
         System::stat = StartHttpServer();
         auto status = StartArrowRPCServer(&serv);
+        System::systemEventMonitor = make_shared<SystemEventMonitor>();
+        System::systemEventMonitor->startMonitor();
+
         HttpServer::start();
-        ClusterServer::start();
+        ClusterServer::start(System::systemEventMonitor->getParameterizedEvent());
         spdlog::info("Initializing...");
         while(!(checkStaticStructures() && checkServers()))sleep(100);
 
@@ -45,6 +48,8 @@ public:
 
         ClusterServer::startHeartbeat();
         System::stat->setShell(getShell());
+
+
 
         System::shell->start();
 
@@ -111,5 +116,6 @@ shared_ptr<StatsEndpoint> System::stat = NULL;
 shared_ptr<arrow::flight::FlightServerBase> System::serv = NULL;
 bool System::shutdown = false;
 shared_ptr<Shell> System::shell = NULL;
+shared_ptr<SystemEventMonitor> System::systemEventMonitor = NULL;
 
 #endif //OLVP_SYSTEM_HPP

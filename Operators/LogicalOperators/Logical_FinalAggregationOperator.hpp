@@ -36,13 +36,13 @@ public:
 
         auto op = std::make_shared<FinalAggregationOperator>(this->operatorId,driverContext,this->desc);
         if(this->interTaskDataSync)
-            op->waitInterTaskDataSync();
+            op->waitSidewayDataSync();
         return op;
     }
     std::shared_ptr<void> getOperatorNonType(shared_ptr<DriverContext> driverContext) {
         auto op = std::make_shared<FinalAggregationOperator>(this->operatorId,driverContext,this->desc);
         if(this->interTaskDataSync)
-            op->waitInterTaskDataSync();
+            op->waitSidewayDataSync();
         return op;
     }
 

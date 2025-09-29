@@ -72,7 +72,7 @@ class TaskBufferGroup
     mutex taskGenLock;
     map<string,int> taskIdToGeneration;
     set<string> taskIdGenerationBuildStates;
-
+    set<string> taskIdToBuildAbort;
 
 public:
     TaskBufferGroup(){
@@ -518,6 +518,18 @@ public:
         return false;
     }
 
+    bool isCloseOldGenerationTaskWithNoHesitate(string bufferId,long token)
+    {
+        taskGenLock.lock();
+
+        if(token < this->taskIdToGeneration[bufferId]) {
+            taskGenLock.unlock();
+            return true;
+        }
+        taskGenLock.unlock();
+        return false;
+    }
+
 
     vector<shared_ptr<DataPage>> getPages(string bufferId,long token,int pageNums) {
 
@@ -545,12 +557,24 @@ public:
        //         this->processSomePagesByBufferId(atoi(bufferId.c_str()),pageNums*100);
             if(!this->repeatable) {
                 if(isCloseOldGenerationTask(bufferId,token))
-                    return {DataPage::getEndPage()};
-
-                result = (*buffers)[bufferId]->getPages(pageNums);
+                    result = {DataPage::getEndPage()};
+                else
+                    result = (*buffers)[bufferId]->getPages(pageNums);
             }
-            else
-                result =  (*buffers)[bufferId]->getPages();
+            else {
+                if(isCloseOldGenerationTaskWithNoHesitate(bufferId,token)) {
+
+                    if(!this->taskIdToBuildAbort.contains(bufferId+ to_string(token)))
+                    {
+                        result = {DataPage::getAbortPage()};
+                        this->taskIdToBuildAbort.insert(bufferId+to_string(token));
+                    }
+                    else
+                        result = {DataPage::getEndPage()};
+                }
+                else
+                    result = (*buffers)[bufferId]->getPages();
+            }
         }
 
         this->tuneBufferCapacity("consumer");

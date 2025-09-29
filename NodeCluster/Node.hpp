@@ -19,7 +19,7 @@ public:
     {
         ALIVE,
         DEAD,
-
+        DRAIN
     };
 
 private:
@@ -28,7 +28,7 @@ private:
     string httpUrl;
 
     bool isCoordinator = false;
-    NodeStatus nodeStatus;
+    atomic<NodeStatus> nodeStatus;
     atomic<int> activeTaskNums = 0;
     atomic<int> activeThreadNums = 0;
     atomic<float> cpuUsage = 0.0;
@@ -41,12 +41,20 @@ private:
 
     set<string> extensions;
 
+    int nodeId;
+
 public:
-    ClusterNode(string identifier,string httpUrl,bool hasStorage){
+    ClusterNode(int nodeId,string identifier,string httpUrl,bool hasStorage){
         this->nodeIdentifier = identifier;
         this->httpUrl = httpUrl;
         this->hasStorage = hasStorage;
+        this->nodeId = nodeId;
+        this->nodeStatus = ALIVE;
+    }
 
+    int getNodeId()
+    {
+        return this->nodeId;
     }
     string getNodeLocation()
     {
@@ -58,6 +66,21 @@ public:
         return this->cpuUsage;
     }
 
+    void drainNode()
+    {
+        if(!is_Coordinator())
+            this->nodeStatus = DRAIN;
+    }
+
+    void transitionToAlive()
+    {
+        this->nodeStatus = ALIVE;
+    }
+
+    NodeStatus status()
+    {
+        return this->nodeStatus;
+    }
 
     int getCoreNums()
     {
@@ -175,6 +198,9 @@ public:
     void display()
     {
         string re;
+        re.append("id:");
+        re.append(TextColor::numberTextTrim(to_string(this->nodeId),2," "));
+        re.append("|");
         re.append("ip:");
         re.append(httpUrl);
         if(this->isCoordinator) {
@@ -205,7 +231,7 @@ public:
 
         re.append("|");
         re.append("cpu usage:");
-        re.append(TextColor::LIGHT_RED(TextColor::numberTextTrim(to_string(this->cpuUsage),8,"0")));
+        re.append(TextColor::LIGHT_RED(TextColor::numberTextTrim(to_string(this->cpuUsage),6,"0")));
         re.append("|");
         re.append("cpu core nums:");
         re.append(TextColor::numberTextTrim(to_string(this->coreNums),2," "));
@@ -217,10 +243,10 @@ public:
         re.append(TextColor::numberTextTrim(to_string(this->activeTaskNums),2," "));
         re.append("|");
         re.append("NIC receive rate:");
-        re.append(TextColor::numberTextTrim(to_string(this->netRecRate),8,"0"));
+        re.append(TextColor::numberTextTrim(to_string(this->netRecRate),6,"0"));
         re.append("|");
         re.append("NIC trans rate:");
-        re.append(TextColor::LIGHT_RED(TextColor::numberTextTrim(to_string(this->netTransRate),8,"0")));
+        re.append(TextColor::LIGHT_RED(TextColor::numberTextTrim(to_string(this->netTransRate),6,"0")));
 
 
         re.append("|");

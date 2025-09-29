@@ -9,7 +9,7 @@
 
 #include "../Query/QueryManager.hpp"
 #include "../Script/ScriptExecutor.hpp"
-#include "../System/ClusterServer.h"
+
 class QueryServer
 {
 public:

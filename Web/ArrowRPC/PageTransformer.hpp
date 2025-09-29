@@ -25,11 +25,14 @@ public:
 
         for(int i = 0 ; i < pages.size() ; i++)
         {
-            if(pages[i]->isEndPage())
-            {
+            if(pages[i]->isEndPage()) {
                 batches.push_back(createAnEndBatch());
             }
-            else {
+            else if(pages[i]->isAbortPage()){
+                batches.push_back(createAnAbortBatch());
+            }
+            else
+            {
                 std::shared_ptr<arrow::RecordBatch> batch = transformPageToBatch(pages[i]);
                 batches.push_back(batch);
             }
@@ -49,6 +52,17 @@ public:
         arrow::Status result = nb.Append(NULL);
         std::shared_ptr<arrow::Array> nullarray = nb.Finish().ValueOrDie();
         std::shared_ptr<arrow::Field> field = std::make_shared<arrow::Field>("EndPage",arrow::null());
+        this->schema = arrow::schema({field});
+        std::shared_ptr<arrow::RecordBatch> batch = arrow::RecordBatch::Make(schema,nullarray->length(),{nullarray});
+        return batch;
+    }
+
+    std::shared_ptr<arrow::RecordBatch> createAnAbortBatch()
+    {
+        arrow::NullBuilder nb;
+        arrow::Status result = nb.Append(NULL);
+        std::shared_ptr<arrow::Array> nullarray = nb.Finish().ValueOrDie();
+        std::shared_ptr<arrow::Field> field = std::make_shared<arrow::Field>("AbortPage",arrow::null());
         this->schema = arrow::schema({field});
         std::shared_ptr<arrow::RecordBatch> batch = arrow::RecordBatch::Make(schema,nullarray->length(),{nullarray});
         return batch;
@@ -100,6 +114,11 @@ public:
             {
                 *tag = 2;
                 pages.push_back(DataPage::getEndPage());
+            }
+            else if (batches[i]->GetColumnByName("AbortPage") != NULL && batches[i]->GetColumnByName("AbortPage")->length() == 1 && batches[i]->num_columns() == 1)
+            {
+                *tag = 3;
+                pages.push_back(DataPage::getAbortPage());
             }
             else {
                 pages.push_back(transformBatchToPage(batches[i]));

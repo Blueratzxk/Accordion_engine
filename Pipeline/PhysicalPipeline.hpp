@@ -51,6 +51,7 @@ public:
 
 
         bool run = false;
+        bool abort = false;
 
 
 
@@ -103,9 +104,15 @@ public:
 
 
                 run = false;
-                for (int i = 0; i < operatorVectors.size(); i++)
-                    if (operatorVectors[i]->isFinished() == false)
+                for (int i = 0; i < operatorVectors.size(); i++) {
+                    if (!operatorVectors[i]->isFinished())
                         run = true;
+                    if(operatorVectors[i]->isAborted())
+                        abort = true;
+                }
+
+                if(abort)
+                    abortRemoteSourcePipeline(operatorVectors);
 
             }
         }
@@ -124,6 +131,18 @@ public:
         driverContext->removeTids({tid});
 
         return 1;
+    }
+
+
+    static void abortRemoteSourcePipeline(const vector<std::shared_ptr<Operator>>& operatorVector)
+    {
+        for(auto op : operatorVector)
+        {
+            if(op->getOperatorType() == "RemoteSourceOperator") {
+                op->abort();
+                break;
+            }
+        }
     }
 
 

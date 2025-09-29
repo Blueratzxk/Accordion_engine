@@ -312,6 +312,8 @@ public:
     }
 
 
+
+
     void showAllQueryCpuUsage()
     {
         list<shared_ptr<SqlQueryExecution>> activeQuerys;
@@ -865,10 +867,19 @@ public:
     }
 
 
+    void drainNode(string nodeUrl)
+    {
+        shared_ptr<SqlQueryExecution> queryExecution = nullptr;
 
+        for(auto query : *this->querys)
+        {
+            if(!query.second->getState()->isFinished()) {
+                spdlog::info("Query:" + query.first + " is draining node " + nodeUrl + "!");
+                query.second->Dynamic_drainNode(nodeUrl);
+            }
 
-
-
+        }
+    }
 
 
 };

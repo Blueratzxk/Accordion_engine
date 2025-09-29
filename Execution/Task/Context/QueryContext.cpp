@@ -94,8 +94,10 @@ bool QueryContext::prepareInterTaskDataByComponentId(TaskId taskId,set<string> s
                 {
                     list<string> ids = op->externalEvent();
                     results.insert(!ids.empty());
-                    if(!ids.empty())
-                        sourceIdMap[op->getOperatorType()].insert(ids.front());
+                    if(!ids.empty()) {
+                        for(auto id : ids)
+                            sourceIdMap[op->getOperatorType()].insert(id);
+                    }
                 }
             }
         }

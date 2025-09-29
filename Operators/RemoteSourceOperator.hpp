@@ -9,6 +9,7 @@
 #include "../Operators/Operator.hpp"
 #include "../Web/ArrowRPC/DataPageRPCBuffer.hpp"
 #include "../Web/ArrowRPC/RPCClient.hpp"
+#include "../Execution/Event/SimpleEvent.hpp"
 
 //class DriverContext;
 using namespace  std;
@@ -29,6 +30,7 @@ class RemoteSourceOperator:public Operator
 
 
     atomic<bool> abortTransmission = false;
+    bool firstOutputCall = true;
 
 
 
@@ -49,6 +51,16 @@ class RemoteSourceOperator:public Operator
     shared_ptr<std::chrono::system_clock::time_point> start = NULL;
     int bufferTuneCircle = 500; //ms
 
+
+    atomic<bool> waitInterTaskSync = false;
+    shared_ptr<Event> sidewayTaskEvent = make_shared<SimpleEvent>();
+    list<std::shared_ptr<DataPage>> sidewayPages;
+
+    bool upstreamFinished = false;
+
+
+    shared_ptr<DataPage> endPage = DataPage::getEndPage();
+
 public:
 
 
@@ -61,6 +73,21 @@ public:
         this->hasBuildTask = this->driverContexts->hasBuildTask();
         this->client->addDriverContext(this->driverContexts);
 
+    }
+
+    void waitSidewayDataSync()
+    {
+        this->waitInterTaskSync = true;
+    }
+
+    void fulfillExternalEventWithPages(vector<std::shared_ptr<DataPage>> pages) override
+    {
+        for(auto page : pages)
+            if(!page->isEndPage())
+                this->sidewayPages.push_back(page);
+
+        this->waitInterTaskSync = false;
+        this->sidewayTaskEvent->notify();
     }
 
 
@@ -142,17 +169,43 @@ public:
 
     }
 
+    shared_ptr<DataPage> provideSidewayPages() {
+
+        if (this->waitInterTaskSync)
+            this->sidewayTaskEvent->listen();
+
+        if (!sidewayPages.empty()) {
+            auto re = sidewayPages.front();
+            sidewayPages.pop_front();
+            return re;
+        } else
+            return NULL;
+    }
+
     std::shared_ptr<DataPage> getOutput() override {
+
+        if(this->firstOutputCall) {
+            this->firstOutputCall = false;
+            return NULL;
+        }
 
         wait:
 
         shared_ptr<DataPage> outputData = NULL;
 
+        if(this->upstreamFinished)
+        {
+            auto sidewayPage = provideSidewayPages();
+            if(sidewayPage != NULL)
+                return sidewayPage;
+            else
+                this->finished = true;
+        }
 
         while (outputData == NULL) {
 
             if (this->finished) {
-                outputData = DataPage::getEndPage();
+                outputData = this->endPage;
                 return outputData;
             }
 
@@ -173,15 +226,24 @@ public:
 
         if (outputData->isEndPage()) {
 
+
             this->endSignalCount++;
 
             int judge = this->endSignalCount - this->concurrentCount;
 
 
             if (judge == 0) {
+
                 spdlog::debug("RemoteSourceOperator has received " + to_string(this->endSignalCount) + " end pages.");
-                this->finished = true;
-                return DataPage::getEndPage();
+                this->upstreamFinished = true;
+
+                auto sidewayPage = provideSidewayPages();
+                if(sidewayPage != NULL)
+                    return sidewayPage;
+                else
+                    this->finished = true;
+
+                return this->endPage;
             } else
                 goto wait;
         }
@@ -198,7 +260,7 @@ public:
         return false;
     }
 
-    void abort()
+    void abort() override
     {
         this->client->abort();
     }

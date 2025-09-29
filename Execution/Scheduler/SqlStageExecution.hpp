@@ -128,6 +128,57 @@ public:
         return result;
     }
 
+
+    void getActiveAndClosedTaskNodeMap(map<shared_ptr<ClusterNode>, set<shared_ptr<HttpRemoteTask>>> &active,
+                                       map<shared_ptr<ClusterNode>, set<shared_ptr<HttpRemoteTask>>> &closed)
+    {
+        tasksLock.lock();
+
+
+        for(auto node : this->tasks)
+        {
+            if((active).count(node.first) == 0)
+                (active)[node.first] = {};
+
+            if((closed).count(node.first) == 0)
+                (closed)[node.first] = {};
+
+            for(auto task : node.second) {
+                if (!task->isDone())
+                    (active)[node.first].insert(task);
+                else
+                    (closed)[node.first].insert(task);
+            }
+        }
+
+        tasksLock.unlock();
+
+    }
+
+
+    shared_ptr<map<shared_ptr<ClusterNode>, set<shared_ptr<HttpRemoteTask>>>> getClosedTaskNodeMap()
+    {
+        shared_ptr<map<shared_ptr<ClusterNode>, set<shared_ptr<HttpRemoteTask>>>> result =
+                make_shared<map<shared_ptr<ClusterNode>, set<shared_ptr<HttpRemoteTask>>>>();
+
+        tasksLock.lock();
+
+
+        for(auto node : this->tasks)
+        {
+            if((*result).count(node.first) == 0) {
+                (*result)[node.first] = {};
+            }
+            for(auto task : node.second)
+                if(task->isDone())
+                    (*result)[node.first].insert(task);
+        }
+
+        tasksLock.unlock();
+
+        return result;
+    }
+
     bool stageHasThroughput()
     {
         vector<shared_ptr<HttpRemoteTask>> allTasks = this->getAllTasks();
@@ -709,6 +760,36 @@ public:
         tasksLock.unlock();
     }
 
+    void finishTaskByTaskId(int taskId)
+    {
+        TaskId targetId;
+        auto allTasks = getAllTasks();
+        for(auto task : allTasks) {
+            if(task->getTaskId()->getId() == taskId)
+                targetId = *task->getTaskId();
+        }
+        vector<shared_ptr<HttpRemoteTask>> sourceStageTasks = this->getSourceTasks();
+        vector<string> bufferIds = {to_string(targetId.getId())};
+
+        for(int i = 0 ; i < sourceStageTasks.size() ; i++)
+        {
+            shared_ptr<TaskBufferOperatingRequest> request = make_shared<TaskBufferOperatingRequest>(TaskBufferOperatingRequest::CLOSE_BUFFER,bufferIds);
+            sourceStageTasks[i]->operateOutputBuffer(request);
+        }
+
+        tasksLock.lock();
+        for(int i = 0 ; i < this->allTasks.size() ; i++)
+        {
+            if(this->allTasks[i].getId() == targetId.getId())
+            {
+                this->allTasks.erase(this->allTasks.begin()+i);
+                this->finishedTasks.push_back(targetId);
+            }
+        }
+        tasksLock.unlock();
+    }
+
+
     bool dopStateMigrating()
     {
         return !this->isDependenciesSatisfied();
@@ -753,6 +834,7 @@ public:
 
     void addNodeTaskMap(shared_ptr<ClusterNode> node,shared_ptr<HttpRemoteTask> remote)
     {
+        tasksLock.lock();
         if(this->NodeTaskNap.find(node) == this->NodeTaskNap.end())
         {
             vector<shared_ptr<HttpRemoteTask>> tasks;
@@ -761,6 +843,7 @@ public:
         }
         else
             this->NodeTaskNap[node].push_back(remote);
+        tasksLock.unlock();
     }
     void addTask(shared_ptr<ClusterNode> node,shared_ptr<HttpRemoteTask> remote)
     {
@@ -1305,73 +1388,6 @@ public:
         return NULL;
     }
 
-    /*
-    shared_ptr<InterTaskDataHandle> prepareMoveStatefulTask(int taskId)
-    {
-        shared_ptr<HttpRemoteTask> target = NULL;
-        vector<shared_ptr<HttpRemoteTask>> tasks = getAllTasks();
-        for(auto task : tasks)
-            if(task->getTaskId()->getId() == taskId)
-                target = task;
-
-        vector<PlanNode*> nodes;
-        this->fragment->findNodeByNodeName("FinalAggregationNode",nodes);
-
-        string componentId;
-        bool status = false;
-        if(nodes.empty())
-            return NULL;
-
-        componentId = "FinalAggregationOperator";
-
-        string result;
-        shared_ptr<InterTaskDataHandle> handle;
-        if (target != NULL && !target->isDone()) {
-            result = target->createInterTaskMission(
-                    make_shared<InterTaskMissionDescriptor>("moveOperator", componentId));
-            if(result == "NULL")
-                return NULL;
-            handle = InterTaskDataHandle::Deserialize(result);
-            if(!handle->getStatus())
-                return NULL;
-            else
-                return handle;
-        }
-
-        return NULL;
-    }
-*/
-    bool taskDataAddressNotification(int preTaskId,int newTaskId,string componentId)
-    {
-        /*
-        shared_ptr<HttpRemoteTask> preTask = NULL;
-        shared_ptr<HttpRemoteTask> newTask = NULL;
-        vector<shared_ptr<HttpRemoteTask>> tasks = getAllTasks();
-        for(auto task : tasks) {
-            if (task->getTaskId()->getId() == preTaskId)
-                preTask = task;
-            if (task->getTaskId()->getId() == newTaskId)
-                newTask = task;
-        }
-        string result;
-        shared_ptr<InterTaskDataHandle> handle;
-        if (preTask != NULL && !preTask->isDone() && newTask != NULL && !newTask->isDone()) {
-
-            result = newTask->createInterTaskMission(
-                    make_shared<InterTaskMissionDescriptor>("setDataLocation",preTask->getTaskId()->ToString(),componentId,preTask->getIP(),preTask->getPORT(),"0"));
-            if(result == "NULL")
-                return false;
-            handle = InterTaskDataHandle::Deserialize(result);
-            if(!handle->getStatus())
-                return false;
-
-        }
-*/
-
-
-        return false;
-    }
-
     shared_ptr<TaskResultFetcher> getTaskResultFetcher()
     {
 
@@ -1385,8 +1401,55 @@ public:
         }
         else
             return taskResultFetcher;
+    }
+
+    set<int> getRunningTasksOnTheNode(string nodeIp)
+    {
+        auto taskNodeMapTemp = this->getActiveTaskNodeMap();
+
+        set<int> taskIds;
+        for(auto node : *taskNodeMapTemp)
+        {
+            if(node.first->getNodeLocation() == nodeIp)
+            {
+                for(auto task : node.second)
+                    taskIds.insert(task->getTaskId()->getId());
+            }
+        }
+        return taskIds;
+    }
+
+
+    void getActiveAndClosedTasksOnTheNode(string nodeIp,set<int> &activeTaskIds,set<int> &closedTaskIds)
+    {
+
+        map<shared_ptr<ClusterNode>, set<shared_ptr<HttpRemoteTask>>> active;
+        map<shared_ptr<ClusterNode>, set<shared_ptr<HttpRemoteTask>>> closed;
+
+        this->getActiveAndClosedTaskNodeMap(active,closed);
+
+
+        for(auto node : active)
+        {
+            if(node.first->getNodeLocation() == nodeIp)
+            {
+                for(auto task : node.second)
+                    activeTaskIds.insert(task->getTaskId()->getId());
+            }
+        }
+
+        for(auto node : closed)
+        {
+            if(node.first->getNodeLocation() == nodeIp)
+            {
+                for(auto task : node.second)
+                    closedTaskIds.insert(task->getTaskId()->getId());
+            }
+        }
 
     }
+
+
 
 
 

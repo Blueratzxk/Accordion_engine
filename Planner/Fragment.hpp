@@ -5,13 +5,13 @@
 #ifndef OLVP_FRAGMENT_HPP
 #define OLVP_FRAGMENT_HPP
 
-
 #include "../Frontend/PlanNode/PlanNodePtr.hpp"
 #include "../Frontend/PlanNode/Serial/PlanNodeTreeDeserialization.hpp"
 #include "../Frontend/PlanNode/Serial/PlanNodeTreeSerialization.hpp"
 #include "../Partitioning/PartitioningScheme.hpp"
 #include "../Frontend/PlanNode/PlanNode.hpp"
 #include "../Partitioning/PartitioningHandleSerializer.hpp"
+
 
 
 class PlanFragment

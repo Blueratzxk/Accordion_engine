@@ -66,6 +66,7 @@ class PartitionedLookupSourceFactory:public LookupSourceFactory,public enable_sh
     mutable std::shared_mutex lock;
 
 
+    bool abortedPageSupply = false;
 
 public:
     PartitionedLookupSourceFactory(std::shared_ptr<arrow::Schema> inputSchema,std::shared_ptr<arrow::Schema> outputSchema,int partitionCount)
@@ -80,6 +81,16 @@ public:
         }
     }
 
+    void abort()
+    {
+        this->abortedPageSupply = true;
+    }
+
+    bool isAborted() override
+    {
+        return this->abortedPageSupply;
+    }
+
     void resetPartitionCount()
     {
         this->partitionCount = 1;
@@ -92,11 +103,18 @@ public:
     {
         vector<shared_ptr<arrow::RecordBatch>> batchs;
         for(auto source : this->partitions) {
+            if(source == NULL)
+                continue;
             auto temp = source->get()->getChunkedArrayVector();
             auto tempTable = arrow::Table::Make(inputSchema,temp,temp[0]->length());
             auto batch = tempTable->CombineChunksToBatch().ValueOrDie();
             batchs.push_back(batch);
+
         }
+
+        if(batchs.empty())
+            return NULL;
+
         auto table = arrow::Table::FromRecordBatches(batchs);
         return table.ValueOrDie();
     }

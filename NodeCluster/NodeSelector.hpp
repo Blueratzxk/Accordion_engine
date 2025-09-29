@@ -122,7 +122,7 @@ public:
     vector<shared_ptr<ClusterNode>> getNodesByMinThreadNums(int num)
     {
 
-        map<string,shared_ptr<ClusterNode>> all = ClusterServer::getNodesManager()->getAllClusterNodes();
+        map<string,shared_ptr<ClusterNode>> all = ClusterServer::getNodesManager()->getAllAliveClusterNodes();
 
         if(!ClusterServer::getNodesManager()->ifUseStorageNode())
         {
@@ -149,7 +149,7 @@ public:
 
         for(auto item : selectedNodes)
         {
-            ClusterServer::getNodesManager()->getAllClusterNodes()[item->getNodeLocation()]->addThreadNums(6);
+            ClusterServer::getNodesManager()->getAllAliveClusterNodes()[item->getNodeLocation()]->addThreadNums(6);
 
         }
 
@@ -172,7 +172,7 @@ public:
         if(mode == 1)
             all = ClusterServer::getNodesManager()->getInitialPlanClusterNodes();
         else
-            all = ClusterServer::getNodesManager()->getAllClusterNodes();
+            all = ClusterServer::getNodesManager()->getAllAliveClusterNodes();
 
 
         if(!ClusterServer::getNodesManager()->ifUseStorageNode())
@@ -203,7 +203,7 @@ public:
 
         for(auto item : selectedNodes)
         {
-            ClusterServer::getNodesManager()->getAllClusterNodes()[item->getNodeLocation()]->addThreadNums(6);
+            ClusterServer::getNodesManager()->getAllAliveClusterNodes()[item->getNodeLocation()]->addThreadNums(6);
 
         }
 

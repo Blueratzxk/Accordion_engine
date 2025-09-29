@@ -13,6 +13,7 @@
 #include "../../Query/QueryStateMachine.hpp"
 #include "../Tuning/ProgressAndTuner.hpp"
 
+
 class Dynamic_scheduler
 {
     shared_ptr<SqlQueryScheduler> scheduler;
@@ -30,6 +31,12 @@ public:
         return "OK";
     }
 
+
+    string drainNode(string nodeUrl)
+    {
+        thread(SqlQueryScheduler::drainNode,this->scheduler,nodeUrl).detach();
+        return "OK";
+    }
 
     string moveFinishedTaskDataToNewNodeForStage(int stageId,int taskId)
     {
@@ -603,6 +610,12 @@ public:
     string Dynamic_moveFinishedTaskDataToNewNodeForStage(int stageId,int taskId)
     {
         this->dyScheduler->moveFinishedTaskDataToNewNodeForStage(stageId, taskId);
+        return "OK";
+    }
+
+    string Dynamic_drainNode(string nodeUrl)
+    {
+        this->dyScheduler->drainNode(nodeUrl);
         return "OK";
     }
 

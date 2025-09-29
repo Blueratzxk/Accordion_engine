@@ -62,6 +62,8 @@ private:
     shared_ptr<std::chrono::system_clock::time_point> buildComputingStartTime = NULL;
 
     string joinId;
+
+
 public:
 
 
@@ -95,33 +97,32 @@ public:
 
 
     void addInput(std::shared_ptr<DataPage> input) override {
-        if(input != NULL && !input->isEndPage()) {
+        if (input != NULL && !input->isEndPage()) {
 
-           // if(this->state == STANDBY)
-           // {
-          //      this->driverContext->reportBuildStartTime(std::chrono::system_clock::now());
-          //  }
+            if (input->isAbortPage()) {
+                this->lookupSourceFactory->abort();
+                return;
+            }
 
-          if(!input->isEmptyPage()) {
-              if (this->firstStartBuildTime == NULL)
-                  this->firstStartBuildTime = make_shared<std::chrono::system_clock::time_point>(
-                          std::chrono::system_clock::now());
-          }
+            if (!input->isEmptyPage()) {
+                if (this->firstStartBuildTime == NULL)
+                    this->firstStartBuildTime = make_shared<std::chrono::system_clock::time_point>(
+                            std::chrono::system_clock::now());
+            }
 
-         //   this->state = CONSUMING_INPUT;
+            //   this->state = CONSUMING_INPUT;
             this->inputPage = input;
+
 
             updateIndex(this->inputPage);
 
             pageCounter++;
-            this->tupleCounter+=this->inputPage->getElementsCount();
-        }
-        else
-        {
-            if(!this->finished) {
+            this->tupleCounter += this->inputPage->getElementsCount();
+        } else {
+            if (!this->finished) {
                 this->finishBuild();
                 spdlog::debug("JoinHash Build Finished!");
-                spdlog::info("HashBuilder operator processes "+ to_string(this->pageCounter) + " pages, "+ to_string(this->tupleCounter)+" tuples!");
+                spdlog::info("HashBuilder operator processes " + to_string(this->pageCounter) + " pages, " + to_string(this->tupleCounter) + " tuples!");
             }
             this->finished = true;
         }

@@ -135,6 +135,7 @@ public:
             for(auto op : operatorsNeedTransferService)
             {
                 auto ids = idmaps[op];
+                ids.erase("NotBuildCompleteYet");
                 targetOperatorIds.insert(ids.begin(),ids.end());
             }
 

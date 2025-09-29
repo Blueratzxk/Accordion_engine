@@ -33,7 +33,9 @@ class BroadcastOutputBuffer: public OutputBuffer
     atomic<int> endPageNum = 0;
 
 
+    tbb::concurrent_map<string,bool> bufferIdToEndPage;
 
+    set<string> bufferToAbort;
 
 public:
     BroadcastOutputBuffer(){
@@ -111,20 +113,37 @@ public:
 
         int bufferIdCount = this->buffers.count(bufferId);
 
+        if(this->bufferIdToEndPage.count(bufferId) == 0)
+            this->bufferIdToEndPage[bufferId] = false;
 
-        if(bufferIdCount == 0)
-        {
+
+        if(bufferIdCount == 0) {
             // cout << "Fatal ERROR! BroadCastBuffer cannot find the bufferId "<< bufferId <<" !"<< endl;
             lock.lock();
-            shared_ptr<ClientBuffer> cb = make_shared<ClientBuffer>(bufferId);
 
+            shared_ptr<ClientBuffer> cb = make_shared<ClientBuffer>(bufferId);
             this->buffers[bufferId] = cb;
-            this->buffers[bufferId]->enqueuePages(allPages);
+
+            if(!bufferIdToEndPage[bufferId])
+                this->buffers[bufferId]->enqueuePages(allPages);
+            else
+                this->buffers[bufferId]->enqueuePages({DataPage::getEndPage()});
+
             this->maxBufferId++;
+
             lock.unlock();
         }
         else
         {
+            if(bufferIdToEndPage[bufferId]) {
+                if(!bufferToAbort.contains(bufferId)) {
+                    this->buffers[bufferId]->enqueuePages({DataPage::getAbortPage()});
+                    bufferToAbort.insert(bufferId);
+                }
+                else
+                    this->buffers[bufferId]->enqueuePages({DataPage::getEndPage()});
+            }
+
             result = buffers[bufferId]->getPages(10000);
 
         }
@@ -162,6 +181,11 @@ public:
 
 
         for(auto buffer : buffers) {
+
+            if(bufferIdToEndPage.count(buffer.first) > 0 && bufferIdToEndPage[buffer.first]) {
+                continue;
+            }
+
             buffer.second->enqueuePages(pagesToEnqueue);
         }
 
@@ -193,7 +217,8 @@ public:
 
     void closeBuffer(string bufferId)
     {
-
+        if(this->bufferIdToEndPage.count(bufferId) > 0)
+            this->bufferIdToEndPage[bufferId] = true;
     }
 
     void setOutputBuffersSchema(OutputBufferSchema schema){

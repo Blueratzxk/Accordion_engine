@@ -6,7 +6,6 @@
 #define OLVP_PLANNODETREETOJSON_HPP
 
 
-
 class PlanNodeTreeToJson : public NodeVisitor {
 
 private:

@@ -500,13 +500,9 @@ public:
             {
                 auto interSplit = static_pointer_cast<InterTaskSplit>(split->getSplit()->getConnectorSplit());
 
-                string tid = interSplit->getTaskId()->ToString();
-                string ip = interSplit->getLocation()->getIp();
-                string port = interSplit->getLocation()->getPort();
-                string bid = interSplit->getLocation()->getBufferId();
 
-                if(!info.contains(tid+ip+port+bid)) {
-                    info.insert(tid + ip + port + bid);
+                if(!info.contains(interSplit->getSourceId())) {
+                    info.insert(interSplit->getSourceId());
                     result.insert(split);
                 }
             }
@@ -562,9 +558,14 @@ public:
 
                     auto typeIdMap = condition->getMigratedOperators().getOperator_Type_Id_Map();
                     set<string> targetOperatorIds;
+
+
                     for(auto item : typeIdMap)
                         if(item.first == source)
                             targetOperatorIds.insert(item.second.begin(),item.second.end());
+
+                    if(targetOperatorIds.contains("NotBuildCompleteYet"))
+                        return false;
 
                     string oldTaskId = condition->getMigratedOperators().getTaskId();
                     string ip = condition->getMigratedOperators().getIP();
