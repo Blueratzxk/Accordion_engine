@@ -374,7 +374,7 @@
 								
 								</div>-->
 							<div style="width:100%; position:relative">
-								<label class="control-label" style="width:10%;font-size:120%;vertical-align:middle;text-align: center;display: inline-block;">DOP Auto Tuner</label>
+							<label class="control-label" style="width:10%;font-size:120%;vertical-align:middle;text-align: center;display: inline-block;">DOP Auto Tuner</label>
 							
 							<textarea id="assistant"class="form-control" style="resize:none;width:70%;margin:4px 1px;display: inline-block;cursor:default;" rows="6" readonly></textarea>
 
@@ -713,6 +713,7 @@ function drawTree(jsonStr){
 	let queryId_stageDivs = {};
 	let stageId_taskDivs = {};
 	let taskId_pipelineDivs = {};
+	let taskToExt = {};
 	
 	var DOPFactor;
 	
@@ -814,6 +815,34 @@ function drawTree(jsonStr){
             }
         });
 	  
+	}
+	
+
+	function sendAdjustExtensionPipelineRequest(obj)
+	{
+		var queryId = $(obj).attr("QID");
+		var stageId = $(obj).attr("SID");
+		var pipelineId = $(obj).attr("PID");
+		var taskId = $(obj).attr("TID");
+		
+		$.ajax({
+            type:"GET",
+            url: 'http://'+serverIp+'/v1/query/addStageTaskIntraExtensionPipelineConcurrentByTaskId/'+queryId+'/GPU'+'/'+stageId+'/'+taskId+'/'+pipelineId,  
+         
+            success: function(data) {
+                    if(data == "NO" || data=="NULL")
+					{
+					   document.getElementById(stageId+"_response").value="REJECT";
+					   document.getElementById(stageId+"_response").style.color="#FF0000";  
+					}
+					else if(data == "YES" ||data == "OK" )
+					{
+					   document.getElementById(stageId+"_response").value="ACCEPT";
+					   document.getElementById(stageId+"_response").style.color="#008000";
+					}
+            }
+        });
+		
 	}
 	
 	function sendAdjustTaskGroupRequest(obj)
@@ -977,8 +1006,16 @@ function drawTree(jsonStr){
 		return arrays[arrays.length - 1];
 	}
 	
-	function appendTaskDiv(queryId,stageId,taskId)
+	function appendTaskDiv(queryId,stageId,taskId,taskhost,taskExtensions)
 	{
+
+var exts = new Array();
+		var extStr="";
+		for(var i = 0;i<taskExtensions.length;i++){
+			exts[i] = taskExtensions[i];
+			extStr += exts[i];
+		}
+
 		taskId = getTaskTid(taskId);
 		if(!stageId_taskDivs.hasOwnProperty(queryId+stageId))
 		{
@@ -991,7 +1028,22 @@ function drawTree(jsonStr){
 		
 			stageId_taskDivs[queryId+stageId].push(queryId+stageId+taskId+'_tid');
 			
-			var taskAppend = '<div class="divStyle" id="'+queryId+stageId+taskId+'_tid">'+'Task'+taskId+'</div>';
+			var taskAppend;
+			if(exts.length <= 0)
+				taskAppend = '<div class="divStyle" id="'+queryId+stageId+taskId+'_tid">'+'Task'+taskId+'</div>';
+			else{
+				
+				taskAppend = '<div class="divStyle" id="'+queryId+stageId+taskId+'_tid">'+'Task'+taskId+'&nbsp;&nbsp;&nbsp;Extensions:&nbsp;'+extStr+'</div>';
+				if(!taskToExt.hasOwnProperty(queryId+stageId+taskId))
+				{
+					taskToExt[queryId+stageId+taskId] = [];
+					for(var i = 0;i<taskExtensions.length;i++){
+						taskToExt[queryId+stageId+taskId].push(exts[i]);
+					}
+					
+				}
+			}			
+				
 			$('#'+queryId+stageId+'_ID_TaskAppend').append(taskAppend);
 		
 		}		
@@ -1011,11 +1063,18 @@ function drawTree(jsonStr){
 		
 		var pipelineNodesAppend = '';
 		if(scalable != 0){
+
 		pipelineNodesAppend = '<button QID='+queryId+' SID='+stageId+' TID='+taskId+' PID='+pipelineId+' onclick="sendAdjustPipelineRequest(this)" class="btnAdjust">driver:'+pipelineInfo["activePipelineDriverNumber"]+'</button>';
 		
 		pipelineSub = '<button QID='+queryId+' SID='+stageId+' TID='+taskId+' PID='+pipelineId+' onclick="sendSubPipelineRequest(this)" class="btnAdjust">close'+'</button>';
 		
 		pipelineNodesAppend+=pipelineSub;
+		
+		if(taskToExt.hasOwnProperty(queryId+stageId+getTaskTid(taskId))){
+		pipelineExt = '<button QID='+queryId+' SID='+stageId+' TID='+getTaskTid(taskId)+' PID='+pipelineId+' onclick="sendAdjustExtensionPipelineRequest(this)" class="btnAdjust">GPU'+'</button>';
+		pipelineNodesAppend += pipelineExt;
+		
+		}
 		
 		}
 		
@@ -1088,7 +1147,7 @@ function drawTree(jsonStr){
 			
 				for(var j = 0 ; j < taskInfos.length ; j++){
 				
-					appendTaskDiv(queryId,queryContext[i]["stageId"],taskInfos[j]["TaskId"])
+					appendTaskDiv(queryId,queryContext[i]["stageId"],taskInfos[j]["TaskId"],taskInfos[j]["host"],taskInfos[j]["hostExtensions"])
 					var pipeInfos = taskInfos[j]["Pipeline Descriptors"];
 						for(var k = 0 ; k < pipeInfos.length ; k++)
 						{ 

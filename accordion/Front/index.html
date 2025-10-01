@@ -68,31 +68,63 @@
 				
 				<!-- NAVBAR LEFT -->
 				<ul class="nav navbar-nav pull-left hidden-xs" id="navbar-left">
-					<li class="dropdown">
-						<a href="#" class="team-status-toggle dropdown-toggle tip-bottom" data-toggle="tooltip" title="Toggle Team View">
-							<i class="fa fa-users"></i>
-							<span class="name">Team Status</span>
-							<i class="fa fa-angle-down"></i>
-						</a>
-					</li>
-					<li class="dropdown">
+					<li class="dropdown"  data-bs-auto-close="outside">
 						<a href="#" class="dropdown-toggle" data-toggle="dropdown">
 							<i class="fa fa-cog"></i>
-							<span class="name">Skins</span>
+							<span class="name">Nodes Status</span>
 							<i class="fa fa-angle-down"></i>
 						</a>
-						<ul class="dropdown-menu skins">
-							<li class="dropdown-title">
+						<ul class="dropdown-menu skins" id="nodesInfo" style="max-width:1200px !important ;width:300% !important;">
+							<!--<li class="dropdown-title">
 								<span><i class="fa fa-leaf"></i> Theme Skins</span>
+							</li>-->
+							<!--<li>
+								<div class="node-item">
+								<span class="node-info">
+								<div class="fa fa-desktop" style="color:black;font-size:100%;"></div> 
+								<input value="Compute" class="dropdown-item" style="width:18%" readonly> &nbsp; 
+								<input value="ID: 1" class="dropdown-item" style="width:10%" readonly>&nbsp; 
+								<input value="CPU: 100%" class="dropdown-item" style="width:18%" readonly>&nbsp; 
+								<input value="Drivers: 3" class="dropdown-item" style="width:16%" readonly>&nbsp; 
+								<input value="Type: CPU" class="dropdown-item" style="width:14%" readonly>&nbsp; 
+								<button type="button">Clear</button>
+								</span>
+								
+								</div>
 							</li>
-							<li><a href="#" data-skin="default">Subtle (default)</a></li>
-							<li><a href="#" data-skin="night">Night</a></li>
-							<li><a href="#" data-skin="earth">Earth</a></li>
-							<li><a href="#" data-skin="utopia">Utopia</a></li>
-							<li><a href="#" data-skin="nature">Nature</a></li>
-							<li><a href="#" data-skin="graphite">Graphite</a></li>
+							<li>
+							<div class="node-item">
+								<span class="node-info">
+								<div class="fa fa-hdd-o"  style="color:black;font-size:120%;"></div>
+								<input value="Storage" class="dropdown-item" style="width:18%" readonly> &nbsp; 
+								<input value="ID: 2" class="dropdown-item" style="width:10%" readonly>&nbsp; 
+								<input value="CPU: 100%" class="dropdown-item" style="width:18%" readonly>&nbsp; 
+								<input value="Drivers: 3" class="dropdown-item" style="width:16%" readonly>&nbsp; 
+								<input value="Type: CPU" class="dropdown-item" style="width:14%" readonly>&nbsp; 
+								<button type="button">Clear</button>
+								</span>
+								
+							</div>
+							</li>
+							<li>
+							<div class="node-item">
+								<span class="node-info">
+								<div class="fa fa-gears"  style="color:black;font-size:100%;"></div>
+								<input value="Coordinator" class="dropdown-item" style="width:18%" readonly> &nbsp; 
+								<input value="ID: 2" class="dropdown-item" style="width:10%" readonly>&nbsp; 
+								<input value="CPU: 100%" class="dropdown-item" style="width:18%" readonly>&nbsp; 
+								<input value="Drivers: 3" class="dropdown-item" style="width:16%" readonly>&nbsp; 
+								<input value="Type: CPU" class="dropdown-item" style="width:14%" readonly>&nbsp; 
+								<button type="button">Clear</button>
+								</span>
+								
+							</div>
+							</li>-->
+							
 						 </ul>
 					</li>
+					
+					
 				</ul>
 				<!-- /NAVBAR LEFT -->
 				<!-- BEGIN TOP NAVIGATION MENU -->					
@@ -1416,10 +1448,118 @@ var serverIp = '192.168.226.129:9080'
 
 
 
-		jQuery(document).ready(function() {		
-			App.setPage("index");  //Set current page
-			App.init(); //Initialise plugins and elements
-		});
+	jQuery(document).ready(function() {		
+		App.setPage("index");  //Set current page
+		App.init(); //Initialise plugins and elements
+	});
+		
+		
+	var nodeId_NodeInfo = {};
+	  
+	function resolveNodesInfoJson(data) {
+		
+		nodesInfo = data['nodesInfo'];
+		for(var i=0 ; i< nodesInfo.length; i++){
+		
+			var nodeInfo = nodesInfo[i];
+			var nodeId = nodeInfo["Id"];
+            var nodeType = nodeInfo["Type"];
+            var cpuUsage = nodeInfo["CPUUsage"];
+			cpuUsage = cpuUsage.toString().substring(0,4)+"%";
+            var drivers = nodeInfo["Drivers"];
+			var exts = nodeInfo["Extensions"];
+		
+			if(!nodeId_NodeInfo.hasOwnProperty(nodeId))	
+			{
+				nodeId_NodeInfo[nodeId] = [];
+				var appendNodeInfo;
+				if(nodeType=="Coordinator")
+					 appendNodeInfo = '<div class="node-item"><span class="node-info"><div class="fa fa-gears"  style="color:black;font-size:100%;"></div>&nbsp;<input value="'+nodeType+'" class="dropdown-item" style="text-align: center;width:18%;color:purple;font-weight: bold;" readonly>&nbsp;&nbsp;&nbsp;<input value="ID: '+nodeId+'" class="dropdown-item" style="width:10%" readonly>&nbsp;&nbsp;<input value="CPU: '+cpuUsage+'" class="dropdown-item" style="width:18%" id="'+nodeId+'_cpuusage'+'" readonly>&nbsp;&nbsp;<input value="Drivers: '+drivers+'" class="dropdown-item" style="width:16%" id="'+nodeId+'_drivers'+'" readonly>&nbsp;&nbsp;<input value="Type: '+exts+'" class="dropdown-item" style="width:14%" readonly>&nbsp;&nbsp;<button type="button" NID="'+nodeId+'" onclick="drainNode(this)">Clear</button></span></div>';
+                                else if(nodeType=="Storage")
+                                        appendNodeInfo = '<div class="node-item"><span class="node-info"><div class="fa fa-hdd-o"  style="color:black;font-size:120%;"></div>&nbsp;<input value="'+nodeType+'" class="dropdown-item" style="text-align: center;width:18%;color:#3A9BDC;font-weight: bold;" readonly>&nbsp;&nbsp;&nbsp;<input value="ID: '+nodeId+'" class="dropdown-item" style="width:10%" readonly>&nbsp;&nbsp;<input value="CPU: '+cpuUsage+'" class="dropdown-item" style="width:18%" id="'+nodeId+'_cpuusage'+'" readonly>&nbsp;&nbsp;<input value="Drivers: '+drivers+'" class="dropdown-item" style="width:16%" id="'+nodeId+'_drivers'+'" readonly>&nbsp;&nbsp;<input value="Type: '+exts+'" class="dropdown-item" style="width:14%" readonly>&nbsp;&nbsp;<button type="button" NID="'+nodeId+'" onclick="drainNode(this)">Clear</button></span></div>';
+                                else
+                                        appendNodeInfo = '<div class="node-item"><span class="node-info"><div class="fa fa-desktop" style="color:black;font-size:100%;"></div>&nbsp;<input value="'+nodeType+'" class="dropdown-item" style="text-align: center;width:18%;color:green;font-weight: bold;" readonly>&nbsp;&nbsp;&nbsp;<input value="ID: '+nodeId+'" class="dropdown-item" style="width:10%" readonly>&nbsp;&nbsp;<input value="CPU: '+cpuUsage+'" class="dropdown-item" style="width:18%" id="'+nodeId+'_cpuusage'+'" readonly>&nbsp;&nbsp;<input value="Drivers: '+drivers+'" class="dropdown-item" style="width:16%" id="'+nodeId+'_drivers'+'" readonly>&nbsp;&nbsp;<input value="Type: '+exts+'" class="dropdown-item" style="width:14%" readonly>&nbsp;&nbsp;<button type="button" NID="'+nodeId+'" onclick="drainNode(this)">Clear</button></span></div>';
+
+					
+				$('#nodesInfo').append(appendNodeInfo);
+			}
+			else
+			{
+			   $('#'+nodeId+'_drivers').val("Drivers: "+drivers);
+			   $('#'+nodeId+'_cpuusage').val("CPU: "+cpuUsage);
+			}
+		}
+	}
+	
+	$('.dropdown-menu').on('click', function(e) {
+		e.preventDefault();   // 阻止默认行为
+		e.stopPropagation();  // 阻止事件冒泡
+	});
+    
+	
+	function getNodesInfo()
+	{
+		$.ajax({
+            // 设置ajax的参数
+            // 请求数据的url地址：接口地址
+            url: 'http://'+serverIp+'/v1/cluster/getAllNodesInfo',  
+            // 请求数据方式：get  post
+            type: 'get',    
+            // 返回的数据格式  json
+            dataType: 'json',
+            // data:发送给接口的数据
+            data:{},
+            // 请求成功之后要执行的回调函数
+            success: function (dat) {
+                //dat:服务端返回的数据
+                console.log(dat)
+        		resolveNodesInfoJson(dat);
+            },
+            // 请求失败
+            error: function (e) {
+                		
+            }
+        });
+	
+	}
+	
+	getNodesInfo();
+    setInterval(function () {
+	getNodesInfo();
+        
+    },500);
+    
+    
+    
+    function drainNode(obj)
+	{
+
+		var nodeId = $(obj).attr("NID");
+		
+		$.ajax({
+            // 设置ajax的参数
+            // 请求数据的url地址：接口地址
+            url: 'http://'+serverIp+'/v1/query/drainNode/'+nodeId,  
+            // 请求数据方式：get  post
+            type: 'get',    
+            // 返回的数据格式  json
+            dataType: 'json',
+            // data:发送给接口的数据
+            data:{},
+            // 请求成功之后要执行的回调函数
+            success: function (dat) {
+                //dat:服务端返回的数据
+                console.log(dat)
+        		resolveNodesInfoJson(dat);
+            },
+            // 请求失败
+            error: function (e) {
+                		
+            }
+        });
+	
+	}		
+		
 		
 		
 		
@@ -1693,6 +1833,24 @@ var serverIp = '192.168.226.129:9080'
 	
 } 
 
+
+.node-item {
+  display: flex;
+ justify-content: flex-start;
+  align-items: center;           
+  padding: 5px 10px;
+}
+
+.node-info {
+
+  font-size: 13px;
+  color: #333;
+}
+.dropdown-item{
+  border:none;
+  background:#f4f4f4;
+  
+}
 
 
 
