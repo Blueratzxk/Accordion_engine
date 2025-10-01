@@ -43,6 +43,9 @@ public:
         QueryServer::queryServer->Give_Me_A_Query(id);
     }
 
+    static void drainNode(string nodeId) {
+        QueryServer::queryServer->drainNodeByNodeId(nodeId);
+    }
 
     static string addStageTask(string queryId,int stageId)
     {

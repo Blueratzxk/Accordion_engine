@@ -881,6 +881,24 @@ public:
         }
     }
 
+    void drainNodeByNodeId(string nodeId)
+    {
+        shared_ptr<SqlQueryExecution> queryExecution = nullptr;
+
+        for(auto query : *this->querys)
+        {
+            if(!query.second->getState()->isFinished()) {
+                ClusterServer::nodeDraining(atoi(nodeId.c_str()));
+            }
+
+        }
+    }
+
+    string getAllNodesInfo()
+    {
+        return ClusterServer::getNodesInfo();
+    }
+
 
 };
 #endif //OLVP_QUERYMANAGER_HPP

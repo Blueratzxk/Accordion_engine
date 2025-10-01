@@ -121,6 +121,7 @@ private:
         Routes::Get(router, "/v1/query/getQueryBottleneckExtern/:queryId", Routes::bind(&StatsEndpoint::getQueryBottleneckExtern, this));
         Routes::Get(router, "/v1/query/getQueryBottleneckStagesAndAnalyzeExterns/:queryId/:factor", Routes::bind(&StatsEndpoint::getQueryBottleneckStagesAndAnalyzeExterns, this));
         Routes::Get(router, "/v1/query/autoTuneByTimeConstraint/:queryId/:timeConstraint", Routes::bind(&StatsEndpoint::autoTuneByTimeConstraint, this));
+        Routes::Get(router, "/v1/query/drainNode/:nodeId", Routes::bind(&StatsEndpoint::drainNode, this));
 
 
 
@@ -129,6 +130,8 @@ private:
 
 
         Routes::Post(router, "/v1/cluster/reportHeartbeat/:infoLength/:info", Routes::bind(&StatsEndpoint::reportHeartbeat, this));
+        Routes::Get(router, "/v1/cluster/getAllNodesInfo", Routes::bind(&StatsEndpoint::getAllNodeInfo, this));
+
 
 
         Routes::Get(router, "/v1/welcome", Routes::bind(&StatsEndpoint::getIndexHtml, this));
@@ -710,6 +713,24 @@ private:
 
     }
 
+
+    void  drainNode(const Rest::Request& request, Http::ResponseWriter response) {
+
+        string nodeId;
+
+        if (request.hasParam(":nodeId")) {
+            auto value = request.param(":nodeId");
+            nodeId = value.as<string>();
+        }
+
+        QueryInterFace api;
+        api.drainNode(nodeId);
+
+        response.headers().add<Http::Header::AccessControlAllowOrigin>("*");
+        response.send(Http::Code::Ok,"ok");
+
+    }
+
     void getQueryStagePredictionInfosExtern(const Rest::Request& request, Http::ResponseWriter response) {
 
 
@@ -773,6 +794,17 @@ private:
 
         response.headers().add<Http::Header::AccessControlAllowOrigin>("*");
         response.send(Http::Code::Ok,"ok");
+
+    }
+
+
+    void getAllNodeInfo(const Rest::Request& request, Http::ResponseWriter response) {
+
+
+        string result = ClusterServer::getNodesInfo();
+
+        response.headers().add<Http::Header::AccessControlAllowOrigin>("*");
+        response.send(Http::Code::Ok,result);
 
     }
 

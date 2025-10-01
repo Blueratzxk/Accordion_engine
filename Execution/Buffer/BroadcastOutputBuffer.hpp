@@ -105,6 +105,23 @@ public:
 
     }
 
+    vector<shared_ptr<DataPage>> abortProcess(string bufferId)
+    {
+        vector<shared_ptr<DataPage>> result;
+        if(bufferIdToEndPage[bufferId]) {
+            if(!bufferToAbort.contains(bufferId)) {
+                result = {DataPage::getAbortPage()};
+                bufferToAbort.insert(bufferId);
+                this->buffers[bufferId]->clear();
+            }
+            else
+            {
+                result = {DataPage::getEndPage()};
+            }
+        }
+
+        return result;
+    }
 
     vector<shared_ptr<DataPage>> getPages(string bufferId,long token,int pageNums) {
 
@@ -124,10 +141,8 @@ public:
             shared_ptr<ClientBuffer> cb = make_shared<ClientBuffer>(bufferId);
             this->buffers[bufferId] = cb;
 
-            if(!bufferIdToEndPage[bufferId])
-                this->buffers[bufferId]->enqueuePages(allPages);
-            else
-                this->buffers[bufferId]->enqueuePages({DataPage::getEndPage()});
+            this->buffers[bufferId]->enqueuePages(allPages);
+
 
             this->maxBufferId++;
 
@@ -135,14 +150,11 @@ public:
         }
         else
         {
-            if(bufferIdToEndPage[bufferId]) {
-                if(!bufferToAbort.contains(bufferId)) {
-                    this->buffers[bufferId]->enqueuePages({DataPage::getAbortPage()});
-                    bufferToAbort.insert(bufferId);
-                }
-                else
-                    this->buffers[bufferId]->enqueuePages({DataPage::getEndPage()});
-            }
+
+            auto abortRe = abortProcess(bufferId);
+            if(!abortRe.empty())
+                return abortRe;
+
 
             result = buffers[bufferId]->getPages(10000);
 
@@ -218,6 +230,8 @@ public:
     void closeBuffer(string bufferId)
     {
         if(this->bufferIdToEndPage.count(bufferId) > 0)
+            this->bufferIdToEndPage[bufferId] = true;
+        else
             this->bufferIdToEndPage[bufferId] = true;
     }
 

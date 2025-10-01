@@ -64,6 +64,8 @@ private:
     string joinId;
 
 
+    string testStr;
+    string testStr2;
 public:
 
 
@@ -83,6 +85,8 @@ public:
         this->joinId = joinId;
         this->operatorId = operatorId;
 
+        this->testStr = this->inputSchema->ToString();
+
     }
     State getState()
     {
@@ -92,6 +96,7 @@ public:
 
     void updateIndex(std::shared_ptr<DataPage>  page)
     {
+        this->testStr2 = page->get()->schema()->ToString();
         this->pagesIndex->addPage(page);
     }
 

@@ -99,6 +99,36 @@ public:
         spdlog::info("------------------------------------------------");
     }
 
+    string getAllNodesInfo()
+    {
+        nlohmann::json nodesInfo;
+        nodesInfo["nodesInfo"] = nlohmann::json::array();
+
+        auto allNodesInfo = getAllClusterNodes();
+
+        for(auto node : allNodesInfo) {
+            nlohmann::json nodeInfo;
+
+            nodeInfo["Id"] = node.second->getNodeId();
+            nodeInfo["Type"] = node.second->getNodeType();
+            nodeInfo["CPUUsage"] = node.second->getCurrentCpuUsage();
+            nodeInfo["Drivers"] = node.second->getThreadNums();
+
+            auto exts = node.second->getExtensions();
+            string extsStr;
+            if(!exts.empty())
+                for(auto ext:exts)
+                    extsStr.append(ext).append(" ");
+            if(!exts.empty())
+                nodeInfo["Extensions"] = extsStr;
+            else
+                nodeInfo["Extensions"] = "CPU";
+
+            nodesInfo["nodesInfo"].push_back(nodeInfo);
+        }
+        return nodesInfo.dump();
+    }
+
     bool getOutputScheduleNodesLog()
     {
         return  this->outputScheduleNodesLog;

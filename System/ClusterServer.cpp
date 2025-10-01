@@ -122,6 +122,13 @@ string ClusterServer::post_getResult_sync(string handle, string addrDest, vector
     return ClusterServer::restfulClient->POST_GetResult_Sync(handle,addrDest,data);
 }
 
+
+string ClusterServer::getNodesInfo()
+{
+    return ClusterServer::getNodesManager()->getAllNodesInfo();
+}
+
+
 shared_ptr<NodesManager> ClusterServer::nodesManager = NULL;
 int ClusterServer::heartbeatFreq = 2000;
 shared_ptr<NetInfoCollector> ClusterServer::netInfoCollector = NULL;

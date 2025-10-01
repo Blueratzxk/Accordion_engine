@@ -45,9 +45,24 @@ public:
         {
             if(this->missionType == OPERATOR_MIGRATION) {
                 if (this->scheduler->opsNeededToMigrate.contains("LookupJoinOperator")) {
-                    for (auto task: this->newTaskIds)
-                        if (!this->scheduler->sqlStageExecution->isTaskDependenciesSatisfied(task))
-                            return false;
+
+                    bool buildComplete = true;
+                    for(auto source : this->scheduler->sourceIdMap)
+                        if (source.second.contains("NotBuildCompleteYet"))
+                            buildComplete = false;
+
+                    if(!buildComplete)
+                    {
+                        for (auto task: this->originTaskIds)
+                            if (!this->scheduler->sqlStageExecution->isTaskFinished(task))
+                                return false;
+                    }
+                    else {
+                        for (auto task: this->newTaskIds)
+                            if (!this->scheduler->sqlStageExecution->isTaskDependenciesSatisfied(task))
+                                return false;
+                    }
+
                 } else if (this->scheduler->opsNeededToMigrate.contains("FinalAggregationOperator")) {
                     for (auto task: this->originTaskIds)
                         if (!this->scheduler->sqlStageExecution->isTaskFinished(task))
@@ -183,7 +198,7 @@ public:
 
         for(auto source : this->sourceIdMap)
             if (source.second.contains("NotBuildCompleteYet"))
-                needExchangeService.insert(source.first);
+                return closeOriginAndCreateNewOne(taskId);
 
 
 
@@ -244,7 +259,7 @@ public:
                 port = task->getPORT();
             }
 
-        ScheduleResult result = (static_pointer_cast<NormalStageScheduler>(stageScheduler))->addOneConcurrent();
+        ScheduleResult result = (static_pointer_cast<NormalStageScheduler>(stageScheduler))->addMulConcurrent(1);
         vector<shared_ptr<HttpRemoteTask>> newTasks = result.getNewTasks();
 
         set<string> newTaskIdStrs;
@@ -333,6 +348,9 @@ public:
         }
 
         this->stageLinkage->processScheduleResultsToAddConcurrent(newTasks);
+
+
+        this->sqlStageExecution->finishTaskByTaskId(taskId);
 
         this->sidewayMonitorPanel = make_shared<SidewayMonitorPanel>(this,this->missionType,newTaskIdStrs,originTaskIdStrs);
 
@@ -474,6 +492,8 @@ public:
 
     bool isSchedulingFinished()
     {
+        if(this->sidewayMonitorPanel == NULL)
+            return false;
         return this->sidewayMonitorPanel->isSchedulingFinished();
     }
 

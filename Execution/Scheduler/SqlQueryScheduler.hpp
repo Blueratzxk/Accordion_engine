@@ -411,22 +411,6 @@ public:
 
 
 
-    void addConcurrencyForOneStage(vector<StageExecutionAndScheduler> executions, int stageId) {
-
-        for (int i = 0; i < executions.size(); i++) {
-
-            if (executions[i].getStageExecution()->getStageId().getId() == stageId) {
-                ScheduleResult result = (static_pointer_cast<NormalStageScheduler>(executions[i].getStageScheduler()))->addOneConcurrent();
-                vector<shared_ptr<HttpRemoteTask>> newTasks = result.getNewTasks();
-                executions[i].getStageLinkage()->processScheduleResultsToAddOneLocationDynamically(newTasks);
-
-                this->setStageFirstExecutionTimePrediction(make_shared<StageExecutionAndScheduler>(executions[i].getStageExecution(),
-                                                                                                   executions[i].getStageLinkage(),executions[i].getStageScheduler()));
-            }
-
-        }
-
-    }
     void addMulConcurrencyForOneStage(vector<StageExecutionAndScheduler> executions, int stageId,int taskNums)
     {
         for (int i = 0; i < executions.size(); i++) {
@@ -533,7 +517,7 @@ public:
         if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
             return;
 
-        scheduler->addConcurrencyForOneStage(scheduler->stageExeSchedulers,stageId);
+        scheduler->addMulConcurrencyForOneStage(scheduler->stageExeSchedulers,stageId,1);
     }
 
     static void addStageMulConcurrent(shared_ptr<SqlQueryScheduler> scheduler,int stageId,int taskNum)

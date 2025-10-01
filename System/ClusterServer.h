@@ -34,6 +34,8 @@ public:
 
     static void start(shared_ptr<ParameterizedEvent> monitor);
     static shared_ptr<NodesManager> getNodesManager();
+
+    static string getNodesInfo();
     static void resolveHeartbeat(string heartbeat);
     static void sendHeartbeat();
     static void heartbeatSender();

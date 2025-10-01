@@ -64,13 +64,17 @@ public:
 
             system->lock.lock();
             bool queueEmpty = system->sidewayExchangeTaskQueue.empty();
+
             system->lock.unlock();
-            if(queueEmpty)
+            if(queueEmpty) {
                 break;
+            }
+
 
             spdlog::info("Sideway exchange schedule start!");
             system->lock.lock();
             scheduler = system->sidewayExchangeTaskQueue.front();
+
             system->sidewayExchangeTaskQueue.pop_front();
             system->lock.unlock();
 
@@ -101,6 +105,14 @@ public:
                 tid = rightId;
         }
         auto sidewayTask = make_shared<SidewayDataExchangeScheduler>(type,stageExe,stageSche,stageLink,taskIds);
+
+
+        string stroutput;
+        for(auto id : taskIds)
+            stroutput.append(to_string(id)).append(" ");
+            spdlog::info("Submit sideway task! "+ getMigrationTypeStr(stageExe) +" "+stroutput);
+
+
 
         this->lock.lock();
         this->sidewayExchangeTaskQueue.push_back(sidewayTask);
@@ -253,8 +265,8 @@ public:
             if(!ids.empty())
                 spdlog::info("Stage:"+to_string(stage.first->getStageId().getId())+" migrate tasks:"+ids + " Type:"+getMigrationTypeStr(stage.first));
 
-
-            submitSidewayExchangeTask(stage.first->getStageId().getId(),taskIds, getMigrationType(stage.first));
+            if(!taskIds.empty())
+                submitSidewayExchangeTask(stage.first->getStageId().getId(),taskIds, getMigrationType(stage.first));
 
 
         }
@@ -312,7 +324,7 @@ public:
     void processNodeDraining(string nodeUrl)
     {
         processActiveStageTaskMigration(nodeUrl);
-        processActiveStageBufferMigration(nodeUrl);
+        //processActiveStageBufferMigration(nodeUrl);
         ClusterServer::getNodesManager()->resetNodeAliveStatus(nodeUrl);
     }
 

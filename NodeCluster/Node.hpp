@@ -276,6 +276,16 @@ public:
         spdlog::info(re);
     }
 
+    string getNodeType()
+    {
+        if(this->isCoordinator)
+            return "Coordinator";
+        else if(this->hasStorage)
+            return "Storage";
+        else
+            return "Compute";
+    }
+
     bool operator<(const ClusterNode& g)const {
         if (nodeIdentifier < g.nodeIdentifier) {
             return true;

@@ -98,31 +98,22 @@ public:
     ArrowTableToDataPage(){}
 
 
-    vector<shared_ptr<DataPage>> ToPages(vector<std::shared_ptr<arrow::RecordBatch>> batches,int *tag)
-    {
+    vector<shared_ptr<DataPage>> ToPages(vector<std::shared_ptr<arrow::RecordBatch>> batches,int *tag) {
         vector<shared_ptr<DataPage>> pages;
-        for(int i = 0 ; i < batches.size() ; i++)
-        {
-            if(batches[i]->GetColumnByName("EmptyPage") != NULL && batches[i]->GetColumnByName("EmptyPage")->length() == 1 && batches[i]->num_columns() == 1)
-            {
+        for (int i = 0; i < batches.size(); i++) {
+            if (batches[i]->GetColumnByName("EmptyPage") != NULL && batches[i]->GetColumnByName("EmptyPage")->length() == 1 && batches[i]->num_columns() == 1) {
 
                 *tag = 1;
                 return pages;
-            }
-
-            if(batches[i]->GetColumnByName("EndPage") != NULL && batches[i]->GetColumnByName("EndPage")->length() == 1 && batches[i]->num_columns() == 1)
-            {
+            } else if (batches[i]->GetColumnByName("EndPage") != NULL && batches[i]->GetColumnByName("EndPage")->length() == 1 && batches[i]->num_columns() == 1) {
                 *tag = 2;
                 pages.push_back(DataPage::getEndPage());
-            }
-            else if (batches[i]->GetColumnByName("AbortPage") != NULL && batches[i]->GetColumnByName("AbortPage")->length() == 1 && batches[i]->num_columns() == 1)
-            {
+            } else if (batches[i]->GetColumnByName("AbortPage") != NULL && batches[i]->GetColumnByName("AbortPage")->length() == 1 && batches[i]->num_columns() == 1) {
                 *tag = 3;
                 pages.push_back(DataPage::getAbortPage());
-            }
-            else {
+            } else
                 pages.push_back(transformBatchToPage(batches[i]));
-            }
+
         }
         return pages;
     }

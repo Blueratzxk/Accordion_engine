@@ -47,39 +47,7 @@ public:
         return sR;
     }
 
-    ScheduleResult addOneConcurrent()
-    {
-        vector<shared_ptr<HttpRemoteTask>> newTasks;
 
-        NodeSelector aSelector;
-        vector<shared_ptr<ClusterNode>> aNode = aSelector.getNodesByMinThreadNums(1);
-        this->partitionToNode.push_back(aNode[0]);
-        shared_ptr<HttpRemoteTask> task = stageExecutor->scheduleTask(aNode[0]);
-        newTasks.push_back(task);
-        ScheduleResult sR(newTasks);
-        stageExecutor->recordTaskGroup(sR.getTaskIds());
-
-
-        return sR;
-    }
-
-    ScheduleResult addOneConcurrent(int mode)
-    {
-        int INITIAL_PLAN_NODES_MODE = 1;
-
-        vector<shared_ptr<HttpRemoteTask>> newTasks;
-
-        NodeSelector aSelector;
-        vector<shared_ptr<ClusterNode>> aNode = aSelector.getNodesByMinThreadNums(INITIAL_PLAN_NODES_MODE,1);
-        this->partitionToNode.push_back(aNode[0]);
-        shared_ptr<HttpRemoteTask> task = stageExecutor->scheduleTask(aNode[0]);
-        newTasks.push_back(task);
-        ScheduleResult sR(newTasks);
-        stageExecutor->recordTaskGroup(sR.getTaskIds());
-
-
-        return sR;
-    }
 
     ScheduleResult addMulConcurrent(int mode,int taskNums)
     {
