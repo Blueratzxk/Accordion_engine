@@ -125,7 +125,7 @@ public:
             newTasks.push_back(task);
         }
         ScheduleResult sR(newTasks);
-        stageExecutor->recordTaskGroup(sR.getTaskIds());
+       // stageExecutor->recordTaskGroup(sR.getTaskIds());
 
         return sR;
     }

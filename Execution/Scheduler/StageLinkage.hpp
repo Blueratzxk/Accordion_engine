@@ -125,8 +125,6 @@ public:
 
             if(child->getOutputBufferManagerId().compare("OutputPartitioningBufferManager") == 0 || child->getOutputBufferManagerId().compare("ShuffleStageBufferManager") == 0) {
 
-
-
                 vector<shared_ptr<OutputBufferSchema>> schema = child->addOutputBuffers(newOutputBuffers);
                 if (schema.size() > 0) {
                     this->childStages[i]->setOutputBuffers(schema[0]);

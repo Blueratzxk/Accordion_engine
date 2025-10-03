@@ -61,6 +61,12 @@ public:
                         for (auto task: this->newTaskIds)
                             if (!this->scheduler->sqlStageExecution->isTaskDependenciesSatisfied(task))
                                 return false;
+                        for (auto task: this->originTaskIds) {
+                            if (!this->scheduler->sqlStageExecution->isTaskFinished(task)) {
+                                spdlog::info(task + " is finished!");
+                                return false;
+                            }
+                        }
                     }
 
                 } else if (this->scheduler->opsNeededToMigrate.contains("FinalAggregationOperator")) {
@@ -83,19 +89,6 @@ public:
             }
 
             return true;
-        }
-
-        static void stateMonitor(SidewayDataExchangeScheduler* scheduler)
-        {
-            while(1)
-            {
-                if(scheduler->isSchedulingFinished()) {
-                    scheduler->schedulingFinished = true;
-                    spdlog::info("Sideway exchange schedule finished!");
-                    break;
-                }
-                sleep_for(std::chrono::milliseconds(500));
-            }
         }
 
     };
@@ -374,9 +367,11 @@ public:
 
         vector<shared_ptr<HttpRemoteTask>> tasks = sqlStageExecution->getAllTasks();
         shared_ptr<HttpRemoteTask> oldTaskPtr = NULL;
+        string taskIdString;
         for (auto task: tasks)
             if (task->getTaskId()->getId() == taskId) {
                 oldTaskPtr = task;
+                taskIdString = task->getTaskId()->ToString();
             }
         if(oldTaskPtr == NULL)
             return false;
@@ -394,10 +389,22 @@ public:
         ScheduleResult result = (static_pointer_cast<NormalStageScheduler>(this->stageScheduler)->addConcurrentForInterTaskMission(condition));
         vector<shared_ptr<HttpRemoteTask>> newTasks = result.getNewTasks();
 
-        for(auto task : newTasks)
+        set<string> newTaskIdStrs;
+        set<string> originTaskIdStrs;
+        originTaskIdStrs.insert(taskIdString);
+
+        for(auto task : newTasks) {
             this->monitoredTaskIds.push_back(task->getTaskId()->ToString());
+            newTaskIdStrs.insert(task->getTaskId()->ToString());
+        }
+
+        spdlog::info(taskIdString+" is finished or not: "+ to_string(this->sqlStageExecution->isTaskFinished(taskIdString)));
+
 
         this->stageLinkage->processScheduleResultsToReplaceSourceTasks(newTasks,{taskId});
+
+
+        this->sidewayMonitorPanel = make_shared<SidewayMonitorPanel>(this,this->missionType,newTaskIdStrs,originTaskIdStrs);
 
         return true;
     }

@@ -107,6 +107,8 @@ public:
         auto sidewayTask = make_shared<SidewayDataExchangeScheduler>(type,stageExe,stageSche,stageLink,taskIds);
 
 
+
+
         string stroutput;
         for(auto id : taskIds)
             stroutput.append(to_string(id)).append(" ");
@@ -233,10 +235,7 @@ public:
         auto type = getMigrationType(sqlStageExecution);
         if(type == SidewayDataExchangeScheduler::OPERATOR_MIGRATION)
             return "OPERATOR_MIGRATION";
-        else if(type == SidewayDataExchangeScheduler::OPERATOR_MIGRATION_PARTITIONED_HASH_JOIN)
-            return "OPERATOR_MIGRATION_PARTITIONED_HASH_JOIN";
-        else
-            return "UNKNOWN MIGRATION TYPE!";
+        else return "OPERATOR_MIGRATION_PARTITIONED_HASH_JOIN";
     }
 
     void processActiveStageTaskMigration(string nodeUrl)
@@ -315,8 +314,37 @@ public:
                 ids.append("closed:"+to_string(ci)).append(" ");
 
 
-            if(!ids.empty())
-                spdlog::info("Stage:"+ to_string(stage.first->getStageId().getId())+" needs Stage:"+to_string(upstreamStage->getStageId().getId())+" migrate buffer tasks:"+ids + " Type:"+getMigrationTypeStr(stage.first));
+            vector<int> bufferTasksNeededToMigrate;
+
+            if(!ids.empty()) {
+                spdlog::info("Stage:" + to_string(stage.first->getStageId().getId()) + " needs Stage:" +
+                             to_string(upstreamStage->getStageId().getId()) + " migrate buffer tasks:" + ids +
+                             " Type:" + getMigrationTypeStr(stage.first));
+
+                vector<int> AllBufferTasksNeededToMigrate;
+                for(auto id : closedIds)
+                    AllBufferTasksNeededToMigrate.push_back(id);
+                for(auto id : activeIds)
+                    AllBufferTasksNeededToMigrate.push_back(id);
+
+
+                auto newestBufferTasks = stage.first->getSourceTasks();
+
+                set<int> newestBufferTaskIds;
+                for(auto task : newestBufferTasks) {
+                    if(task->getTaskId()->getStageId().getId() == upstreamStage->getStageId().getId())
+                        newestBufferTaskIds.insert(task->getTaskId()->getId());
+                }
+
+                for(auto id : AllBufferTasksNeededToMigrate)
+                    if(newestBufferTaskIds.contains(id))
+                        bufferTasksNeededToMigrate.push_back(id);
+            }
+
+
+
+            if(!bufferTasksNeededToMigrate.empty() && !stage.first->getState()->isDone())
+                submitSidewayExchangeTask(upstreamStage->getStageId().getId(),bufferTasksNeededToMigrate, SidewayDataExchangeScheduler::BUFFER_MIGRATION);
         }
 
     }
@@ -324,7 +352,7 @@ public:
     void processNodeDraining(string nodeUrl)
     {
         processActiveStageTaskMigration(nodeUrl);
-        //processActiveStageBufferMigration(nodeUrl);
+        processActiveStageBufferMigration(nodeUrl);
         ClusterServer::getNodesManager()->resetNodeAliveStatus(nodeUrl);
     }
 

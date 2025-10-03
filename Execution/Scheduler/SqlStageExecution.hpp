@@ -1237,6 +1237,8 @@ public:
 
     void replaceExchangeLocations(string planFragmentId,vector<shared_ptr<HttpRemoteTask>> source_Tasks, vector<int> taskIds) {
 
+
+
         PlanNode *remoteSource = exchangeSources[planFragmentId];
 
         auto newTask = source_Tasks[0];
@@ -1265,9 +1267,14 @@ public:
             }
         }
 
-        if(planNodeId.get() == "NULL")
+        if(planNodeId.get() == "NULL") {
             spdlog::critical("replaceExchangeLocations: Plan node id is NULL!");
+            for (auto task: sourceTasks) {
+                auto plannodeId = task.first;
+                spdlog::info(plannodeId.get()+","+task.second->getTaskId()->ToString());
+            }
 
+        }
 
         for (auto it = sourceTasks.begin(); it != sourceTasks.end(); ) {
             PlanNodeId plid = it->first;
