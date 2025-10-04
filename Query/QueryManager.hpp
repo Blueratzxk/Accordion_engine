@@ -529,6 +529,7 @@ public:
             queryJson["queryId"] = queryId;
             queryJson["planTree"] = queryExecution->planTreeToJsonObj();
             queryJson["queryContext"] = json;
+            queryJson["extensions"] = ClusterServer::getExtensionsAvailable();
 
 
             if(queryExecution->isQueryFinished())
@@ -781,6 +782,33 @@ public:
         else
             return "NULL";
     }
+
+
+    string addHeteroTaskForStage(string queryId,string type,int stageId)
+    {
+        shared_ptr<SqlQueryExecution> queryExecution = nullptr;
+
+        if((*this->querys).find(queryId) != (*this->querys).end()) {
+            queryExecution = (*this->querys)[queryId];
+            return queryExecution->Dynamic_addHeteroTaskForStage(type,stageId);
+        }
+        else
+            return "NULL";
+    }
+
+    string addHeteroTaskForQuery(string queryId,string type)
+    {
+        shared_ptr<SqlQueryExecution> queryExecution = nullptr;
+
+        if((*this->querys).find(queryId) != (*this->querys).end()) {
+            queryExecution = (*this->querys)[queryId];
+            return queryExecution->Dynamic_addHeteroTaskForQuery(type);
+        }
+        else
+            return "NULL";
+    }
+
+
     string addStageAllTaskIntraPipelineConcurrent(string queryId,string stageId,string pipelineId)
     {
         shared_ptr<SqlQueryExecution> queryExecution = nullptr;

@@ -41,6 +41,7 @@ class NodesManager
 
     bool outputScheduleNodesLog = false;
 
+    set<string> extensionsAvailable;
 
 public:
     NodesManager();
@@ -63,6 +64,16 @@ public:
         }
 
         return allRatio;
+    }
+
+    set<string> getExtensionsAvailable()
+    {
+        set<string> result;
+        nodesLock.lock();
+        result = this->extensionsAvailable;
+        nodesLock.unlock();
+
+        return result;
     }
 
     int getNextNodeId(){
@@ -168,7 +179,31 @@ public:
         map<string,shared_ptr<ClusterNode>> all = this->allClusterNodes;
 
         for (auto it = all.begin(); it != all.end(); ) {
-            if (it->second->status() != ClusterNode::ALIVE) {
+            if (it->second->status() != ClusterNode::ALIVE){
+                all.erase(it++);
+            }
+            else if (!it->second->getExtensions().empty() && !it->second->is_Coordinator())
+            {
+                all.erase(it++);
+            }
+            else {
+                ++it;
+            }
+        }
+
+
+        nodesLock.unlock();
+        return all;
+    }
+
+
+    map<string,shared_ptr<ClusterNode>> getAllAliveHeteroNodes(string extension)
+    {
+        nodesLock.lock();
+        map<string,shared_ptr<ClusterNode>> all = this->allClusterNodes;
+
+        for (auto it = all.begin(); it != all.end(); ) {
+            if (it->second->status() != ClusterNode::ALIVE || !it->second->getExtensions().contains(extension)) {
                 all.erase(it++);
             } else {
                 ++it;

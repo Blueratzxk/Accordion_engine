@@ -31,6 +31,12 @@ public:
         return "OK";
     }
 
+    string addHeteroTaskForStage(string type,int stageId)
+    {
+        thread(SqlQueryScheduler::addHeteroTaskForStage,this->scheduler,type,stageId).detach();
+        return "OK";
+    }
+
 
     string drainNode(string nodeUrl)
     {
@@ -529,6 +535,30 @@ public:
         else
             return "NO";
     }
+
+    string Dynamic_addHeteroTaskForStage(string type,int stageId)
+    {
+        if(! this->dyMonitor->isBuildTimeTooLongForStage(stageId)) {
+            this->dyScheduler->addHeteroTaskForStage(type,stageId);
+            return "YES";
+        }
+        else
+            return "NO";
+    }
+
+    string Dynamic_addHeteroTaskForQuery(string type)
+    {
+        set<int> stages = this->scheduler->getAllScalableStageIds();
+        for(auto stage : stages) {
+            if (!this->dyMonitor->isBuildTimeTooLongForStage(stage)) {
+                this->dyScheduler->addHeteroTaskForStage(type, stage);
+            }
+        }
+        return "YES";
+    }
+
+
+
 
     string Dynamic_decreaseStageParallelism(int stageId, int degree)
     {

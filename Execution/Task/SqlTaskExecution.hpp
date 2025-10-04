@@ -71,6 +71,9 @@ class SqlTaskExecution {
     int initial_runtime_scalable_pipeline_concurrent = 3;
 
 
+    bool startWithHeteroPipeline = false;
+    string startWithExtension;
+
 public:
 
 
@@ -429,6 +432,17 @@ public:
                         std::shared_ptr<SplitRunner> splitRunner = this->remoteSourcePipelineFactory[pipelineId]->createLogicalPipelineRunner(task.second);
                         runners.push_back(splitRunner);
                     }
+                    if(this->startWithHeteroPipeline)
+                    {
+                        OperatorExtension operatorExtension;
+                        auto factory = this->remoteSourcePipelineFactory[pipelineId];
+                        shared_ptr<LogicalPipeline> CPU_logicalPipeline = factory->getLogicalPipeline();
+                        vector<std::shared_ptr<LogicalOperator>> originTemplate = CPU_logicalPipeline->getLogicalPipelines();
+                        vector<std::shared_ptr<LogicalOperator>> extendedTemplate = operatorExtension.extendPipelineTemplate(originTemplate);
+                        shared_ptr<LogicalPipeline> extendedLogicalPipeline = CPU_logicalPipeline->getExtendedLogicalPipeline(extendedTemplate);
+                        runners.push_back(factory->createLogicalPipelineRunnerWithExtendedLogicalPipeline(extendedLogicalPipeline,task.second));
+                    }
+
                 }
 
                 else if(isRemoteSinkPipeline(pipe))
@@ -454,18 +468,10 @@ public:
                     std::shared_ptr<SplitRunner> splitRunner = this->remoteSourcePipelineFactory[pipelineId]->createLogicalPipelineRunner(task.second);
                     runners.push_back(splitRunner);
                 }
-
-    //            auto id = this->remoteSourcePipelineFactory[pipelineId]->getLogicalPipeline()->getLogicalPipelines().back()->getLogicalOperatorType();
-     //           if(id == "Logical_LocalExchangeSinkOperator"){
-     //               std::shared_ptr<SplitRunner> splitRunner = this->remoteSourcePipelineFactory[pipelineId]->createLogicalPipelineRunner(task.second);
-      //              runners.push_back(splitRunner);
-      //          }
-
-
             }
         }
-
         this->taskExecutor->enqueueSplits(this->taskHandle,runners);
+
 
     }
 
@@ -622,11 +628,15 @@ public:
                     return true;
                 }
             }
-
-
-
             return false;
         }
+        else if(condition->getConditionType() == TaskExecutionCondition::HETERO_TASK_SCHEDULE)
+        {
+            this->startWithHeteroPipeline = true;
+            this->startWithExtension = condition->getExtension();
+            return false;
+        }
+
         return false;
     }
 

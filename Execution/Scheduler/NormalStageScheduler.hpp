@@ -109,6 +109,32 @@ public:
         return sR;
     }
 
+
+    ScheduleResult addHeteroTask(string extension,shared_ptr<TaskExecutionCondition> condition,int taskNums = 1)
+    {
+        vector<shared_ptr<HttpRemoteTask>> newTasks;
+
+
+        NodeSelector aSelector;
+        vector<shared_ptr<ClusterNode>> aNode = aSelector.getHeteroNodesByMinThreadNums(extension,taskNums);
+
+        if(aNode.empty())
+            return ScheduleResult({});
+
+        for(int i = 0 ; i < aNode.size() ; i++) {
+            this->partitionToNode.push_back(aNode[i]);
+        }
+        for(int i = 0 ; i < aNode.size() ; i++) {
+            shared_ptr<HttpRemoteTask> task = stageExecutor->scheduleTask(aNode[i],condition);
+            newTasks.push_back(task);
+        }
+        ScheduleResult sR(newTasks);
+        stageExecutor->recordTaskGroup(sR.getTaskIds());
+
+        return sR;
+    }
+
+
     ScheduleResult cloneTask(int taskId,shared_ptr<TaskExecutionCondition> condition)
     {
         vector<shared_ptr<HttpRemoteTask>> newTasks;
@@ -125,7 +151,6 @@ public:
             newTasks.push_back(task);
         }
         ScheduleResult sR(newTasks);
-       // stageExecutor->recordTaskGroup(sR.getTaskIds());
 
         return sR;
     }

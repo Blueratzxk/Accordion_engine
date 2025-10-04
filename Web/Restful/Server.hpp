@@ -107,7 +107,8 @@ private:
         Routes::Get(router, "/v1/query/subStageAllTaskPipelineConcurrentExtern/:queryId/:stageId/:pipelineId", Routes::bind(&StatsEndpoint::subStageAllTaskPipelineConcurrentExtern, this));
         Routes::Get(router, "/v1/query/addStageTaskIntraExtensionPipelineConcurrentByTaskId/:queryId/:extensionType/:stageId/:taskId/:pipelineId", Routes::bind(&StatsEndpoint::addStageTaskIntraExtensionPipelineConcurrentByTaskId, this));
         Routes::Get(router, "/v1/query/moveFinishedTaskDataToNewNodeForStage/:queryId/:stageId/:taskId", Routes::bind(&StatsEndpoint::moveFinishedTaskDataToNewNodeForStage, this));
-
+        Routes::Get(router, "/v1/query/addHeteroTaskForStage/:queryId/:stageId/:nodeType", Routes::bind(&StatsEndpoint::addHeteroTaskForStageExtern, this));
+        Routes::Get(router, "/v1/query/addHeteroTaskForQuery/:queryId/:nodeType", Routes::bind(&StatsEndpoint::addHeteroTaskForQueryExtern, this));
 
 
 
@@ -446,6 +447,69 @@ private:
         response.send(Http::Code::Ok,taskResponse);
 
     }
+
+    void addHeteroTaskForStageExtern(const Rest::Request& request, Http::ResponseWriter response) {
+
+
+        string queryId;
+        string stageId;
+        string nodeType;
+
+        if (request.hasParam(":queryId")) {
+            auto value = request.param(":queryId");
+            queryId = value.as<string>();
+        }
+        if (request.hasParam(":stageId")) {
+            auto value = request.param(":stageId");
+            stageId = value.as<string>();
+        }
+
+        if (request.hasParam(":nodeType")) {
+            auto value = request.param(":nodeType");
+            nodeType = value.as<string>();
+        }
+
+
+        QueryInterFace api;
+        string taskResponse = api.addHeteroTaskForStage(queryId,nodeType,atoi(stageId.c_str()));
+        nlohmann::json responseString;
+
+        string resultString;
+
+
+        response.headers().add<Http::Header::AccessControlAllowOrigin>("*");
+        response.send(Http::Code::Ok,taskResponse);
+
+    }
+    void addHeteroTaskForQueryExtern(const Rest::Request& request, Http::ResponseWriter response) {
+
+
+        string queryId;
+        string nodeType;
+
+        if (request.hasParam(":queryId")) {
+            auto value = request.param(":queryId");
+            queryId = value.as<string>();
+        }
+        if (request.hasParam(":nodeType")) {
+            auto value = request.param(":nodeType");
+            nodeType = value.as<string>();
+        }
+
+
+        QueryInterFace api;
+        string taskResponse = api.addHeteroTaskForQuery(queryId,nodeType);
+        nlohmann::json responseString;
+
+        string resultString;
+
+
+        response.headers().add<Http::Header::AccessControlAllowOrigin>("*");
+        response.send(Http::Code::Ok,taskResponse);
+
+    }
+
+
 
     void decreaseStageParallelismExtern(const Rest::Request& request, Http::ResponseWriter response) {
 

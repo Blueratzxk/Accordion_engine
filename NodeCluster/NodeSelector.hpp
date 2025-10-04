@@ -256,6 +256,52 @@ public:
     }
 
 
+    vector<shared_ptr<ClusterNode>> getHeteroNodesByMinThreadNums(string extension,int num)
+    {
+
+        map<string,shared_ptr<ClusterNode>> all = ClusterServer::getNodesManager()->getAllAliveHeteroNodes(extension);
+
+        if(!ClusterServer::getNodesManager()->ifUseStorageNode())
+        {
+            all = filterStorageNodes(all);
+        }
+
+        vector<shared_ptr<ClusterNode>> selectedNodes;
+
+        vector<pair<shared_ptr<ClusterNode>,int>> vec;
+        for(auto n : all)
+        {
+            vec.push_back(make_pair(n.second,n.second->getThreadNums()));
+        }
+        sort(vec.begin(),vec.end(),cmp);
+
+        for(int i = 0 ; i < num ; i++)
+        {
+            shared_ptr<ClusterNode> selected = findMinThreadNumNode(vec);
+            if(selected->is_Coordinator() && all.size() > 1)
+                num++;
+            else
+                selectedNodes.push_back(selected);
+        }
+
+        for(auto item : selectedNodes)
+        {
+            ClusterServer::getNodesManager()->getAllAliveHeteroNodes(extension)[item->getNodeLocation()]->addThreadNums(6);
+
+        }
+
+        if(ClusterServer::getNodesManager()->getOutputScheduleNodesLog())
+        {
+            for(auto node : selectedNodes)
+            {
+                spdlog::info(node->getNodeLocation()+" is scheduled as GPU compuation node!");
+            }
+        }
+
+        return selectedNodes;
+
+    }
+
 
 };
 

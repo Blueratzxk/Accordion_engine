@@ -51,6 +51,18 @@ public:
     {
         return QueryServer::queryServer->addStageConcurrent(queryId,stageId);
     }
+
+    static string addHeteroTaskForStage(string queryId,string type,int stageId)
+    {
+        return QueryServer::queryServer->addHeteroTaskForStage(queryId,type,stageId);
+    }
+
+    static string addHeteroTaskForQuery(string queryId,string type)
+    {
+        return QueryServer::queryServer->addHeteroTaskForQuery(queryId,type);
+    }
+
+
     static string addStageTaskPipeline(string queryId,string stageId,string pipelineId)
     {
         return QueryServer::queryServer->addStageAllTaskIntraPipelineConcurrent(queryId,stageId,pipelineId);

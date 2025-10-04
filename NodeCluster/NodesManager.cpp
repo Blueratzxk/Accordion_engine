@@ -101,6 +101,13 @@ void NodesManager::initialNodes() {
         this->allClusterNodes[heartbeat.getNodeHttpURL()]->updateNetTransRate(heartbeat.getNet_transRate());
         this->allClusterNodes[heartbeat.getNodeHttpURL()]->updateExtensions(heartbeat.getExtensions());
 
+
+        for(auto ext : heartbeat.getExtensions())
+        {
+            if(!this->extensionsAvailable.contains(ext))
+                this->extensionsAvailable.insert(ext);
+        }
+
         if(heartbeat.isNeedClean()) {
             this->allClusterNodes[heartbeat.getNodeHttpURL()]->drainNode();
             eventStr = heartbeat.getNodeHttpURL();

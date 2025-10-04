@@ -155,6 +155,7 @@ public:
   enum ConditionType {
         OPERATOR_MIGRATION,
         BUFFER_MIGRATION,
+        HETERO_TASK_SCHEDULE,
         NO_CONDITION
     };
 
@@ -164,16 +165,19 @@ private:
     MigratedBufferAddress migratedBufferAddress;
     MigratedOperators migratedOperators;
 
+    string extension;
+
 public:
 
     TaskExecutionCondition(){
         this->conditionType = NO_CONDITION;
     }
 
-    TaskExecutionCondition(ConditionType conditionType,MigratedBufferAddress migratedBufferAddress,MigratedOperators migratedOperators){
+    TaskExecutionCondition(ConditionType conditionType,MigratedBufferAddress migratedBufferAddress,MigratedOperators migratedOperators,string extension){
         this->migratedBufferAddress = migratedBufferAddress;
         this->migratedOperators = migratedOperators;
         this->conditionType = conditionType;
+        this->extension = extension;
 
     }
 
@@ -189,12 +193,18 @@ public:
         this->conditionType = conditionType;
     }
 
+    TaskExecutionCondition(ConditionType conditionType,string extension){
+        this->conditionType = conditionType;
+        this->extension = extension;
+    }
 
     MigratedBufferAddress getMigratedBufferAddress(){return migratedBufferAddress;}
 
     MigratedOperators getMigratedOperators(){return migratedOperators;}
 
     ConditionType getConditionType(){return this->conditionType;}
+
+    string getExtension(){return this->extension;}
 
     static string Serialize(shared_ptr<TaskExecutionCondition> taskExecutionCondition)
     {
@@ -203,7 +213,7 @@ public:
         json["conditionType"] = taskExecutionCondition->conditionType;
         json["migratedBufferAddress"] = MigratedBufferAddress::Serialize(taskExecutionCondition->migratedBufferAddress);
         json["migratedOperators"] = MigratedOperators::Serialize(taskExecutionCondition->migratedOperators);
-
+        json["extension"] = taskExecutionCondition->extension;
         string result = json.dump();
 
         return result;
@@ -218,7 +228,7 @@ public:
         MigratedBufferAddress migratedBufferAddress = MigratedBufferAddress::Deserialize(json["migratedBufferAddress"]);
         MigratedOperators migratedOperators = MigratedOperators::Deserialize(json["migratedOperators"]);
 
-        return make_shared<TaskExecutionCondition>(json["conditionType"],migratedBufferAddress,migratedOperators);
+        return make_shared<TaskExecutionCondition>(json["conditionType"],migratedBufferAddress,migratedOperators,json["extension"]);
     }
 
 

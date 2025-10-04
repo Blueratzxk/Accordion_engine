@@ -97,6 +97,16 @@ public:
         return this->executionTime;
     }
 
+    set<int> getAllScalableStageIds()
+    {
+        set<int> ids;
+        for(auto exe : this->stageExeSchedulers) {
+            if(exe.getStageExecution()->isStageScalable() && !exe.getStageExecution()->getState()->isDone())
+                ids.insert(exe.getStageExecution()->getStageId().getId());
+        }
+        return ids;
+    }
+
     vector<StageExecutionAndScheduler> getStageExeSchedulers()
     {
         return this->stageExeSchedulers;
@@ -509,7 +519,28 @@ public:
         }
     }
 
+    void addGPUTaskForStage(int stageId) {
+        auto executions = this->stageExeSchedulers;
 
+        for (int i = 0; i < executions.size(); i++) {
+
+            if (executions[i].getStageExecution()->getStageId().getId() == stageId) {
+
+                if (executions[i].getStageExecution()->isStageScalable()) {
+
+                    shared_ptr<TaskExecutionCondition> condition = make_shared<TaskExecutionCondition>(TaskExecutionCondition::HETERO_TASK_SCHEDULE,"GPU");
+
+                    auto result = (static_pointer_cast<NormalStageScheduler>(executions[i].getStageScheduler()))->addHeteroTask("GPU",condition);
+                    if(result.getNewTasks().empty()) {
+                        spdlog::info("No GPU node found!");
+                       // return;
+                    }
+                    executions[i].getStageLinkage()->processScheduleResultsToAddConcurrent(result.getNewTasks());
+                }
+            }
+
+        }
+    }
 
 
     static void addStageConcurrent(shared_ptr<SqlQueryScheduler> scheduler,int stageId)
@@ -855,6 +886,23 @@ public:
             return;
         scheduler->sidewayExchangeSystem->processNodeDraining(nodeUrl);
 
+    }
+
+    static void addHeteroTaskForStage(shared_ptr<SqlQueryScheduler> scheduler,string nodeType,int stageId)
+    {
+        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
+            return;
+
+        if(nodeType != "GPU") {
+            spdlog::warn("Unsupported heterogeneous type "+nodeType+"!");
+            return;
+        }
+        auto executions = scheduler->stageExeSchedulers;
+
+        for (int i = 0; i < executions.size(); i++) {
+            if (executions[i].getStageExecution()->getStageId().getId() == stageId)
+               scheduler->addGPUTaskForStage(stageId);
+        }
     }
 
     static void schedule(shared_ptr<SqlQueryScheduler> scheduler) {

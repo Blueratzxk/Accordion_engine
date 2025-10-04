@@ -51,6 +51,11 @@ public:
 
     static void cleanTheNode();
 
+    static set<string> getExtensionsAvailable()
+    {
+        return ClusterServer::nodesManager->getExtensionsAvailable();
+    }
+
     static void openClusterInfoDisplay()
     {
         ClusterServer::showInfos = true;
