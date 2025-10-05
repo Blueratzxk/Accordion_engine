@@ -37,6 +37,12 @@ public:
         return "OK";
     }
 
+    string closeHeteroTaskForStage(string type,int stageId)
+    {
+        thread(SqlQueryScheduler::closeHeteroTaskForStage,this->scheduler,type,stageId).detach();
+        return "OK";
+    }
+
 
     string drainNode(string nodeUrl)
     {
@@ -546,6 +552,14 @@ public:
             return "NO";
     }
 
+
+    string Dynamic_closeHeteroTaskForStage(string type,int stageId) {
+
+        this->dyScheduler->closeHeteroTaskForStage(type, stageId);
+        return "YES";
+
+    }
+
     string Dynamic_addHeteroTaskForQuery(string type)
     {
         set<int> stages = this->scheduler->getAllScalableStageIds();
@@ -554,6 +568,14 @@ public:
                 this->dyScheduler->addHeteroTaskForStage(type, stage);
             }
         }
+        return "YES";
+    }
+
+    string Dynamic_closeHeteroTaskForQuery(string type)
+    {
+        set<int> stages = this->scheduler->getAllScalableStageIds();
+        for(auto stage : stages)
+            this->dyScheduler->closeHeteroTaskForStage(type, stage);
         return "YES";
     }
 

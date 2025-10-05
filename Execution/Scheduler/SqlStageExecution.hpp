@@ -734,8 +734,19 @@ public:
         }
         tasksLock.unlock();
         return minT;
-
     }
+
+    set<int> getTaskIdsWithExtension(string extension)
+    {
+        set<int> ids;
+        auto all = this->getAllTasks();
+        for(auto task : all)
+            if(task->getExtensions().contains(extension) && !task->isDone())
+                ids.insert(task->getTaskId()->getId());
+
+        return ids;
+    }
+
     void finishATaskBySourceStageTasks()
     {
         TaskId minId = this->getMinTaskId();

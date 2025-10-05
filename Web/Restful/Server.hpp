@@ -110,6 +110,8 @@ private:
         Routes::Get(router, "/v1/query/addHeteroTaskForStage/:queryId/:stageId/:nodeType", Routes::bind(&StatsEndpoint::addHeteroTaskForStageExtern, this));
         Routes::Get(router, "/v1/query/addHeteroTaskForQuery/:queryId/:nodeType", Routes::bind(&StatsEndpoint::addHeteroTaskForQueryExtern, this));
 
+        Routes::Get(router, "/v1/query/closeHeteroTaskForStage/:queryId/:stageId/:nodeType", Routes::bind(&StatsEndpoint::closeHeteroTaskForStageExtern, this));
+        Routes::Get(router, "/v1/query/closeHeteroTaskForQuery/:queryId/:nodeType", Routes::bind(&StatsEndpoint::closeHeteroTaskForQueryExtern, this));
 
 
 
@@ -450,7 +452,6 @@ private:
 
     void addHeteroTaskForStageExtern(const Rest::Request& request, Http::ResponseWriter response) {
 
-
         string queryId;
         string stageId;
         string nodeType;
@@ -499,6 +500,67 @@ private:
 
         QueryInterFace api;
         string taskResponse = api.addHeteroTaskForQuery(queryId,nodeType);
+        nlohmann::json responseString;
+
+        string resultString;
+
+
+        response.headers().add<Http::Header::AccessControlAllowOrigin>("*");
+        response.send(Http::Code::Ok,taskResponse);
+
+    }
+
+
+    void closeHeteroTaskForStageExtern(const Rest::Request& request, Http::ResponseWriter response) {
+
+        string queryId;
+        string stageId;
+        string nodeType;
+
+        if (request.hasParam(":queryId")) {
+            auto value = request.param(":queryId");
+            queryId = value.as<string>();
+        }
+        if (request.hasParam(":stageId")) {
+            auto value = request.param(":stageId");
+            stageId = value.as<string>();
+        }
+
+        if (request.hasParam(":nodeType")) {
+            auto value = request.param(":nodeType");
+            nodeType = value.as<string>();
+        }
+
+
+        QueryInterFace api;
+        string taskResponse = api.closeHeteroTaskForStage(queryId,nodeType,atoi(stageId.c_str()));
+        nlohmann::json responseString;
+
+        string resultString;
+
+
+        response.headers().add<Http::Header::AccessControlAllowOrigin>("*");
+        response.send(Http::Code::Ok,taskResponse);
+
+    }
+    void closeHeteroTaskForQueryExtern(const Rest::Request& request, Http::ResponseWriter response) {
+
+
+        string queryId;
+        string nodeType;
+
+        if (request.hasParam(":queryId")) {
+            auto value = request.param(":queryId");
+            queryId = value.as<string>();
+        }
+        if (request.hasParam(":nodeType")) {
+            auto value = request.param(":nodeType");
+            nodeType = value.as<string>();
+        }
+
+
+        QueryInterFace api;
+        string taskResponse = api.closeHeteroTaskForQuery(queryId,nodeType);
         nlohmann::json responseString;
 
         string resultString;

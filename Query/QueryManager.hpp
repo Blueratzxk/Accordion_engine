@@ -796,6 +796,18 @@ public:
             return "NULL";
     }
 
+    string closeHeteroTaskForStage(string queryId,string type,int stageId)
+    {
+        shared_ptr<SqlQueryExecution> queryExecution = nullptr;
+
+        if((*this->querys).find(queryId) != (*this->querys).end()) {
+            queryExecution = (*this->querys)[queryId];
+            return queryExecution->Dynamic_closeHeteroTaskForStage(type,stageId);
+        }
+        else
+            return "NULL";
+    }
+
     string addHeteroTaskForQuery(string queryId,string type)
     {
         shared_ptr<SqlQueryExecution> queryExecution = nullptr;
@@ -803,6 +815,18 @@ public:
         if((*this->querys).find(queryId) != (*this->querys).end()) {
             queryExecution = (*this->querys)[queryId];
             return queryExecution->Dynamic_addHeteroTaskForQuery(type);
+        }
+        else
+            return "NULL";
+    }
+
+    string closeHeteroTaskForQuery(string queryId,string type)
+    {
+        shared_ptr<SqlQueryExecution> queryExecution = nullptr;
+
+        if((*this->querys).find(queryId) != (*this->querys).end()) {
+            queryExecution = (*this->querys)[queryId];
+            return queryExecution->Dynamic_closeHeteroTaskForQuery(type);
         }
         else
             return "NULL";

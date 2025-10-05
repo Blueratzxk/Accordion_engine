@@ -62,6 +62,16 @@ public:
         return QueryServer::queryServer->addHeteroTaskForQuery(queryId,type);
     }
 
+    static string closeHeteroTaskForStage(string queryId,string type,int stageId)
+    {
+        return QueryServer::queryServer->closeHeteroTaskForStage(queryId,type,stageId);
+    }
+
+    static string closeHeteroTaskForQuery(string queryId,string type)
+    {
+        return QueryServer::queryServer->closeHeteroTaskForQuery(queryId,type);
+    }
+
 
     static string addStageTaskPipeline(string queryId,string stageId,string pipelineId)
     {

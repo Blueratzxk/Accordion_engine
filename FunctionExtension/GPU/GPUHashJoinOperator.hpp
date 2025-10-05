@@ -50,6 +50,9 @@ class GPUHashJoinOperator :public Operator {
 
     string buildTableToken;
 
+    bool aborted = false;
+
+
 public:
 
 
@@ -158,8 +161,8 @@ public:
             return NULL;
         }
 
-        if(!tryFetchLookupSourceProvider())
-            return NULL;
+        //if(!tryFetchLookupSourceProvider())
+        //    return NULL;
 
 
        // if(!this->lookupSourceProvider->isLookupSourceExist()) {
@@ -190,6 +193,13 @@ public:
 
     }
 
+    void waitingBuildSideAndCheckAborted()
+    {
+        tryFetchLookupSourceProvider();
+        if(this->lookupSourceFactory->isAborted())
+            this->aborted = true;
+    }
+
 
     std::shared_ptr<DataPage> getOutput() override {
 
@@ -201,7 +211,7 @@ public:
             return DataPage::getEndPage();
         }
 
-
+        waitingBuildSideAndCheckAborted();
 
         if(this->inputPage != NULL) {
 
@@ -229,6 +239,12 @@ public:
     bool isFinished() {
         return this->finished;
     }
+
+    bool isAborted() override
+    {
+        return this->aborted;
+    }
+
 
     int isExtension() override
     {

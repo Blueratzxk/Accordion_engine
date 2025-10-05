@@ -543,6 +543,26 @@ public:
     }
 
 
+    void closeGPUTaskForStage(int stageId) {
+        auto executions = this->stageExeSchedulers;
+
+        set<int> taskIdsWithExtension;
+        shared_ptr<SqlStageExecution> stageExecution = NULL;
+        for (int i = 0; i < executions.size(); i++) {
+            if (executions[i].getStageExecution()->getStageId().getId() == stageId) {
+                if (executions[i].getStageExecution()->isStageScalable()) {
+                    taskIdsWithExtension = executions[i].getStageExecution()->getTaskIdsWithExtension("GPU");
+                    stageExecution = executions[i].getStageExecution();
+                }
+            }
+        }
+
+        if(stageExecution != NULL && !taskIdsWithExtension.empty())
+        for(auto id : taskIdsWithExtension)
+            stageExecution->finishTaskByTaskId(id);
+    }
+
+
     static void addStageConcurrent(shared_ptr<SqlQueryScheduler> scheduler,int stageId)
     {
         if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
@@ -903,6 +923,19 @@ public:
             if (executions[i].getStageExecution()->getStageId().getId() == stageId)
                scheduler->addGPUTaskForStage(stageId);
         }
+    }
+
+    static void closeHeteroTaskForStage(shared_ptr<SqlQueryScheduler> scheduler,string nodeType,int stageId)
+    {
+        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
+            return;
+
+        if(nodeType != "GPU") {
+            spdlog::warn("Unsupported heterogeneous type "+nodeType+"!");
+            return;
+        }
+        auto executions = scheduler->stageExeSchedulers;
+        scheduler->closeGPUTaskForStage(stageId);
     }
 
     static void schedule(shared_ptr<SqlQueryScheduler> scheduler) {

@@ -389,7 +389,7 @@
 
 							</div>
 							 
-                                <button onclick="foldall()">Fold All</button>
+                                <div id="foldbar"><button onclick="foldall()">Fold All</button> <!--&nbsp&nbsp&nbsp <button class="btnAdjust" onclick="foldall()">GPU</button>--></div>
 								
 								<div class="tabbable header-tabs" >
 								
@@ -947,7 +947,25 @@ function drawTree(jsonStr){
 		return true;
 	}
 	
-	function appendStageDiv(queryId,stageId,stageData)
+	
+	
+	var extensionStageButtons = {};
+	function appendExtensionToStage(queryId,stageId,extensions)
+	{
+	
+		var appendStr = '';
+		for(var i = 0;i < extensions.length;i++){
+			 if(!extensionStageButtons.hasOwnProperty(queryId+stageId))
+			 {
+				appendStr += '&nbsp&nbsp<button class="btnExtensions" style="font-size:90%" QID="'+queryId+'" SID="'+stageId+'" ext="'+extensions[i]+'" onclick="addStageHeteroTask(this)">'+extensions[i]+'</button>&nbsp<button class="btnExtensions"  style="font-size:90%" QID="'+queryId+'" SID="'+stageId+'" ext="'+extensions[i]+'" onclick="closeStageHeteroTask(this)">Cancel '+extensions[i]+'</button>';
+					
+				extensionStageButtons[queryId+stageId] = true;
+			 }
+		}
+		return appendStr;
+	}
+	
+	function appendStageDiv(queryId,stageId,stageData,extensions)
 	{
 		appendQueryReturnIfExist(queryId);
 		
@@ -964,7 +982,14 @@ function drawTree(jsonStr){
 		if(partitionStyle != "UNSUPPORT"){
 		
 		    if(partitionStyle.indexOf("HASH") == -1 && partitionStyle.indexOf("SHUFFLE") == -1){
-		        stageAppendContent = '&nbsp;&nbsp;&nbsp;&nbsp;<div style="color:black;font-size:120%;" class="fa fa-rocket"></div>&nbsp;<span style="color:black;font-size:120%">Throughputs:<\span>&nbsp;&nbsp;<input id='+stageId+'_'+'throughput'+' style="width:80px;background-color:#ECECEC" value=" ">&nbsp;tuples/ms&nbsp;&nbsp;&nbsp;&nbsp;<div style="color:black;font-size:110%;" class="fa fa-clock-o"></div>&nbsp;<span style="color:black;">Time Left:<\span>&nbsp;&nbsp;<input id='+stageId+'_'+'remaintime'+' style="width:80px;background-color:#ECECEC" value=" "><div id="'+queryId+stageId+'_ID_TaskAppend'+'" style="margin-top:10px;display:none;">Response:<input id='+stageId+'_'+'response'+' value="" style="width:10%;border:0px; background-color: #ECECEC;" readonly unselectable="on">&nbsp;&nbsp;&nbsp;&nbsp;No. of tasks:<input style="width:3%;border:0px; background-color: transparent;" id="'+stageId+'_tasknumber" value="'+taskCount+'"><\span>&nbsp;&nbsp;<button QID='+queryId+' SID='+stageId+' onclick="sendAdjustTaskRequest(this)" class="btnAdjust">Add Task</button>  DOP:<input RID='+queryId+'_'+stageId+'_'+'radix'+'           style="border:none;width:5%;" value="1">   </input><button QID='+queryId+' SID='+stageId+' onclick="sendDecreaseTaskRequest(this)" class="btnAdjust" >Close A Task</button></div>';
+			
+				var extensionStr = '';
+				extensionStr = appendExtensionToStage(queryId,stageId,extensions);
+			
+		        stageAppendContent = '&nbsp;&nbsp;&nbsp;&nbsp;<div style="color:black;font-size:120%;" class="fa fa-rocket"></div>&nbsp;<span style="color:black;font-size:120%">Throughputs:<\span>&nbsp;&nbsp;<input id='+stageId+'_'+'throughput'+' style="width:80px;background-color:#ECECEC" value=" ">&nbsp;tuples/ms&nbsp;&nbsp;&nbsp;&nbsp;<div style="color:black;font-size:110%;" class="fa fa-clock-o"></div>&nbsp;<span style="color:black;">Time Left:<\span>&nbsp;&nbsp;<input id='+stageId+'_'+'remaintime'+' style="width:80px;background-color:#ECECEC" value=" "><div id="'+queryId+stageId+'_ID_TaskAppend'+'" style="margin-top:10px;display:none;">Response:<input id='+stageId+'_'+'response'+' value="" style="width:10%;border:0px; background-color: #ECECEC;" readonly unselectable="on">&nbsp;&nbsp;&nbsp;&nbsp;No. of tasks:<input style="width:3%;border:0px; background-color: transparent;" id="'+stageId+'_tasknumber" value="'+taskCount+'"><\span>&nbsp;&nbsp;<button QID='+queryId+' SID='+stageId+' onclick="sendAdjustTaskRequest(this)" class="btnAdjust">Add Task</button>  DOP:<input RID='+queryId+'_'+stageId+'_'+'radix'+' style="border:none;width:5%;" value="1">   </input><button QID='+queryId+' SID='+stageId+' onclick="sendDecreaseTaskRequest(this)" class="btnAdjust" >Close A Task</button>'+extensionStr+'</div>';
+				
+				
+				
 			}
 			else
 			{
@@ -1009,7 +1034,7 @@ function drawTree(jsonStr){
 	function appendTaskDiv(queryId,stageId,taskId,taskhost,taskExtensions)
 	{
 
-var exts = new Array();
+		var exts = new Array();
 		var extStr="";
 		for(var i = 0;i<taskExtensions.length;i++){
 			exts[i] = taskExtensions[i];
@@ -1045,7 +1070,9 @@ var exts = new Array();
 			}			
 				
 			$('#'+queryId+stageId+'_ID_TaskAppend').append(taskAppend);
+			
 		
+			
 		}		
 	}
 	
@@ -1064,17 +1091,21 @@ var exts = new Array();
 		var pipelineNodesAppend = '';
 		if(scalable != 0){
 
-		pipelineNodesAppend = '<button QID='+queryId+' SID='+stageId+' TID='+taskId+' PID='+pipelineId+' onclick="sendAdjustPipelineRequest(this)" class="btnAdjust">driver:'+pipelineInfo["activePipelineDriverNumber"]+'</button>';
+			pipelineNodesAppend = '<button QID='+queryId+' SID='+stageId+' TID='+taskId+' PID='+pipelineId+' onclick="sendAdjustPipelineRequest(this)" class="btnAdjust">driver:'+	pipelineInfo["activePipelineDriverNumber"]+'</button>';
+			pipelineSub = '<button QID='+queryId+' SID='+stageId+' TID='+taskId+' PID='+pipelineId+' onclick="sendSubPipelineRequest(this)" class="btnAdjust">close'+'</button>';
+			pipelineNodesAppend+=pipelineSub;
+			
 		
-		pipelineSub = '<button QID='+queryId+' SID='+stageId+' TID='+taskId+' PID='+pipelineId+' onclick="sendSubPipelineRequest(this)" class="btnAdjust">close'+'</button>';
-		
-		pipelineNodesAppend+=pipelineSub;
-		
-		if(taskToExt.hasOwnProperty(queryId+stageId+getTaskTid(taskId))){
-		pipelineExt = '<button QID='+queryId+' SID='+stageId+' TID='+getTaskTid(taskId)+' PID='+pipelineId+' onclick="sendAdjustExtensionPipelineRequest(this)" class="btnAdjust">GPU'+'</button>';
-		pipelineNodesAppend += pipelineExt;
-		
-		}
+				if(taskToExt.hasOwnProperty(queryId+stageId+getTaskTid(taskId))){
+				
+					var exts = taskToExt[queryId+stageId+getTaskTid(taskId)];
+					
+					for(var i = 0 ; i < exts.length ; i++){
+					pipelineExt = '&nbsp<button QID='+queryId+' SID='+stageId+' TID='+getTaskTid(taskId)+' PID='+pipelineId+' onclick="sendAdjustExtensionPipelineRequest(this)" class="btnExtensions" style="font-size:90%">'+exts[i]+''+'</button>';
+					pipelineNodesAppend += pipelineExt;
+					}
+				}
+			
 		
 		}
 		
@@ -1115,7 +1146,21 @@ var exts = new Array();
 	}
 	
 	
-	
+	var extensionButtons = {};
+	function appendExtensionToFoldBar(queryId,extensions)
+	{
+		for(var i = 0;i < extensions.length;i++){
+			 if(!extensionButtons.hasOwnProperty(extensions[i]))
+			 {
+				var appendStr = '&nbsp&nbsp&nbsp <button class="btnExtensions" QID="'+queryId+'" ext="'+extensions[i]+'" onclick="addHeteroTask(this)">'+extensions[i]+'</button>&nbsp&nbsp <button class="btnExtensions" QID="'+queryId+'" ext="'+extensions[i]+'" onclick="closeHeteroTask(this)">Cancel '+extensions[i]+'</button>';
+				$('#'+'foldbar').append(appendStr);
+					
+					
+				extensionButtons[extensions[i]] = true;
+			 }
+		}
+		
+	}
 	
 	
 	
@@ -1124,7 +1169,7 @@ var exts = new Array();
 		originQueryId = data["queryId"];
 		planTree = data["planTree"];
 		queryContext = data["queryContext"];
-		
+		extensions = data["extensions"];
 		drawTree(JSON.stringify(planTree));
 
 		for(var i=0 ; i< queryContext.length; i++){
@@ -1137,7 +1182,7 @@ var exts = new Array();
 			   maxStageId = stageIdInt;
 			}
 			
-			appendStageDiv(queryId,queryContext[i]["stageId"],queryContext[i]);
+			appendStageDiv(queryId,queryContext[i]["stageId"],queryContext[i],extensions);
 			
 			
 		   
@@ -1156,13 +1201,9 @@ var exts = new Array();
 						}								
 								
 				}
-				
-				
-	       
-
      	}
 		
-		
+		appendExtensionToFoldBar(originQueryId,extensions);
 		
 	
 		if("exeTime" in data && "actualTime" in data && "originTime" in data)
@@ -1346,6 +1387,79 @@ var exts = new Array();
 	  getThroughputs();
 	
 		  },500);	  
+		  
+		  
+	function addHeteroTask(obj)
+	{    
+		var queryId = $(obj).attr("QID");
+		var ext = $(obj).attr("ext");
+		
+		console.log('http://'+serverIp+'/v1/query/addHeteroTaskForQuery/'+queryId+'/'+ext)
+		
+		$.ajax({
+            type:"GET",
+            url: 'http://'+serverIp+'/v1/query/addHeteroTaskForQuery/'+queryId+'/'+ext,  
+         
+            success: function(data) {
+                
+            }
+        });
+		
+	}
+	
+	function closeHeteroTask(obj)
+	{    
+		var queryId = $(obj).attr("QID");
+		var ext = $(obj).attr("ext");
+		
+		console.log('http://'+serverIp+'/v1/query/closeHeteroTaskForQuery/'+queryId+'/'+ext)
+		
+		$.ajax({
+            type:"GET",
+            url: 'http://'+serverIp+'/v1/query/closeHeteroTaskForQuery/'+queryId+'/'+ext,  
+         
+            success: function(data) {
+                
+            }
+        });
+		
+	}
+	
+	function addStageHeteroTask(obj)
+	{    
+		var queryId = $(obj).attr("QID");
+		var stageId = $(obj).attr("SID");
+		var ext = $(obj).attr("ext");
+		
+		console.log('http://'+serverIp+'/v1/query/addHeteroTaskForStage/'+queryId+'/'+stageId+'/'+ext)
+		$.ajax({
+            type:"GET",
+            url: 'http://'+serverIp+'/v1/query/addHeteroTaskForStage/'+queryId+'/'+stageId+'/'+ext,  
+         
+            success: function(data) {
+                
+            }
+        });
+		
+	}
+	
+	function closeStageHeteroTask(obj)
+	{    
+		var queryId = $(obj).attr("QID");
+		var stageId = $(obj).attr("SID");
+		var ext = $(obj).attr("ext");
+		
+		console.log('http://'+serverIp+'/v1/query/closeHeteroTaskForStage/'+queryId+'/'+stageId+'/'+ext)
+		$.ajax({
+            type:"GET",
+            url: 'http://'+serverIp+'/v1/query/closeHeteroTaskForStage/'+queryId+'/'+stageId+'/'+ext,  
+         
+            success: function(data) {
+                
+            }
+        });
+		
+	}
 	</script>
 	<!-- /JAVASCRIPTS -->
 <style>
@@ -1433,6 +1547,14 @@ margin: 3px 1px;
             stroke: #ccc;
             stroke-width: 1.5px;
         }
+		
+		
+		.btnExtensions{
+			background-color: #4682B4;
+			color: white;
+			text-align: center;
+			border-radius: 9px;
+		}
 
 </style>
 
