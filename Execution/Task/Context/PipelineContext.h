@@ -103,6 +103,7 @@ public:
 
     int getTaskGeneration();
     void savePagesForInterTaskMission(string componentId,vector<shared_ptr<DataPage>> pages);
+    string getTaskId();
 
 };
 

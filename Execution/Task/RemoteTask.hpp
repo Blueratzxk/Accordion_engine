@@ -47,6 +47,8 @@ class HttpRemoteTask
 
     shared_ptr<TaskExecutionCondition> condition;
 
+    bool migratedBufferTask = false;
+
 
 public:
     HttpRemoteTask(shared_ptr<Event> eventListener,shared_ptr<TaskId> taskId,shared_ptr<PlanFragment> fragment,string nodeLocation,
@@ -66,6 +68,15 @@ public:
 
     }
 
+    void setMigratedBufferTask()
+    {
+        this->migratedBufferTask = true;
+    }
+
+    bool isMigratedBufferTask()
+    {
+        return this->migratedBufferTask;
+    }
 
     shared_ptr<TaskId> getTaskId()
     {

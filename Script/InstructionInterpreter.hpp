@@ -57,6 +57,8 @@ class InstructionInterpreter
 
         funcMap.insert(make_pair("START_AUTO_TUNE", &InstructionInterpreter::START_AUTO_TUNE));
 
+        funcMap.insert(make_pair("MOVE_TASK", &InstructionInterpreter::MOVE_TASK));
+
 
     }
     bool RUNTIME_CONFIG(Instruction instruction)
@@ -305,6 +307,52 @@ class InstructionInterpreter
         }
     }
 
+
+    bool MOVE_TASK(Instruction instruction)
+    {
+        vector<string> parameters = instruction.getParameters();
+        if(parameters.size() !=4)
+        {
+            spdlog::error("MOVE_TASK Instruction need four parameters. Like \"MOVE_TASK STAGE,3,TASK,1;\"");
+            return false;
+        }
+        bool result = true;
+
+
+        if(parameters[0]!="STAGE" || parameters[2] != "TASK")
+            result = false;
+        if(!isNum(parameters[1]) || isNum(parameters[1]) && atoi(parameters[1].c_str()) < 0)
+            result = false;
+
+        string taskStr = parameters[3];
+        vector<string> taskIds;
+        StringUtils::Stringsplit(taskStr,',',taskIds);
+        for(auto id: taskIds)
+            if(!isNum(id) || isNum(id) && atoi(id.c_str()) < 0)
+                result = false;
+
+
+        if(!result)
+        {
+            string info;
+            info+=instruction.getInstruction()+" ";
+            for(auto i : instruction.getParameters())
+            {
+                info+=i;
+                info+=",";
+            }
+            info.pop_back();
+
+            spdlog::error("["+info+"] Instruction or parameters ERROR!");
+            return false;
+        }
+        else
+        {
+            spdlog::debug("Move task for stage "+parameters[1]+" with taskId "+parameters[3]+".");
+            return true;
+        }
+
+    }
 
     bool PREDICT_TIME(Instruction instruction)
     {

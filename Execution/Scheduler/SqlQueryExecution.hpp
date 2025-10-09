@@ -498,6 +498,10 @@ public:
         return this->scheduler->getRootStageExecutionTime();
     }
 
+    nlohmann::json getSidewayInfoJsons()
+    {
+        return this->scheduler->getSidewayScheduleInfoJsons();
+    }
     string getQueryThroughputsSnapShot()
     {
 
@@ -508,6 +512,12 @@ public:
     {
 
         return this->scheduler->getQueryStagesThroughputsInfo(this->scheduler);
+    }
+
+    bool submitTaskMigrationMission(int stageId,vector<int> taskIds)
+    {
+        this->scheduler->submitTaskMigrationMission(this->scheduler,stageId,taskIds);
+        return true;
     }
 
     bool isStageisTuningKnob(int stageId)

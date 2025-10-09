@@ -49,10 +49,10 @@ public:
         funcMap.insert(make_pair("ECHO", &InstructionExecutor::ECHO_INFO));
         funcMap.insert(make_pair("PREDICT_TIME", &InstructionExecutor::PREDICT_TIME));
 
-
-
         funcMap.insert(make_pair("START_AND_COLLECT", &InstructionExecutor::START_AND_COLLECT));
         funcMap.insert(make_pair("START_AUTO_TUNE", &InstructionExecutor::START_AUTO_TUNE));
+
+        funcMap.insert(make_pair("MOVE_TASK", &InstructionExecutor::MOVE_TASK));
 
     }
 
@@ -85,6 +85,30 @@ public:
         }
         return true;
 
+    }
+
+
+    bool MOVE_TASK(Instruction instruction,ScriptExecutionContext &context)
+    {
+
+        string queryId;
+        if(!context.getQueryId(queryId)) return false;
+
+        vector<string> parameters = instruction.getParameters();
+
+        string stageId = parameters[1];
+
+        string taskStr = parameters[3];
+        vector<string> taskIds;
+        StringUtils::Stringsplit(taskStr,',',taskIds);
+
+        vector<int> ids;
+        for(auto id : taskIds)
+            ids.push_back(atoi(id.c_str()));
+
+        this->queryManager->submitTaskMigrationMission(queryId, atoi(stageId.c_str()),ids);
+
+        return true;
     }
 
 
@@ -155,6 +179,9 @@ public:
         }
         info["buildRecords"] = buildRecords;
 
+        nlohmann::json sidewayRecords;
+        this->queryManager->getQuerySidewayScheduleInfos(queryId,sidewayRecords);
+        info["sidewayRecords"] = sidewayRecords;
 
         if(this->recordProcessingtime)
         {

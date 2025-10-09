@@ -24,6 +24,8 @@ class RPCClient : public std::enable_shared_from_this<RPCClient>
 
     shared_ptr<DriverContext> driverContext = NULL;
 
+    set<int> locationTaskIds;
+
 public:
     RPCClient(){
         this->buffer = make_shared<DataPageRPCBuffer>();
@@ -61,10 +63,11 @@ public:
             client = make_shared<ArrowRPCClient>(this->driverContext,remote->getLocation()->getIp(),remote->getLocation()->getPort());
             bufferIds = remote->getLocation()->getBufferId();
             client->setBufferTarget(taskId,bufferIds,"0");
-
-
-
             this->allClients[taskId] = client;
+
+
+            TaskId tid;
+            this->locationTaskIds.insert(tid.StringToObject(taskId)->getId());;
 
         }
         lock.unlock();
@@ -89,6 +92,21 @@ public:
         }
         lock.unlock();
 
+    }
+
+    int getLocationNums(){
+
+        int locationNums = 0;
+        lock.lock();
+        locationNums = this->taskIdToLocationMap.size();
+        lock.unlock();
+
+        return locationNums;
+    }
+
+    set<int> getLocaitonTaskIds()
+    {
+        return this->locationTaskIds;
     }
 
 
@@ -300,10 +318,6 @@ public:
         if(endPageCompensationNum > 0)
             for(int i = 0 ; i < endPageCompensationNum ; i++)
                 buffer->enqueuePages({DataPage::getEndPage()});
-
-
-
-
     }
 
 

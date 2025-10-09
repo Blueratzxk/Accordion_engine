@@ -106,7 +106,7 @@ public:
         }
         auto sidewayTask = make_shared<SidewayDataExchangeScheduler>(type,stageExe,stageSche,stageLink,taskIds);
 
-
+        sidewayTask->setStartTime();
 
 
         string stroutput;
@@ -118,10 +118,26 @@ public:
 
         this->lock.lock();
         this->sidewayExchangeTaskQueue.push_back(sidewayTask);
+
         this->lock.unlock();
 
         if(!this->sidewayExecutorActivated)
             this->releaseExecutor();
+    }
+
+    nlohmann::json getSchedulingTimes()
+    {
+
+        nlohmann::json times;
+        for(auto schedule: this->finishedSidewayExchangeTasks)
+        {
+            nlohmann::json time;
+            time["sidewayType"] = schedule->getMigrationType();
+            time["start"] = schedule->getStartSchedulingTime();
+            time["finish"] = schedule->getFinishedSchedulingTime();
+            times.push_back(time);
+        }
+        return times;
     }
 
 
@@ -270,6 +286,12 @@ public:
 
         }
 
+    }
+
+    void submitTaskMigrationMission(int stageId,vector<int> taskIds)
+    {
+        auto stageExe = this->getStageExecution(stageId);
+        submitSidewayExchangeTask(stageId,taskIds, getMigrationType(stageExe));
     }
 
     void processActiveStageBufferMigration(string nodeUrl)

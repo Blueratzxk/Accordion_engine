@@ -17,7 +17,7 @@
 //Instructions => Instruction;Instuctions | Instruction;
 //Instruction => Identifier Parameters
 //Parameters => Parameter,Parameters | Parameter
-//Parameter => Identifer | number
+//Parameter => Identifer | number | {Parameters}
 
 class SimpleParser:public ScriptParser
 {
@@ -30,6 +30,31 @@ public:
 
     bool parseParameter(string &paraValue)
     {
+        if(this->lexer->peekcurrent().getValue() == "{")
+        {
+            vector<string> subParas;
+            this->lexer->ConsumeToken();
+            bool re = parseParameters(subParas);
+            if(!re) {
+                spdlog::error("Sub-parameter error!");
+                return false;
+            }
+            auto tail = this->lexer->ConsumeToken();
+            if(tail.getValue() != "}") {
+                spdlog::error("Sub-parameter invalid! Need '}'!");
+                return false;
+            }
+            string reValue;
+            for(auto para: subParas) {
+                reValue.append(para);
+                reValue.append(",");
+            }
+            if(!reValue.empty())
+                reValue.pop_back();
+            paraValue = reValue;
+            return true;
+        }
+
         SimpleToken token = this->lexer->ConsumeToken();
         if (!token.isIdentifier() && !token.isNumber())
         {

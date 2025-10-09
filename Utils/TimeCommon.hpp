@@ -47,6 +47,16 @@ public:
         return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     }
 
+    static string getTimeStamp(std::shared_ptr<std::chrono::system_clock::time_point> tp_ptr)
+    {
+        if (!tp_ptr) return "";
+
+        auto duration = tp_ptr->time_since_epoch();
+        auto mseconds = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+
+        return std::to_string(mseconds);
+    }
+
 
 
 };

@@ -203,6 +203,10 @@ void PipelineContext::savePagesForInterTaskMission(string componentId, vector<sh
 
 int PipelineContext::getTaskGeneration() {
     return this->taskContext.lock()->getTaskGeneration();
+}
+
+string PipelineContext::getTaskId() {
+    return this->taskContext.lock()->getTaskId()->ToString();
 };
 
 #endif //OLVP_PIPELINECONTEXT_CPP

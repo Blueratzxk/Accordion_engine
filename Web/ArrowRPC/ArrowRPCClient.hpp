@@ -61,6 +61,7 @@ public:
         this->exchangeType = SIDEWAY;
     }
 
+
     arrow::Status connect()
     {
         if(this->client != NULL)
@@ -251,6 +252,9 @@ public:
             if(this->exchangeType == SIDEWAY)
                 spdlog::debug("SIDEWAY! Get end page!");
 
+
+            if(this->driverContext != NULL)
+                spdlog::info("$$$"+this->driverContext->getTaskId() +" get end page from "+this->clientBufferIp+" taskId:"+this->taskId+" bufferId:"+this->bufferId+"\n");
             spdlog::debug("Get end page from "+this->taskId+"_"+this->bufferId+"\n");
         }
 

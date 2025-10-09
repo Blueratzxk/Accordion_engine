@@ -104,6 +104,8 @@ public:
     void savePagesForInterTaskMission(string componentId,vector<shared_ptr<DataPage>> pages);
 
     int getTaskGeneration();
+
+    string getTaskId();
 };
 
 #endif //OLVP_DRIVERCONTEXT_H

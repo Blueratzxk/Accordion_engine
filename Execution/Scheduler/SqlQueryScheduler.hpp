@@ -394,12 +394,15 @@ public:
 
     }
 
+
+
     string getRootStageExecutionTime()
     {
         string info = this->rootStage->getStageInfo();
         nlohmann::json j = nlohmann::json::parse(info);
         return j["taskInfos"][0]["RunningTime"];
     }
+
 
     void cleanEmptyResult()
     {
@@ -419,7 +422,10 @@ public:
         return this->resultSet;
     }
 
-
+    nlohmann::json getSidewayScheduleInfoJsons()
+    {
+        return this->sidewayExchangeSystem->getSchedulingTimes();
+    }
 
     void addMulConcurrencyForOneStage(vector<StageExecutionAndScheduler> executions, int stageId,int taskNums)
     {
@@ -876,6 +882,15 @@ public:
         }
 
         return false;
+    }
+
+    static bool submitTaskMigrationMission(shared_ptr<SqlQueryScheduler> scheduler,int stageId,vector<int> taskIds)
+    {
+        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
+            return false;
+
+        scheduler->sidewayExchangeSystem->submitTaskMigrationMission(stageId,taskIds);
+        return true;
     }
 
     static void moveFinishedTaskDataToNewNodeForStage(shared_ptr<SqlQueryScheduler> scheduler,int stageId,int taskId)

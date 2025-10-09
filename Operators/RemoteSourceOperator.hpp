@@ -98,8 +98,8 @@ public:
 
         set<shared_ptr<Split>> regSplits;
 
-        if(this->concurrentCount < Splits.size())
-            this->concurrentCount = Splits.size();
+        //if(this->concurrentCount < Splits.size())
+          //  this->concurrentCount = Splits.size();
         for(auto split : Splits)
         {
             if(split->getConnectorSplit()->getId() == "RemoteSplit") {
@@ -114,6 +114,13 @@ public:
         }
         //  startScheduleAllClient();
         //  this->client.scheduleAllClientOneRound(this->pagesOneRound);
+
+        this->concurrentCount = this->client->getLocationNums();
+
+        string debugoutput;
+        for(int id: this->client->getLocaitonTaskIds())
+            debugoutput.append(to_string(id)+" ");
+        spdlog::info(this->driverContexts->getTaskId()+" need to get data from "+ to_string(this->concurrentCount) + " Sources."+"["+debugoutput+"]");
 
 
         this->driverContexts->regRemoteSplit(regSplits);

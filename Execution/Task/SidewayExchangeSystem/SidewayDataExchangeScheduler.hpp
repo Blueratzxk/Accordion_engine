@@ -32,6 +32,7 @@ public:
 
         SidewayDataExchangeScheduler *scheduler;
 
+        bool originTasksFinishSignalSended = false;
     public:
         SidewayMonitorPanel(SidewayDataExchangeScheduler *scheduler,MissionType missionType,set<string> newTaskIds,set<string> originTaskIds){
 
@@ -53,6 +54,12 @@ public:
 
                     if(!buildComplete)
                     {
+                        if(!this->originTasksFinishSignalSended)
+                            for (auto task: this->originTaskIds) {
+                                TaskId id;
+                                this->scheduler->sqlStageExecution->finishTaskByTaskId(id.StringToObject(task)->getId());
+                            }
+
                         for (auto task: this->originTaskIds)
                             if (!this->scheduler->sqlStageExecution->isTaskFinished(task))
                                 return false;
@@ -61,6 +68,13 @@ public:
                         for (auto task: this->newTaskIds)
                             if (!this->scheduler->sqlStageExecution->isTaskDependenciesSatisfied(task))
                                 return false;
+
+                        if(!this->originTasksFinishSignalSended)
+                            for (auto task: this->originTaskIds) {
+                                TaskId id;
+                                this->scheduler->sqlStageExecution->finishTaskByTaskId(id.StringToObject(task)->getId());
+                            }
+
                         for (auto task: this->originTaskIds) {
                             if (!this->scheduler->sqlStageExecution->isTaskFinished(task)) {
                                 spdlog::info(task + " is finished!");
@@ -70,6 +84,13 @@ public:
                     }
 
                 } else if (this->scheduler->opsNeededToMigrate.contains("FinalAggregationOperator")) {
+
+                    if(!this->originTasksFinishSignalSended)
+                        for (auto task: this->originTaskIds) {
+                            TaskId id;
+                            this->scheduler->sqlStageExecution->finishTaskByTaskId(id.StringToObject(task)->getId());
+                        }
+
                     for (auto task: this->originTaskIds)
                         if (!this->scheduler->sqlStageExecution->isTaskFinished(task))
                             return false;
@@ -83,10 +104,18 @@ public:
             }
             else if(this->missionType == CLOSE_AND_CREATE)
             {
+                if(!this->originTasksFinishSignalSended)
+                    for (auto task: this->originTaskIds) {
+                        TaskId id;
+                        this->scheduler->sqlStageExecution->finishTaskByTaskId(id.StringToObject(task)->getId());
+                    }
+
                 for (auto task: this->originTaskIds)
                     if (!this->scheduler->sqlStageExecution->isTaskFinished(task))
                         return false;
             }
+
+            this->scheduler->setFinishTime();
 
             return true;
         }
@@ -126,6 +155,9 @@ private:
 
     int targetTaskNumber = 0;
 
+
+    shared_ptr<std::chrono::system_clock::time_point> startSchedulingTime = NULL;
+    shared_ptr<std::chrono::system_clock::time_point> finishedSchedulingTime = NULL;
 public:
 
     SidewayDataExchangeScheduler(MissionType type,shared_ptr<SqlStageExecution> sqlStageExecution,shared_ptr<StageScheduler> stageScheduler,shared_ptr<StageLinkage> stageLinkage,vector<int> taskIds)
@@ -135,6 +167,42 @@ public:
         this->stageScheduler = stageScheduler;
         this->stageLinkage = stageLinkage;
         this->taskIds = taskIds;
+    }
+
+    void setStartTime()
+    {
+        if(this->startSchedulingTime == NULL)
+            this->startSchedulingTime = make_shared<std::chrono::system_clock::time_point>(std::chrono::system_clock::now());
+    }
+    void setFinishTime()
+    {
+        if(this->finishedSchedulingTime == NULL)
+            this->finishedSchedulingTime = make_shared<std::chrono::system_clock::time_point>(std::chrono::system_clock::now());
+    }
+
+    string getMigrationType(){
+
+        if(this->missionType == OPERATOR_MIGRATION)
+            return "OPERATOR_MIGRATION";
+        else if(this->missionType == BUFFER_MIGRATION)
+            return "BUFFER_MIGRATION";
+        else if(this->missionType == OPERATOR_MIGRATION_PARTITIONED_HASH_JOIN)
+            return "OPERATOR_MIGRATION_PARTITIONED_HASH_JOIN";
+        else if(this->missionType == CLOSE_AND_CREATE)
+            return "CLOSE_AND_CREATE";
+        else
+            return "Unknown Migration Type!";
+
+    }
+
+
+    string getStartSchedulingTime (){
+
+        return TimeCommon::getTimeStamp(this->startSchedulingTime);
+    }
+    string getFinishedSchedulingTime (){
+
+        return TimeCommon::getTimeStamp(this->finishedSchedulingTime);
     }
 
     void setManyToManyMode(int targetTaskNumber)
@@ -230,7 +298,7 @@ public:
 
         this->stageLinkage->processScheduleResultsToAddConcurrent(newTasks);
 
-        this->sqlStageExecution->finishTaskByTaskId(taskId);
+        //this->sqlStageExecution->finishTaskByTaskId(taskId);
 
         this->sidewayMonitorPanel = make_shared<SidewayMonitorPanel>(this,this->missionType,newTaskIdStrs,originTaskIdStrs);
 
@@ -388,6 +456,9 @@ public:
 
         ScheduleResult result = (static_pointer_cast<NormalStageScheduler>(this->stageScheduler)->addConcurrentForInterTaskMission(condition));
         vector<shared_ptr<HttpRemoteTask>> newTasks = result.getNewTasks();
+
+        for(auto task : newTasks)
+            task->setMigratedBufferTask();
 
         set<string> newTaskIdStrs;
         set<string> originTaskIdStrs;

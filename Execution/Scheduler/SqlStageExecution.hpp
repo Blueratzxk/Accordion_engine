@@ -1199,11 +1199,16 @@ public:
     }
 
 
-    shared_ptr<TaskSource> sourceTasksTo_taskSources(TaskId ownTaskId)
+    shared_ptr<TaskSource> sourceTasksTo_taskSources(TaskId ownTaskId, bool filterMigratedBufferTasks = false)
     {
         shared_ptr<TaskSource> task_Sources = NULL;
         map<string,vector<shared_ptr<HttpRemoteTask>>> splits;
         for (auto sourceTask : this->sourceTasks) {
+
+            if(filterMigratedBufferTasks)
+                if(sourceTask.second->isMigratedBufferTask())
+                    continue;
+
             PlanNodeId id = sourceTask.first;
             splits[id.get()].push_back(sourceTask.second);
         }
@@ -1230,6 +1235,12 @@ public:
         return taskSource;
 
     }
+
+    void filterMigratedBufferTasks()
+    {
+
+    }
+
     void addExchangeLocations(string planFragmentId,vector<shared_ptr<HttpRemoteTask>> source_Tasks) {
 
 
@@ -1240,7 +1251,7 @@ public:
         }
 
         for (auto ownTask : getAllTasks()) {
-            shared_ptr<TaskSource> task_Sources = this->sourceTasksTo_taskSources(*ownTask->getTaskId());
+            shared_ptr<TaskSource> task_Sources = this->sourceTasksTo_taskSources(*ownTask->getTaskId(),true);
             ownTask->addSplits(task_Sources);
         }
     }
@@ -1300,6 +1311,7 @@ public:
         {
             this->sourceTasks.emplace(PlanNodeId(planNodeId.get()),newTask);
         }
+
 
     }
 

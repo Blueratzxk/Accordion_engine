@@ -488,7 +488,7 @@ public:
         bool success = true;
         string linkString = location+path;
         string result = client->POST_GetResult(location,linkString,{this->taskId->ToString()});
-        if(result == "NULL")
+        if(result == "NULL" || result == "Couldn't connect to server")
             return false;
         requestCounter++;
         bufferInfoRequestCounter++;

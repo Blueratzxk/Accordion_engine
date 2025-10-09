@@ -170,4 +170,8 @@ int DriverContext::getTaskGeneration() {
     return this->pipelineContext.lock()->getTaskGeneration();
 }
 
+string DriverContext::getTaskId() {
+    return this->pipelineContext.lock()->getTaskId();
+}
+
 #endif //OLVP_DRIVERCONTEXT_CPP

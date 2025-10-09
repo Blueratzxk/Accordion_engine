@@ -686,6 +686,34 @@ public:
         else
             return false;
     }
+
+    bool getQuerySidewayScheduleInfos(string queryId,nlohmann::json &scheduleInfos)
+    {
+        shared_ptr<SqlQueryExecution> queryExecution = nullptr;
+
+        if((*this->querys).find(queryId) != (*this->querys).end()) {
+            queryExecution = (*this->querys)[queryId];
+            scheduleInfos = queryExecution->getSidewayInfoJsons();
+            return true;
+        }
+        else
+            return false;
+    }
+
+    bool submitTaskMigrationMission(string queryId,int stageId,vector<int> taskIds)
+    {
+        shared_ptr<SqlQueryExecution> queryExecution = nullptr;
+
+        if((*this->querys).find(queryId) != (*this->querys).end()) {
+            queryExecution = (*this->querys)[queryId];
+            return queryExecution->submitTaskMigrationMission(stageId,taskIds);
+        }
+        else
+            return false;
+
+    }
+
+
     bool isStageOfQueryExist(string queryId,int stageId)
     {
         shared_ptr<SqlQueryExecution> queryExecution = nullptr;
