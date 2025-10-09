@@ -242,14 +242,14 @@ public:
 
         map<string,int> tBuffers = this->bufferSchema->getBuffers();
 
-        for(auto buffer : tBuffers)
+        /*for(auto buffer : tBuffers)
         {
             if(this->buffers.count(buffer.first) == 0)
             {
                 shared_ptr<ClientBuffer> cb = make_shared<ClientBuffer>(buffer.first);
                 this->buffers[buffer.first] = cb;
             }
-        }
+        }*/
 
     }
 };
