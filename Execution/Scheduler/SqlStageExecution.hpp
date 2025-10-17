@@ -324,6 +324,12 @@ public:
                 totalThroughput += task->getTaskInfoFetcher()->getThroughput();
                 totalRemainingTuples += task->getTaskInfoFetcher()->getRemainingTuples();
             }
+            else if(!task->isGetFinalTaskInfo())
+            {
+                totalThroughput += task->getTaskInfoFetcher()->getThroughput();
+                totalRemainingTuples += task->getTaskInfoFetcher()->getRemainingTuples();
+                task->setGetFinalTaskInfo();
+            }
         }
 
         nlohmann::json info;
@@ -332,6 +338,7 @@ public:
 
         return info.dump();
     }
+
 
     string getStageInfo()
     {
@@ -1236,10 +1243,6 @@ public:
 
     }
 
-    void filterMigratedBufferTasks()
-    {
-
-    }
 
     void addExchangeLocations(string planFragmentId,vector<shared_ptr<HttpRemoteTask>> source_Tasks) {
 
@@ -1315,6 +1318,17 @@ public:
 
     }
 
+    void abandonTasks(set<int> taskIds)
+    {
+        tasksLock.lock();
+
+        for(auto nodeTask: this->tasks) {
+            for(auto task : nodeTask.second)
+                if(taskIds.contains(task->getTaskId()->getId()))
+                    task->abandonTask();
+        }
+        tasksLock.unlock();
+    }
     vector<shared_ptr<HttpRemoteTask>> getAllTasks()
     {
         tasksLock.lock();
@@ -1347,7 +1361,8 @@ public:
         vector<shared_ptr<HttpRemoteTask>> allTasks = getAllTasks();
         for(int i = 0 ; i < allTasks.size() ; i++)
         {
-            allTasks[i]->setOutputBuffers(this->outputBufferSchema);
+            if(!allTasks[i]->isAbandonedTask())
+                allTasks[i]->setOutputBuffers(this->outputBufferSchema);
         }
         this->outputBufferSeted = true;
 
@@ -1388,15 +1403,32 @@ public:
         return states;
     }
 
+    shared_ptr<HttpRemoteTask> findMaxGenerationTask(int taskId)
+    {
+        shared_ptr<HttpRemoteTask> result;
+        int maxGen = -100;
+
+        vector<shared_ptr<HttpRemoteTask>> tasks = this->getAllTasks();
+
+        for(auto task : tasks)
+            if(task->getTaskId()->getId() == taskId) {
+                if(task->getTaskId()->getStageExecutionId().getId() > maxGen)
+                {
+                    maxGen = task->getTaskId()->getStageExecutionId().getId();
+                    result = task;
+                }
+            }
+
+        return result;
+    }
 
     shared_ptr<InterTaskDataHandle> taskMigrationPreparation(int taskId,set<string> operatorTypes)
     {
 
         shared_ptr<HttpRemoteTask> target = NULL;
-        vector<shared_ptr<HttpRemoteTask>> tasks = this->getAllTasks();
-        for(auto task : tasks)
-            if(task->getTaskId()->getId() == taskId)
-                target = task;
+        target = findMaxGenerationTask(taskId);
+
+
         if(target == NULL)
             return make_shared<InterTaskDataHandle>(false,"Task is not exist in task map!");
 

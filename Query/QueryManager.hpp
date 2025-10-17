@@ -714,6 +714,19 @@ public:
     }
 
 
+    bool submitBufferMigrationMission(string queryId,int stageId,vector<int> taskIds,int targetTaskNums)
+    {
+        shared_ptr<SqlQueryExecution> queryExecution = nullptr;
+
+        if((*this->querys).find(queryId) != (*this->querys).end()) {
+            queryExecution = (*this->querys)[queryId];
+            return queryExecution->submitBufferMigrationMission(stageId,taskIds,targetTaskNums);
+        }
+        else
+            return false;
+    }
+
+
     bool isStageOfQueryExist(string queryId,int stageId)
     {
         shared_ptr<SqlQueryExecution> queryExecution = nullptr;
@@ -874,14 +887,23 @@ public:
 
     string addStageTaskIntraExtensionPipelineConcurrentByTaskId(string queryId,string extensionType,string stageId,string taskId,string pipelineId)
     {
-
         shared_ptr<SqlQueryExecution> queryExecution = nullptr;
         if((*this->querys).find(queryId) != (*this->querys).end()) {
             queryExecution = (*this->querys)[queryId];
 
-
-
             return queryExecution->Dynamic_addStageTaskIntraExtensionPipelineConcurrentByTaskId(extensionType,stageId,atoi(taskId.c_str()),pipelineId);
+        }
+        else
+            return "NULL";
+    }
+
+    string closeStageTaskIntraExtensionPipelineConcurrentByTaskId(string queryId,string extensionType,string stageId,string taskId,string pipelineId)
+    {
+        shared_ptr<SqlQueryExecution> queryExecution = nullptr;
+        if((*this->querys).find(queryId) != (*this->querys).end()) {
+            queryExecution = (*this->querys)[queryId];
+
+            return queryExecution->Dynamic_closeStageTaskIntraExtensionPipelineConcurrentByTaskId(extensionType,stageId,atoi(taskId.c_str()),pipelineId);
         }
         else
             return "NULL";
@@ -956,6 +978,7 @@ public:
             if(!query.second->getState()->isFinished()) {
                 spdlog::info("Query:" + query.first + " is draining node " + nodeUrl + "!");
                 query.second->Dynamic_drainNode(nodeUrl);
+
             }
 
         }

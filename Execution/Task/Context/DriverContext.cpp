@@ -60,6 +60,26 @@ void DriverContext::closeRemoteSourceDriver() {
     }
 
 }
+
+void DriverContext::closeExtendedRemoteSourceDriver(set<string> extendedOpTypes) {
+
+
+    bool isExtendedDriver = false;
+    for (int i = 0; i < (*this->driver).size(); i++) {
+        if(extendedOpTypes.contains((*this->driver)[i]->getOperatorType()))
+            isExtendedDriver = true;
+    }
+
+    if(isExtendedDriver) {
+        for (int i = 0; i < (*this->driver).size(); i++) {
+            if ((*this->driver)[i]->getOperatorType() == "RemoteSourceOperator") {
+                static_pointer_cast<RemoteSourceOperator>((*this->driver)[i])->abort();
+                break;
+            }
+        }
+    }
+
+}
 void DriverContext::addRuntimeLocation(set<std::shared_ptr<Split>> scheduledSplits) {
 
     if(this->driver == NULL)

@@ -15,7 +15,8 @@ public:
         OPERATOR_MIGRATION,
         BUFFER_MIGRATION,
         OPERATOR_MIGRATION_PARTITIONED_HASH_JOIN,
-        CLOSE_AND_CREATE
+        CLOSE_AND_CREATE,
+        NODE_STATUS_RESETTING
     };
 
     enum DataExchangeMode
@@ -114,6 +115,46 @@ public:
                     if (!this->scheduler->sqlStageExecution->isTaskFinished(task))
                         return false;
             }
+            else if(this->missionType == OPERATOR_MIGRATION_PARTITIONED_HASH_JOIN)
+            {
+                bool buildComplete = true;
+                for(auto source : this->scheduler->sourceIdMap)
+                    if (source.second.contains("NotBuildCompleteYet"))
+                        buildComplete = false;
+
+                if(!buildComplete)
+                {
+                    if(!this->originTasksFinishSignalSended)
+                        for (auto task: this->originTaskIds) {
+                            TaskId id;
+                            this->scheduler->sqlStageExecution->finishTaskByTaskId(id.StringToObject(task)->getId());
+                        }
+
+                    for (auto task: this->originTaskIds)
+                        if (!this->scheduler->sqlStageExecution->isTaskFinished(task))
+                            return false;
+                }
+
+                else
+                {
+                    for (auto task: this->newTaskIds)
+                        if (!this->scheduler->sqlStageExecution->isTaskDependenciesSatisfied(task))
+                            return false;
+
+                    if(!this->originTasksFinishSignalSended)
+                        for (auto task: this->originTaskIds) {
+                            TaskId id;
+                            this->scheduler->sqlStageExecution->finishTaskByTaskId(id.StringToObject(task)->getId());
+                        }
+
+                    for (auto task: this->originTaskIds) {
+                        if (!this->scheduler->sqlStageExecution->isTaskFinished(task)) {
+                            spdlog::info(task + " is finished!");
+                            return false;
+                        }
+                    }
+                }
+            }
 
             this->scheduler->setFinishTime();
 
@@ -158,6 +199,9 @@ private:
 
     shared_ptr<std::chrono::system_clock::time_point> startSchedulingTime = NULL;
     shared_ptr<std::chrono::system_clock::time_point> finishedSchedulingTime = NULL;
+
+
+    string nodeDrainingMissionHelper_nodeUrl;
 public:
 
     SidewayDataExchangeScheduler(MissionType type,shared_ptr<SqlStageExecution> sqlStageExecution,shared_ptr<StageScheduler> stageScheduler,shared_ptr<StageLinkage> stageLinkage,vector<int> taskIds)
@@ -169,14 +213,29 @@ public:
         this->taskIds = taskIds;
     }
 
+    SidewayDataExchangeScheduler(MissionType type,string nodeUrl)
+    {
+        this->missionType = type;
+        this->nodeDrainingMissionHelper_nodeUrl = nodeUrl;
+    }
+
+    MissionType getMissionType(){
+        return this->missionType;
+    }
+    string getNodeDrainingMissionHelper_nodeUrl()
+    {
+        return this->nodeDrainingMissionHelper_nodeUrl;
+    }
+
+
     void setStartTime()
     {
-        if(this->startSchedulingTime == NULL)
+        if(needRecordInfo() && this->startSchedulingTime == NULL)
             this->startSchedulingTime = make_shared<std::chrono::system_clock::time_point>(std::chrono::system_clock::now());
     }
     void setFinishTime()
     {
-        if(this->finishedSchedulingTime == NULL)
+        if(needRecordInfo() && this->finishedSchedulingTime == NULL)
             this->finishedSchedulingTime = make_shared<std::chrono::system_clock::time_point>(std::chrono::system_clock::now());
     }
 
@@ -286,6 +345,9 @@ public:
                 make_shared<TaskExecutionCondition>(TaskExecutionCondition::OPERATOR_MIGRATION,migratedOperators));
         vector<shared_ptr<HttpRemoteTask>> newTasks = result.getNewTasks();
 
+        for(auto newTask : newTasks)
+            spdlog::info("Task "+newTask->getTaskId()->ToString()+" scheduled node is "+newTask->getIP());
+
         set<string> newTaskIdStrs;
         set<string> originTaskIdStrs;
         originTaskIdStrs.insert(taskIdString);
@@ -320,8 +382,11 @@ public:
                 port = task->getPORT();
             }
 
-        ScheduleResult result = (static_pointer_cast<NormalStageScheduler>(stageScheduler))->addMulConcurrent(1);
+        ScheduleResult result = (static_pointer_cast<NormalStageScheduler>(stageScheduler))->addConcurrentForInterTaskMission(NULL);
         vector<shared_ptr<HttpRemoteTask>> newTasks = result.getNewTasks();
+
+        for(auto newTask : newTasks)
+            spdlog::info("Task "+newTask->getTaskId()->ToString()+" scheduled node is "+newTask->getIP());
 
         set<string> newTaskIdStrs;
         set<string> originTaskIdStrs;
@@ -342,24 +407,7 @@ public:
         return true;
     }
 
-    shared_ptr<HttpRemoteTask> findMaxGenerationTask(int taskId)
-    {
-        shared_ptr<HttpRemoteTask> result;
-        int maxGen = -100;
 
-        vector<shared_ptr<HttpRemoteTask>> tasks = sqlStageExecution->getAllTasks();
-
-        for(auto task : tasks)
-            if(task->getTaskId()->getId() == taskId) {
-                if(task->getTaskId()->getStageExecutionId().getId() > maxGen)
-                {
-                    maxGen = task->getTaskId()->getStageExecutionId().getId();
-                    result = task;
-                }
-            }
-
-        return result;
-    }
 
     bool cloneTasksWithConditionExecution(int taskId)
     {
@@ -380,7 +428,7 @@ public:
         vector<shared_ptr<HttpRemoteTask>> tasks = sqlStageExecution->getAllTasks();
 
 
-        auto task = findMaxGenerationTask(taskId);
+        auto task = sqlStageExecution->findMaxGenerationTask(taskId);
         spdlog::info("Clone task id:"+task->getTaskId()->ToString());
         taskIdString = task->getTaskId()->ToString();
         ip = task->getIP();
@@ -411,7 +459,6 @@ public:
         this->stageLinkage->processScheduleResultsToAddConcurrent(newTasks);
 
 
-        this->sqlStageExecution->finishTaskByTaskId(taskId);
 
         this->sidewayMonitorPanel = make_shared<SidewayMonitorPanel>(this,this->missionType,newTaskIdStrs,originTaskIdStrs);
 
@@ -460,6 +507,9 @@ public:
         for(auto task : newTasks)
             task->setMigratedBufferTask();
 
+        for(auto newTask : newTasks)
+            spdlog::info("Task "+newTask->getTaskId()->ToString()+" scheduled node is "+newTask->getIP());
+
         set<string> newTaskIdStrs;
         set<string> originTaskIdStrs;
         originTaskIdStrs.insert(taskIdString);
@@ -487,10 +537,14 @@ public:
         vector<shared_ptr<HttpRemoteTask>> tasks = sqlStageExecution->getAllTasks();
         vector<shared_ptr<HttpRemoteTask>> originTaskPtrs;
         shared_ptr<HttpRemoteTask> oldTaskPtr = NULL;
+
+        set<string> originTaskIdStrs;
+
         for(auto taskId : taskIds) {
             for (auto task: tasks)
                 if (task->getTaskId()->getId() == taskId) {
                     originTaskPtrs.push_back(task);
+                    originTaskIdStrs.insert(task->getTaskId()->ToString());
                 }
         }
         if(originTaskPtrs.size() != taskIds.size())
@@ -519,12 +573,29 @@ public:
             newTasks = result.getNewTasks();
         }
 
-
-
         for(auto task : newTasks)
+            task->setMigratedBufferTask();
+
+
+        set<string> newTaskIdStrs;
+
+
+        for(auto task : newTasks) {
             this->monitoredTaskIds.push_back(task->getTaskId()->ToString());
+            newTaskIdStrs.insert(task->getTaskId()->ToString());
+        }
+
+        set<int> abandonedTaskIds;
+        for(auto id : taskIds)
+            abandonedTaskIds.insert(id);
+        this->sqlStageExecution->abandonTasks(abandonedTaskIds);
 
         this->stageLinkage->processScheduleResultsToReplaceSourceTasks(newTasks,taskIds);
+
+
+
+
+        this->sidewayMonitorPanel = make_shared<SidewayMonitorPanel>(this,this->missionType,newTaskIdStrs,originTaskIdStrs);
 
         return true;
 
@@ -554,11 +625,28 @@ public:
         }
     }
 
+    bool needRecordInfo(){
+
+        if(this->missionType == NODE_STATUS_RESETTING)
+            return false;
+
+        return true;
+    }
+
+
     bool schedule()
     {
         if(this->missionType == BUFFER_MIGRATION && this->dataExchangeMode == MANY_TO_MANY)
         {
             return migrateBuffersManyToMany(this->taskIds,this->targetTaskNumber);
+        }
+
+        if(this->getMissionType() == NODE_STATUS_RESETTING) {
+            string nodeUrl = this->getNodeDrainingMissionHelper_nodeUrl();
+            ClusterServer::getNodesManager()->resetNodeAliveStatus(nodeUrl);
+            set<string> nullSet;
+            this->sidewayMonitorPanel = make_shared<SidewayMonitorPanel>(this,NODE_STATUS_RESETTING,nullSet,nullSet);
+            return true;
         }
 
         for(auto taskId : this->taskIds)

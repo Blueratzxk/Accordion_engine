@@ -56,12 +56,18 @@ class OutputPartitioningBuffer: public OutputBuffer
 
 
     map<int,int> taskIdToGeneration;
+
+    bool skipBufferTaskReshuffle = false;
 public:
 
 
     OutputPartitioningBuffer(OutputBufferSchema schema){
 
         tbg = make_shared<TaskBufferGroup>();
+
+        ExecutionConfig config;
+        int maxShufflerNums = atoi(config.getInitial_shuffle_executor_nums().c_str());
+        tbg->setForceShuffleExecutorNum(maxShufflerNums);
 
         if(!schema.isPartitioning_Buffer())
         {
@@ -108,12 +114,10 @@ public:
         return "OutputPartitioningBuffer";
     }
 
-    void addPartitionTaskGroup(int newPartitionCount)
+    void addPartitionTaskGroup(int newPartitionCount,bool process = true)
     {
         if(newPartitionCount > 0) {
-            this->tbg->addPartitionTaskGroup(newPartitionCount);
-
-
+            this->tbg->addPartitionTaskGroup(newPartitionCount,process);
         }
     }
 
@@ -300,9 +304,20 @@ public:
             }
         }
 
+
+        int index = 0;
         for(auto pn : tgNeedToBuild)
         {
-            this->addPartitionTaskGroup(pn);
+            if(this->bufferSchema->isMigratedBuffer()) {
+                if(index == (tgNeedToBuild.size() - 1))
+                    this->addPartitionTaskGroup(pn);
+                else
+                    this->addPartitionTaskGroup(pn,false);
+            }
+            else {
+                this->addPartitionTaskGroup(pn);
+            }
+            index++;
         }
 
     }
@@ -313,6 +328,8 @@ public:
 
         this->bufferSchema = make_shared<OutputBufferSchema>(schema.getBufferType(),schema.getBuffers(),schema.getParScheme(),schema.getParBufType());
         this->bufferSchema->updateTaskGroupMap(schema.getTaskGroupMap());
+        if(schema.isMigratedBuffer())
+            this->bufferSchema->setMigratedBuffer();
         map<string,int> tBuffers = this->bufferSchema->getBuffers();
 
 
@@ -322,9 +339,19 @@ public:
         {
             map<int, int> parentStageTaskGroupMap = this->bufferSchema->getTaskGroupMap();
 
+
             for(auto tgm : parentStageTaskGroupMap)
             {
-                this->addPartitionTaskGroup(tgm.second);
+                if(this->bufferSchema->isMigratedBuffer()) {
+                    if(tgm.first == (parentStageTaskGroupMap.size() - 1))
+                        this->addPartitionTaskGroup(tgm.second);
+                    else
+                        this->addPartitionTaskGroup(tgm.second,false);
+                }
+                else
+                {
+                    this->addPartitionTaskGroup(tgm.second);
+                }
             }
         }
         else {

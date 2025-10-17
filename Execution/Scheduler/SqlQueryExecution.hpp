@@ -122,6 +122,13 @@ public:
         return "OK";
     }
 
+    string closeStageTaskIntraExtensionPipelineConcurrentByTaskId(string extensionType,string stageId,int taskId,string pipelineId)
+    {
+        thread(SqlQueryScheduler::closeStageTaskIntraExtensionPipelineConcurrentByTaskId,this->scheduler,extensionType,stageId,taskId,pipelineId).detach();
+        return "OK";
+    }
+
+
     string subStageAllTaskIntraPipelineConcurrent(string stageId,string pipelineId)
     {
 
@@ -520,6 +527,12 @@ public:
         return true;
     }
 
+    bool submitBufferMigrationMission(int stageId,vector<int> taskIds,int targetTaskNums)
+    {
+        this->scheduler->submitBufferMigrationMission(this->scheduler,stageId,taskIds,targetTaskNums);
+        return true;
+    }
+
     bool isStageisTuningKnob(int stageId)
     {
         if(this->scheduler == NULL)
@@ -655,15 +668,19 @@ public:
 
     string Dynamic_addStageTaskIntraExtensionPipelineConcurrentByTaskId(string extensionType,string stageId,int taskId,string pipelineId)
     {
-
         this->dyScheduler-> addStageTaskIntraExtensionPipelineConcurrentByTaskId(extensionType,stageId,taskId,pipelineId);
+        return "OK";
+    }
+
+    string Dynamic_closeStageTaskIntraExtensionPipelineConcurrentByTaskId(string extensionType,string stageId,int taskId,string pipelineId)
+    {
+        this->dyScheduler->closeStageTaskIntraExtensionPipelineConcurrentByTaskId(extensionType,stageId,taskId,pipelineId);
         return "OK";
     }
 
 
     string Dynamic_subStageAllTaskIntraPipelineConcurrent(string stageId,string pipelineId)
     {
-
         this->dyScheduler->subStageAllTaskIntraPipelineConcurrent(stageId,pipelineId);
         return "OK";
     }

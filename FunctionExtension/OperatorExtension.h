@@ -28,13 +28,34 @@ class LogicalOperator;
 using namespace std;
 class OperatorExtension
 {
-    set<string> extensionSupport = {"Logical_LookupJoinOperator"};
+    map<string,set<string>> type_Operators = {
+            {"GPU",{
+              "GPUHashJoinOperator",
+              "GPUFilterOperator",
+              "GPUProjectOperator",
+              "GPUPartialAggregationOperator",
+              "GPUBatchAssembleOperator"
+            }}
+    };
     GPUExecutionConfig gpuExecutionConfig;
 public:
 
     OperatorExtension()
     {
 
+    }
+
+    bool isExtendedOperator(string operatorType){
+        for(auto tp : type_Operators)
+            if(tp.second.contains(operatorType))
+                return true;
+
+        return false;
+    }
+
+    set<string> extendedOperatorTypes(string extensionType)
+    {
+        return this->type_Operators[extensionType];
     }
 
     shared_ptr<Logical_GPUHashJoinOperator> extendHashJoin(shared_ptr<Logical_LookupJoinOperator> lookupJoinOp);

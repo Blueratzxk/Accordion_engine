@@ -58,6 +58,13 @@ class InstructionInterpreter
         funcMap.insert(make_pair("START_AUTO_TUNE", &InstructionInterpreter::START_AUTO_TUNE));
 
         funcMap.insert(make_pair("MOVE_TASK", &InstructionInterpreter::MOVE_TASK));
+        funcMap.insert(make_pair("ADD_HETERO", &InstructionInterpreter::ADD_HETERO));
+        funcMap.insert(make_pair("CANCEL_HETERO", &InstructionInterpreter::CANCEL_HETERO));
+        funcMap.insert(make_pair("ADD_HETERO_PIPE", &InstructionInterpreter::ADD_HETERO_PIPELINE));
+        funcMap.insert(make_pair("CANCEL_HETERO_PIPE", &InstructionInterpreter::CANCEL_HETERO_PIPELINE));
+        funcMap.insert(make_pair("DRAIN_NODE", &InstructionInterpreter::DRAIN_NODE));
+
+        funcMap.insert(make_pair("MOVE_BUFFER", &InstructionInterpreter::MOVE_BUFFER));
 
 
     }
@@ -307,6 +314,172 @@ class InstructionInterpreter
         }
     }
 
+    bool ADD_HETERO(Instruction instruction)
+    {
+        vector<string> parameters = instruction.getParameters();
+        if(parameters.size() !=3)
+        {
+            spdlog::error("ADD_HETERO Instruction need two parameters. Like \"ADD_HETERO GPU,STAGE,3;\"");
+            return false;
+        }
+        bool result = true;
+
+
+        if(parameters[1]!="STAGE")
+            result = false;
+        if(!isNum(parameters[2]))
+            result = false;
+        if(atoi(parameters[2].c_str()) < 0)
+            result = false;
+
+
+        if(!result)
+        {
+            string info;
+            info+=instruction.getInstruction()+" ";
+            for(auto i : instruction.getParameters())
+            {
+                info+=i;
+                info+=",";
+            }
+            info.pop_back();
+
+            spdlog::error("["+info+"] Instruction or parameters ERROR!");
+            return false;
+        }
+        else
+        {
+            spdlog::debug("Add "+parameters[0]+"node for stage "+parameters[2]+".");
+            return true;
+        }
+
+    }
+
+    bool ADD_HETERO_PIPELINE(Instruction instruction)
+    {
+        vector<string> parameters = instruction.getParameters();
+        if(parameters.size() !=7)
+        {
+            spdlog::error("ADD_HETERO_PIPE Instruction need seven parameters. Like \"ADD_HETERO_PIPELINE GPU,STAGE,3,TASK,1,PIPELINE,0;\"");
+            return false;
+        }
+        bool result = true;
+
+
+        if(parameters[1]!="STAGE" && parameters[3] != "TASK" && parameters[5] != "PIPELINE")
+            result = false;
+        if(!isNum(parameters[2]) || !isNum(parameters[4]) || !isNum(parameters[6]))
+            result = false;
+        if(atoi(parameters[2].c_str()) < 0 || atoi(parameters[4].c_str()) < 0 || atoi(parameters[6].c_str()) < 0)
+            result = false;
+
+
+        if(!result)
+        {
+            string info;
+            info+=instruction.getInstruction()+" ";
+            for(auto i : instruction.getParameters())
+            {
+                info+=i;
+                info+=",";
+            }
+            info.pop_back();
+
+            spdlog::error("["+info+"] Instruction or parameters ERROR!");
+            return false;
+        }
+        else
+        {
+            spdlog::debug("Add "+parameters[0]+"pipeline for stage "+parameters[2]+" task "+parameters[4]+" pipeline "+parameters[6]+".");
+            return true;
+        }
+
+    }
+
+
+    bool CANCEL_HETERO_PIPELINE(Instruction instruction)
+    {
+        vector<string> parameters = instruction.getParameters();
+        if(parameters.size() !=7)
+        {
+            spdlog::error("CANCEL_HETERO_PIPE Instruction need seven parameters. Like \"CANCEL_HETERO GPU,STAGE,3,TASK,1,PIPELINE,0;\"");
+            return false;
+        }
+        bool result = true;
+
+
+        if(parameters[1]!="STAGE" && parameters[3] != "TASK" && parameters[5] != "PIPELINE")
+            result = false;
+        if(!isNum(parameters[2]) || !isNum(parameters[4]) || !isNum(parameters[6]))
+            result = false;
+        if(atoi(parameters[2].c_str()) < 0 || atoi(parameters[4].c_str()) < 0 || atoi(parameters[6].c_str()) < 0)
+            result = false;
+
+
+        if(!result)
+        {
+            string info;
+            info+=instruction.getInstruction()+" ";
+            for(auto i : instruction.getParameters())
+            {
+                info+=i;
+                info+=",";
+            }
+            info.pop_back();
+
+            spdlog::error("["+info+"] Instruction or parameters ERROR!");
+            return false;
+        }
+        else
+        {
+            spdlog::debug("Cancel "+parameters[0]+"pipeline for stage "+parameters[2]+" task "+parameters[4]+" pipeline "+parameters[6]+".");
+            return true;
+        }
+
+    }
+
+
+
+    bool CANCEL_HETERO(Instruction instruction)
+    {
+        vector<string> parameters = instruction.getParameters();
+        if(parameters.size() !=3)
+        {
+            spdlog::error("CANCEL_HETERO Instruction need two parameters. Like \"ADD_HETERO GPU,STAGE,3;\"");
+            return false;
+        }
+        bool result = true;
+
+
+        if(parameters[1]!="STAGE")
+            result = false;
+        if(!isNum(parameters[2]))
+            result = false;
+        if(atoi(parameters[2].c_str()) < 0)
+            result = false;
+
+
+        if(!result)
+        {
+            string info;
+            info+=instruction.getInstruction()+" ";
+            for(auto i : instruction.getParameters())
+            {
+                info+=i;
+                info+=",";
+            }
+            info.pop_back();
+
+            spdlog::error("["+info+"] Instruction or parameters ERROR!");
+            return false;
+        }
+        else
+        {
+            spdlog::debug("Cancel "+parameters[0]+" node for stage "+parameters[2]+".");
+            return true;
+        }
+
+    }
 
     bool MOVE_TASK(Instruction instruction)
     {
@@ -349,6 +522,114 @@ class InstructionInterpreter
         else
         {
             spdlog::debug("Move task for stage "+parameters[1]+" with taskId "+parameters[3]+".");
+            return true;
+        }
+
+    }
+
+
+    bool MOVE_BUFFER(Instruction instruction)
+    {
+        vector<string> parameters = instruction.getParameters();
+        if(parameters.size() !=4 && parameters.size() !=6)
+        {
+            spdlog::error("MOVE_BUFFER Instruction need four or six parameters. Like \"MOVE_BUFFER STAGE,3,TASK,{1},TARGET,4;\"");
+            return false;
+        }
+        bool result = true;
+
+        if(parameters.size() == 4)
+        {
+            if(parameters[0]!="STAGE" || parameters[2] != "TASK" )
+                result = false;
+
+            vector<string> taskIds;
+            StringUtils::Stringsplit(parameters[3],',',taskIds);
+
+            for(auto taskId:taskIds)
+                if(!isNum(taskId) || isNum(taskId) && atoi(taskId.c_str()) < 0)
+                    return false;
+            if(!isNum(parameters[1]) || isNum(parameters[1]) && atoi(parameters[1].c_str()) < 0)
+                result = false;
+        }
+        else if(parameters.size() == 6)
+        {
+            if(parameters[0]!="STAGE" || parameters[2] != "TASK" || parameters[4] != "TARGET")
+                result = false;
+
+            vector<string> taskIds;
+            StringUtils::Stringsplit(parameters[3],',',taskIds);
+
+            for(auto taskId:taskIds)
+                if(!isNum(taskId) || isNum(taskId) && atoi(taskId.c_str()) < 0)
+                    return false;
+            if(!isNum(parameters[1]) || isNum(parameters[1]) && atoi(parameters[1].c_str()) < 0)
+                result = false;
+
+            if(!isNum(parameters[5]) || isNum(parameters[5]) && atoi(parameters[5].c_str()) < 0)
+                result = false;
+
+        }
+
+        if(!result)
+        {
+            string info;
+            info+=instruction.getInstruction()+" ";
+            for(auto i : instruction.getParameters())
+            {
+                info+=i;
+                info+=",";
+            }
+            info.pop_back();
+
+            spdlog::error("["+info+"] Instruction or parameters ERROR!");
+            return false;
+        }
+        else
+        {
+            spdlog::debug("Move buffer for stage "+parameters[1]+" with taskId "+parameters[3]+".");
+            return true;
+        }
+
+    }
+
+
+    bool DRAIN_NODE(Instruction instruction)
+    {
+        vector<string> parameters = instruction.getParameters();
+        if(parameters.size() !=2)
+        {
+            spdlog::error("DRAIN_NODE Instruction need three parameters. Like \"DRAIN_NODE NID,2;\"");
+            return false;
+        }
+        bool result = true;
+
+
+        if(parameters[0]!="NID")
+            result = false;
+        if(!isNum(parameters[1]))
+            result = false;
+        if(atoi(parameters[1].c_str()) < 0)
+            result = false;
+
+
+        if(!result)
+        {
+            string info;
+            info+=instruction.getInstruction()+" ";
+            for(auto i : instruction.getParameters())
+            {
+                info+=i;
+                info+=",";
+            }
+            info.pop_back();
+
+            spdlog::error("["+info+"] Instruction or parameters ERROR!");
+            return false;
+        }
+        else
+        {
+            spdlog::debug("Drain node "+parameters[1]+".");
             return true;
         }
 

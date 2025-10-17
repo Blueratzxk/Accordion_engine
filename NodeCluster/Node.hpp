@@ -82,6 +82,17 @@ public:
         return this->nodeStatus;
     }
 
+    string getNodeStatus(){
+        if(this->nodeStatus == ALIVE)
+            return "ALIVE";
+        else if(this->nodeStatus == DEAD)
+            return "DEAD";
+        else if(this->nodeStatus == DRAIN)
+            return "DRAIN";
+        else
+            return "Unknown";
+    }
+
     int getCoreNums()
     {
         return this->coreNums;

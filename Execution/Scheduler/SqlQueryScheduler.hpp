@@ -792,6 +792,16 @@ public:
 
     }
 
+    static void closeStageTaskIntraExtensionPipelineConcurrentByTaskId(shared_ptr<SqlQueryScheduler> scheduler,string extensionType,string stageId,int taskId,string pipelineId)
+    {
+        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
+            return;
+
+        shared_ptr<TaskIntraParaUpdateRequest> intraRequest  = make_shared<TaskIntraParaUpdateRequest>(pipelineId,"decre","1",extensionType);
+        scheduler->updateIntraTaskParallelismByTaskId(scheduler->stageExeSchedulers,atoi(stageId.c_str()),taskId,intraRequest);
+
+    }
+
     static void closeStageAllTaskIntraPipelineConcurrent(shared_ptr<SqlQueryScheduler> scheduler,string stageId,string pipelineId)
     {
         if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
@@ -890,6 +900,19 @@ public:
             return false;
 
         scheduler->sidewayExchangeSystem->submitTaskMigrationMission(stageId,taskIds);
+        return true;
+    }
+
+    static bool submitBufferMigrationMission(shared_ptr<SqlQueryScheduler> scheduler,int stageId,vector<int> taskIds,int targetTaskNums)
+    {
+        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
+            return false;
+
+        if(targetTaskNums <= 0)
+            scheduler->sidewayExchangeSystem->submitBufferMigrationMission(stageId,taskIds,SidewayDataExchangeScheduler::ONE_TO_ONE,-1);
+        else
+            scheduler->sidewayExchangeSystem->submitBufferMigrationMission(stageId,taskIds,SidewayDataExchangeScheduler::MANY_TO_MANY,targetTaskNums);
+
         return true;
     }
 

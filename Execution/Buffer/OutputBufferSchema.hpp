@@ -57,6 +57,7 @@ private:
     PartitioningBufferType parBufType = PAR_NONE;
     map<int,int> taskGroupMap;
 
+    bool migratedBuffer = false;
 
 public:
     OutputBufferSchema(){}
@@ -148,6 +149,15 @@ public:
     {
         this->buffers = bs;
     }
+    bool isMigratedBuffer()
+    {
+        return this->migratedBuffer;
+    }
+    void setMigratedBuffer()
+    {
+        this->migratedBuffer = true;
+    }
+
     BufferType &getBufferType()
     {
         return this->type;
@@ -166,7 +176,7 @@ public:
             outputBuffersSchema["PartitioningScheme"] = schema.getParScheme()->Serialize();
 
         }
-
+        outputBuffersSchema["migratedBuffer"] = schema.isMigratedBuffer();
         outputBuffersSchema["type"] = schema.getBufferType();
         outputBuffersSchema["taskGroupMap"] = schema.getTaskGroupMap();
         outputBuffersSchema["buffers"] = schema.getBuffers();
@@ -201,6 +211,10 @@ public:
         }
 
         buffer->updateTaskGroupMap(taskGroupMap);
+
+        bool isMigratedBuffer = outputBuffersSchemaJson["migratedBuffer"];
+        if(isMigratedBuffer)
+            buffer->setMigratedBuffer();
 
         return buffer;
     }

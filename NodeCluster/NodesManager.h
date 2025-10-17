@@ -225,6 +225,17 @@ public:
         }
     }
 
+    void setNodeDrainingStatus(string nodeUrl)
+    {
+        auto nodes = getAllClusterNodes();
+
+        for(auto node : nodes)
+        {
+            if(node.second->getNodeLocation() == nodeUrl)
+                node.second->drainNode();
+        }
+    }
+
     map<string,shared_ptr<ClusterNode>> getAllComputeNodes()
     {
         map<string,shared_ptr<ClusterNode>> computeNodes;

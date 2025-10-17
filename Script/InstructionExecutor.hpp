@@ -53,7 +53,12 @@ public:
         funcMap.insert(make_pair("START_AUTO_TUNE", &InstructionExecutor::START_AUTO_TUNE));
 
         funcMap.insert(make_pair("MOVE_TASK", &InstructionExecutor::MOVE_TASK));
-
+        funcMap.insert(make_pair("ADD_HETERO", &InstructionExecutor::ADD_HETERO));
+        funcMap.insert(make_pair("CANCEL_HETERO", &InstructionExecutor::CANCEL_HETERO));
+        funcMap.insert(make_pair("ADD_HETERO_PIPE", &InstructionExecutor::ADD_HETERO_PIPELINE));
+        funcMap.insert(make_pair("CANCEL_HETERO_PIPE", &InstructionExecutor::CANCEL_HETERO_PIPELINE));
+        funcMap.insert(make_pair("DRAIN_NODE", &InstructionExecutor::DRAIN_NODE));
+        funcMap.insert(make_pair("MOVE_BUFFER", &InstructionExecutor::MOVE_BUFFER));
     }
 
 
@@ -87,6 +92,88 @@ public:
 
     }
 
+    bool ADD_HETERO(Instruction instruction,ScriptExecutionContext &context)
+    {
+        string queryId;
+        if(!context.getQueryId(queryId)) return false;
+
+        vector<string> parameters = instruction.getParameters();
+
+        string type = parameters[0];
+        string stageId = parameters[2];
+
+
+        nlohmann::json info;
+        info["Type"] = "IQRS";
+        info["Operation"] = "ADD_HETERO-STAGE,"+stageId;
+        info["Value"] = "1";
+        info["TimeStamp"] = TimeCommon::getCurrentTimeStamp();
+
+        monitor->addInfo(queryId,info.dump());
+
+
+
+        this->queryManager->addHeteroTaskForStage(queryId,type,atoi(stageId.c_str()));
+
+        return true;
+    }
+
+    bool ADD_HETERO_PIPELINE(Instruction instruction,ScriptExecutionContext &context)
+    {
+        string queryId;
+        if(!context.getQueryId(queryId)) return false;
+
+        vector<string> parameters = instruction.getParameters();
+
+        string type = parameters[0];
+        string stageId = parameters[2];
+        string taskId = parameters[4];
+        string pipelineId = parameters[6];
+
+        nlohmann::json info;
+        info["Type"] = "IQRS";
+        info["Operation"] = "ADD_HETERO_PIPELINE-STAGE,"+stageId;
+        info["Value"] = "1";
+        info["TimeStamp"] = TimeCommon::getCurrentTimeStamp();
+
+        monitor->addInfo(queryId,info.dump());
+
+        this->queryManager->addStageTaskIntraExtensionPipelineConcurrentByTaskId(queryId,type,stageId,taskId,pipelineId);
+
+        return true;
+    }
+
+    bool CANCEL_HETERO_PIPELINE(Instruction instruction,ScriptExecutionContext &context)
+    {
+        string queryId;
+        if(!context.getQueryId(queryId)) return false;
+
+        vector<string> parameters = instruction.getParameters();
+
+        string type = parameters[0];
+        string stageId = parameters[2];
+        string taskId = parameters[4];
+        string pipelineId = parameters[6];
+
+        this->queryManager->closeStageTaskIntraExtensionPipelineConcurrentByTaskId(queryId,type,stageId,taskId,pipelineId);
+
+        return true;
+    }
+
+    bool CANCEL_HETERO(Instruction instruction,ScriptExecutionContext &context)
+    {
+        string queryId;
+        if(!context.getQueryId(queryId)) return false;
+
+        vector<string> parameters = instruction.getParameters();
+
+        string type = parameters[0];
+        string stageId = parameters[2];
+
+        this->queryManager->closeHeteroTaskForStage(queryId,type,atoi(stageId.c_str()));
+
+        return true;
+    }
 
     bool MOVE_TASK(Instruction instruction,ScriptExecutionContext &context)
     {
@@ -97,7 +184,6 @@ public:
         vector<string> parameters = instruction.getParameters();
 
         string stageId = parameters[1];
-
         string taskStr = parameters[3];
         vector<string> taskIds;
         StringUtils::Stringsplit(taskStr,',',taskIds);
@@ -111,6 +197,39 @@ public:
         return true;
     }
 
+
+    bool MOVE_BUFFER(Instruction instruction,ScriptExecutionContext &context)
+    {
+
+        string queryId;
+        if(!context.getQueryId(queryId)) return false;
+
+        vector<string> parameters = instruction.getParameters();
+
+        string stageId = parameters[1];
+        string taskStr = parameters[3];
+        string targetNums = parameters[5];
+
+        vector<string> taskIds;
+        StringUtils::Stringsplit(taskStr,',',taskIds);
+
+        vector<int> ids;
+        for(auto id : taskIds)
+            ids.push_back(atoi(id.c_str()));
+
+        this->queryManager->submitBufferMigrationMission(queryId, atoi(stageId.c_str()),ids, atoi(targetNums.c_str()));
+
+        return true;
+    }
+
+
+    bool DRAIN_NODE(Instruction instruction,ScriptExecutionContext &context)
+    {
+        vector<string> parameters = instruction.getParameters();
+        string nid = parameters[1];
+        this->queryManager->drainNodeByNodeId(nid);
+        return true;
+    }
 
 
     bool BEGIN(Instruction instruction,ScriptExecutionContext &context)
@@ -155,6 +274,15 @@ public:
             this->monitor->deleteQuery(queryId);
             return true;
         }
+
+        string re = this->queryManager->getQueryThroughputsInfo(queryId);
+        if(re != "NULL") {
+            nlohmann::json j = nlohmann::json::parse(re);
+            j["Type"] = "TP";
+            j["TimeStamp"] = TimeCommon::getCurrentTimeStamp();
+            this->monitor->addInfo(queryId,j.dump());
+        }
+
 
         nlohmann::json info;
         info["Type"] = "QUERYTIME";

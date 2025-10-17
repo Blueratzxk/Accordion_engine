@@ -105,6 +105,8 @@ public:
 
     int getTaskGeneration();
 
+    void closeExtendedRemoteSourceDriver(set<string> extendedOpTypes);
+
     string getTaskId();
 };
 

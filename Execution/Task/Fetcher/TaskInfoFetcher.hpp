@@ -744,6 +744,7 @@ public:
 
 
                 if (fetcher->taskInfo != NULL && fetcher->taskInfo->getStatus().compare("FINISHED") == 0) {
+
                     break;
                 }
                 sleep_for(std::chrono::milliseconds(fetcher->delay));

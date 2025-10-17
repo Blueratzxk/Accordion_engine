@@ -112,11 +112,13 @@ public:
     void addInput(std::shared_ptr<DataPage> input) override {
 
         if (input != NULL) {
-            if (this->input_schema == NULL)
-                this->input_schema = input->get()->schema();
 
             this->inputPage = input;
             if (!input->isEndPage()) {
+
+                if (this->input_schema == NULL)
+                    this->input_schema = input->get()->schema();
+
                 this->sink.push_back(input->get());
 
                 this->totalElementCount += input->getElementsCount();

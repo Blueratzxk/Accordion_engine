@@ -203,8 +203,12 @@ public:
         }
         else if(taskIntraParaUpdateRequest->getUpdateType() == "decre") {
             if (pipelineId != "-1") {
-                for (int i = 0; i < atoi(taskIntraParaUpdateRequest->getUpdateParaCount().c_str()); i++)
-                    this->taskHolder->getTaskExecution()->closePipelineDriver(PipelineId(pipelineId));
+                for (int i = 0; i < atoi(taskIntraParaUpdateRequest->getUpdateParaCount().c_str()); i++) {
+                    if (taskIntraParaUpdateRequest->isExtension())
+                        this->taskHolder->getTaskExecution()->closePipelineExtensionDriver(taskIntraParaUpdateRequest->getExtension(), PipelineId(pipelineId));
+                    else
+                        this->taskHolder->getTaskExecution()->closePipelineDriver(PipelineId(pipelineId));
+                }
             }
         }
         spdlog::debug("updateTaskIntraParallelism out");

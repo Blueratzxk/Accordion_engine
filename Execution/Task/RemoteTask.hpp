@@ -46,9 +46,11 @@ class HttpRemoteTask
     set<string> extension;
 
     shared_ptr<TaskExecutionCondition> condition;
+    bool getFinalTaskInfo = false;
 
     bool migratedBufferTask = false;
 
+    bool isAbandoned = false;
 
 public:
     HttpRemoteTask(shared_ptr<Event> eventListener,shared_ptr<TaskId> taskId,shared_ptr<PlanFragment> fragment,string nodeLocation,
@@ -68,6 +70,14 @@ public:
 
     }
 
+    void setGetFinalTaskInfo()
+    {
+        this->getFinalTaskInfo = true;
+    }
+    bool isGetFinalTaskInfo(){
+        return this->getFinalTaskInfo;
+    }
+
     void setMigratedBufferTask()
     {
         this->migratedBufferTask = true;
@@ -76,6 +86,15 @@ public:
     bool isMigratedBufferTask()
     {
         return this->migratedBufferTask;
+    }
+
+    bool isAbandonedTask()
+    {
+        return this->isAbandoned;
+    }
+    void abandonTask()
+    {
+        this->isAbandoned = true;
     }
 
     shared_ptr<TaskId> getTaskId()
@@ -165,6 +184,9 @@ public:
     void setOutputBuffers(shared_ptr<OutputBufferSchema> newSchema)
     {
         this->schema = newSchema;
+        if(this->migratedBufferTask)
+            this->schema->setMigratedBuffer();
+
         TaskUpdateRequest updateRequest(this->schema);
         scheduleUpdate(TaskUpdateRequest::Serialize(updateRequest),"/v1/task/updateTask");
     }

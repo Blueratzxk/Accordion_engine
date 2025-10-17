@@ -181,7 +181,7 @@ public:
             this->repeatable = true;
         }
     }
-    void addPartitionTaskGroup(int partitionCount)
+    void addPartitionTaskGroup(int partitionCount, bool process = true)
     {
 
         vector<int> bufferIdSlice;
@@ -265,8 +265,10 @@ public:
         if(this->pType == OutputBufferSchema::PAR_REPEATABLE)
         {
 
-            if(this->endPageFound)
+            if(this->endPageFound && process) {
+                spdlog::info("Reshuffle task group!!! ID:"+ to_string(this->nextGroupId));
                 groupMap[this->nextGroupId]->enqueuePages({this->allPages});
+            }
 
         }
         else

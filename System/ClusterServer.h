@@ -42,6 +42,7 @@ public:
     static void startHeartbeat();
 
     static void nodeDraining(int nodeId);
+
     static void post_sync(string handle,string addrDest,vector<string> data);
     static string post_getResult_sync(string handle,string addrDest,vector<string> data);
 

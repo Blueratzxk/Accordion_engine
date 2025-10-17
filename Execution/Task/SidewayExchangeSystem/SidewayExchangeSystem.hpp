@@ -78,12 +78,14 @@ public:
             system->sidewayExchangeTaskQueue.pop_front();
             system->lock.unlock();
 
+
             if(scheduler->schedule())
                 while(!scheduler->isSchedulingFinished()) sleep_for(std::chrono::milliseconds(200));
 
             spdlog::info("Sideway exchange schedule finished!");
 
-            system->finishedSidewayExchangeTasks.push_back(scheduler);
+            if(scheduler->needRecordInfo())
+                system->finishedSidewayExchangeTasks.push_back(scheduler);
 
         }
 
@@ -162,6 +164,7 @@ public:
             taskGroupIds.push_back(id.getId());
 
         auto sidewayTask = make_shared<SidewayDataExchangeScheduler>(type,stageExe,stageSche,stageLink,taskGroupIds);
+        sidewayTask->setStartTime();
         this->sidewayExchangeTasks.push_back(sidewayTask);
 
         if(mode == SidewayDataExchangeScheduler::MANY_TO_MANY)
@@ -294,6 +297,15 @@ public:
         submitSidewayExchangeTask(stageId,taskIds, getMigrationType(stageExe));
     }
 
+    void submitBufferMigrationMission(int stageId,vector<int> taskIds,SidewayDataExchangeScheduler::DataExchangeMode mode,int targetTaskNums = 1)
+    {
+        auto stageExe = this->getStageExecution(stageId);
+        if(mode == SidewayDataExchangeScheduler::ONE_TO_ONE)
+            submitSidewayExchangeTask(stageId,taskIds,SidewayDataExchangeScheduler::BUFFER_MIGRATION);
+        else
+            submitSidewayExchangeTask(stageId,taskIds,SidewayDataExchangeScheduler::BUFFER_MIGRATION,SidewayDataExchangeScheduler::MANY_TO_MANY,targetTaskNums);
+    }
+
     void processActiveStageBufferMigration(string nodeUrl)
     {
         map<shared_ptr<SqlStageExecution>,pair<set<int>,set<int>>> stageTasksMap;
@@ -371,11 +383,24 @@ public:
 
     }
 
+    void resetNodeAliveStatus(string nodeUrl)
+    {
+        auto resetNodeStatus = make_shared<SidewayDataExchangeScheduler>(SidewayDataExchangeScheduler::NODE_STATUS_RESETTING,nodeUrl);
+        this->lock.lock();
+        this->sidewayExchangeTaskQueue.push_back(resetNodeStatus);
+        this->lock.unlock();
+
+        if(!this->sidewayExecutorActivated)
+            this->releaseExecutor();
+    }
+
     void processNodeDraining(string nodeUrl)
     {
         processActiveStageTaskMigration(nodeUrl);
         processActiveStageBufferMigration(nodeUrl);
-        ClusterServer::getNodesManager()->resetNodeAliveStatus(nodeUrl);
+        resetNodeAliveStatus(nodeUrl);
+
+
     }
 
 };

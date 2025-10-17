@@ -32,11 +32,15 @@ void ClusterServer::resolveHeartbeat(std::string heartbeat) {
 void ClusterServer::nodeDraining(int nodeId)
 {
     auto nodeUrl = nodesManager->getNodeUrlByNodeId(nodeId);
+    nodesManager->setNodeDrainingStatus(nodeUrl);
+
     if(nodeUrl != "NULL")
         eventMonitor->notify("cluster",nodeUrl);
     else
         spdlog::info("Cannot find the node " + to_string(nodeId)+"!");
 }
+
+
 
 void ClusterServer::checkExtensions() {
     GPUFunctions gpuFunctions;
@@ -139,3 +143,4 @@ shared_ptr<mutex> ClusterServer::clientLock = make_shared<mutex>();
 set<string> ClusterServer::extensions = {};
 list<string> ClusterServer::events = {};
 shared_ptr<ParameterizedEvent> ClusterServer::eventMonitor = NULL;
+

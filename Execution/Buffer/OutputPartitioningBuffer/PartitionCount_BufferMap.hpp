@@ -246,7 +246,11 @@ public:
         if(forceExecutorNum > 0)
         {
             tidsLock.lock();
-            for(int i = 0 ; i < forceExecutorNum ; i++)
+            int actualNum = partitionCount;
+            if(forceExecutorNum < partitionCount)
+                actualNum = forceExecutorNum;
+
+            for(int i = 0 ; i < actualNum ; i++)
                 ShuffleExecutor::releaseShuffleExecutor(this->shuffleExecutors);
 
             while(this->executorTidReportNum > 0);
@@ -298,7 +302,11 @@ public:
 
             if(forceExecutorNum > 0)
             {
-                for(int i = 0 ; i < forceExecutorNum ; i++)
+                int actualNum = partitionCount;
+                if(forceExecutorNum < partitionCount)
+                    actualNum = forceExecutorNum;
+
+                for(int i = 0 ; i < actualNum ; i++)
                     ShuffleExecutor::releaseShuffleExecutor(this->shuffleExecutors);
             }
             else
@@ -313,7 +321,11 @@ public:
             if(forceExecutorNum > 0)
             {
                 tidsLock.lock();
-                for(int i = 0 ; i < forceExecutorNum ; i++)
+                int actualNum = partitionCount;
+                if(forceExecutorNum < partitionCount)
+                    actualNum = forceExecutorNum;
+
+                for(int i = 0 ; i < actualNum ; i++)
                     ShuffleExecutor::releaseShuffleExecutor(this->shuffleExecutors);
 
                 while(this->executorTidReportNum > 0);

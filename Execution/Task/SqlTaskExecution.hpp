@@ -809,10 +809,33 @@ public:
         runners.push_back(factory->createLogicalPipelineRunnerWithExtendedLogicalPipeline(extendedLogicalPipeline,splits));
         this->taskExecutor->enqueueSplits(this->taskHandle,runners);
 
+    }
 
 
+    void closePipelineExtensionDriver(string extension, PipelineId pipelineName) {
+
+        if (remoteSourceLogicalPipelineRegister.find(pipelineName) == remoteSourceLogicalPipelineRegister.end())
+        {
+            spdlog::critical("Cannot find the RemoteSource Pipeline '"+pipelineName.get()+"'");
+            return;
+        }
+
+        auto pipelineContext = this->taskContext->getPipelineContext(pipelineName);
+        if(pipelineContext == NULL)
+            return;
+
+        OperatorExtension operatorExtension;
+        list<shared_ptr<DriverContext>> driverContexts = pipelineContext->getDriverContexts();
+        if(driverContexts.size() > 1) {
+
+            for (auto driverContext: driverContexts) {
+                driverContext->closeExtendedRemoteSourceDriver(operatorExtension.extendedOperatorTypes(extension));
+                break;
+            }
+        }
 
     }
+
 
     void closeASourceCPUPipeline(PipelineId pipelineName)
     {

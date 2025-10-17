@@ -124,6 +124,10 @@ public:
 
         map<string,shared_ptr<ClusterNode>> all = ClusterServer::getNodesManager()->getAllAliveClusterNodes();
 
+
+       // for(auto n : all)
+        //    spdlog::info(n.second->getNodeLocation()+" "+n.second->getNodeStatus());
+
         if(!ClusterServer::getNodesManager()->ifUseStorageNode())
         {
             all = filterStorageNodes(all);
