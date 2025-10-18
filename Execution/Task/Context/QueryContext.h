@@ -10,7 +10,7 @@
 #include "../../../common.h"
 //#include "../Id/TaskId.hpp"
 #include "../../../Session/RuntimeConfigParser.hpp"
-#include "../SidewayExchangeSystem/InterTaskDataExchangeManager.hpp"
+#include "../../Scheduler/SidewayExchangeSystem/InterTaskDataExchangeManager.hpp"
 
 class TaskContext;
 using namespace std;

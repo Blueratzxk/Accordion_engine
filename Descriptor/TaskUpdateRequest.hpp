@@ -12,7 +12,7 @@
 //#include "../Descriptor/TaskInterfere/TaskInterfereRequest.hpp"
 #include "../Descriptor/TaskInterfere/TaskInterfereRequestSerial.hpp"
 #include "../Session/SessionRepresentation.hpp"
-#include "../Execution/Task/SidewayExchangeSystem/TaskExecutionCondition.hpp"
+#include "../Execution/Scheduler/SidewayExchangeSystem/TaskExecutionCondition.hpp"
 class TaskUpdateRequest
 {
     shared_ptr<TaskSource> taskSource = NULL;

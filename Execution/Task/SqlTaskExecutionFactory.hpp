@@ -5,7 +5,7 @@
 #ifndef OLVP_SQLTASKEXECUTIONFACTORY_HPP
 #define OLVP_SQLTASKEXECUTIONFACTORY_HPP
 
-#include "SidewayExchangeSystem/TaskExecutionCondition.hpp"
+#include "../Scheduler/SidewayExchangeSystem/TaskExecutionCondition.hpp"
 #include "SqlTaskExecution.hpp"
 #include "../../Planner/LocalPlanner/LogicalPipelineFactory.hpp"
 #include "../../Planner/LocalPlanner/LocalPlanTreeAnalyzer.hpp"

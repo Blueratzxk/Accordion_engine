@@ -515,12 +515,12 @@ add_executable(OLVP main.cpp
         Utils/ColumnCompute.hpp
         Split/InterTaskSplit.hpp
         Execution/Buffer/InterTaskSimpleOutputBuffer.hpp
-        Execution/Task/SidewayExchangeSystem/InterTaskDataExchangeManager.hpp
+        Execution/Scheduler/SidewayExchangeSystem/InterTaskDataExchangeManager.hpp
         Web/ArrowRPC/InterTaskRPCClient.hpp
         Web/ArrowRPC/InterTaskDataPageRPCBuffer.hpp
         Web/ArrowRPC/InterTaskArrowRPCClient.hpp
         Descriptor/InterTaskMissionDescriptor.hpp
-        Execution/Task/SidewayExchangeSystem/TaskExecutionCondition.hpp
+        Execution/Scheduler/SidewayExchangeSystem/TaskExecutionCondition.hpp
         FunctionExtension/GPU/GPUFilterOperator.hpp
         FunctionExtension/GPU/GPUFilterExprEvaluator.hpp
         FunctionExtension/GPU/Logical_GPUFilterOperator.hpp
@@ -537,11 +537,12 @@ add_executable(OLVP main.cpp
         FunctionExtension/GPU/GPUBatchAssembleOperator.hpp
         FunctionExtension/GPU/Logical_GPUBatchAssembleOperator.hpp
         FunctionExtension/GPU/Config/GPUExecutionConfig.hpp
-        Execution/Task/SidewayExchangeSystem/SidewayDataExchangeScheduler.hpp
+        Execution/Scheduler/SidewayExchangeSystem/SidewayDataExchangeScheduler.hpp
         TpchTest/Querys/SimpleTest/Query_OperatorMigration.hpp
-        Execution/Task/SidewayExchangeSystem/SidewayExchangeSystem.hpp
+        Execution/Scheduler/SidewayExchangeSystem/SidewayExchangeSystem.hpp
         System/SystemEventMonitor.hpp
         Execution/Event/ParameterizedEvent.hpp
+        Execution/Scheduler/SqlScheduleLock.hpp
 
 
 )

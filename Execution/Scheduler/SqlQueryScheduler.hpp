@@ -20,7 +20,7 @@
 #include "../../Query/QueryStateMachine.hpp"
 #include "QueryInfos/StageProcessingTimeCollector.hpp"
 
-#include "../Task/SidewayExchangeSystem/SidewayExchangeSystem.hpp"
+#include "SidewayExchangeSystem/SidewayExchangeSystem.hpp"
 
 
 class SqlQueryScheduler : public enable_shared_from_this<SqlQueryScheduler>{
@@ -49,6 +49,8 @@ class SqlQueryScheduler : public enable_shared_from_this<SqlQueryScheduler>{
     shared_ptr<StageProcessingTimeCollector> stageProcessingTimeCollector;
 
     shared_ptr<SidewayExchangeSystem> sidewayExchangeSystem;
+    shared_ptr<SqlScheduleLock> scheduleLock;
+
 
 
 public:
@@ -59,6 +61,7 @@ public:
         this->session = session;
         this->stateMachine = stateMachine;
         this->executionFactory = make_shared<StageTreeExecutionFactory>(this->session);
+        this->scheduleLock = make_shared<SqlScheduleLock>();
 
 
         this->stageExeSchedulers = this->executionFactory->createStageTreeExecutions(this->rootStage, this->root);
@@ -73,7 +76,7 @@ public:
         for(auto exe : this->stageExeSchedulers)
             stageExecutions.push_back(exe.getStageExecution());
 
-        this->sidewayExchangeSystem = make_shared<SidewayExchangeSystem>(this->stageExeSchedulers);
+        this->sidewayExchangeSystem = make_shared<SidewayExchangeSystem>(this->stageExeSchedulers,this->scheduleLock);
 
         this->stageProcessingTimeCollector = make_shared<StageProcessingTimeCollector>(stageExecutions);
         this->stageProcessingTimeCollector->start();
@@ -259,16 +262,11 @@ public:
         return results;
     }
 
-
-
     long getCurProcessingTime(int stageId)
     {
         auto re = this->getStageProcessingTimes();
         return re[stageId].first;
     }
-
-    //------------------------------------------------------------------------------//
-
 
     map<int,int> getStageDOPs()
     {
@@ -344,8 +342,6 @@ public:
 
     }
 
-
-
     double getSingleTaskOfStageCpuUsage(int stageId)
     {
         return this->stageExecutionsMap[stageId]->getStageExecution()->getSingleTaskOfTheStageCpuUsage();
@@ -394,8 +390,6 @@ public:
 
     }
 
-
-
     string getRootStageExecutionTime()
     {
         string info = this->rootStage->getStageInfo();
@@ -439,8 +433,6 @@ public:
 
                 this->setStageFirstExecutionTimePrediction(make_shared<StageExecutionAndScheduler>(executions[i].getStageExecution(),
                                                                                                    executions[i].getStageLinkage(),executions[i].getStageScheduler()));
-
-
             }
 
         }
@@ -503,7 +495,6 @@ public:
 
                 this->setStageFirstExecutionTimePrediction(make_shared<StageExecutionAndScheduler>(executions[i].getStageExecution(),
                                                                                                    executions[i].getStageLinkage(),executions[i].getStageScheduler()));
-
             }
         }
     }
@@ -512,12 +503,7 @@ public:
         for (int i = 0; i < executions.size(); i++) {
 
             if (executions[i].getStageExecution()->getStageId().getId() == (stageId)) {
-
-
-
                 executions[i].getStageExecution()->updateTasksIntraParaByTaskId(taskId,request);
-
-
                 this->setStageFirstExecutionTimePrediction(make_shared<StageExecutionAndScheduler>(executions[i].getStageExecution(),
                                                                                                    executions[i].getStageLinkage(),executions[i].getStageScheduler()));
 
@@ -569,247 +555,7 @@ public:
     }
 
 
-    static void addStageConcurrent(shared_ptr<SqlQueryScheduler> scheduler,int stageId)
-    {
-        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
-            return;
-
-        scheduler->addMulConcurrencyForOneStage(scheduler->stageExeSchedulers,stageId,1);
-    }
-
-    static void addStageMulConcurrent(shared_ptr<SqlQueryScheduler> scheduler,int stageId,int taskNum)
-    {
-        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
-            return;
-
-        scheduler->addMulConcurrencyForOneStage(scheduler->stageExeSchedulers,stageId,taskNum);
-    }
-
-    static void addStageMulConcurrentByNodesGroup(shared_ptr<SqlQueryScheduler> scheduler,int stageId,int taskNum)
-    {
-        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
-            return;
-
-        scheduler->addMulConcurrencyForOneStageByNodesGroup(scheduler->stageExeSchedulers,stageId,taskNum);
-    }
-
-    static void decreaseStageParallelism(shared_ptr<SqlQueryScheduler> scheduler,int stageId,int degree)
-    {
-        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
-            return;
-
-        scheduler->decreaseParallelismForOneStage(scheduler->stageExeSchedulers,stageId,degree);
-    }
-
-    static void decreaseStageTaskGroupParallelism(shared_ptr<SqlQueryScheduler> scheduler,int stageId)
-    {
-        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
-            return;
-
-        scheduler->decreaseTaskGroupParallielismForOneStage(scheduler->stageExeSchedulers,stageId);
-    }
-
-    static bool isStageScalable(shared_ptr<SqlQueryScheduler> scheduler,int stageId)
-    {
-
-
-        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
-            return false;
-
-        vector<StageExecutionAndScheduler> executions = scheduler->stageExeSchedulers;
-        for (int i = 0; i < executions.size(); i++) {
-            if (executions[i].getStageExecution()->getStageId().getId() == stageId) {
-                return executions[i].getStageExecution()->isStageScalable();
-            }
-        }
-
-        return false;
-    }
-
-    static bool isStageExist(shared_ptr<SqlQueryScheduler> scheduler,int stageId)
-    {
-        vector<StageExecutionAndScheduler> executions = scheduler->stageExeSchedulers;
-        for (int i = 0; i < executions.size(); i++) {
-            if (executions[i].getStageExecution()->getStageId().getId() == stageId) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    static bool isStageHasBuild(shared_ptr<SqlQueryScheduler> scheduler,int stageId)
-    {
-        vector<StageExecutionAndScheduler> executions = scheduler->stageExeSchedulers;
-        for (int i = 0; i < executions.size(); i++) {
-            auto sta = executions[i].getStageExecution();
-            if (sta->getStageId().getId() == stageId) {
-            }
-        }
-        return false;
-    }
-
-    static void addQueryConcurrency(shared_ptr<SqlQueryScheduler> scheduler,string degree)
-    {
-        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
-            return;
-
-        vector<StageExecutionAndScheduler> executions = scheduler->stageExeSchedulers;
-
-        for (int i = 0; i < executions.size(); i++) {
-            auto handle = executions[i].getStageExecution()->getFragment()->getPartitionHandle();
-            if(handle != NULL && handle->getConnectorHandle()->getHandleId().compare("SystemPartitioningHandle") == 0) {
-
-                if(static_pointer_cast<SystemPartitioningHandle>((handle)->getConnectorHandle())->partitioningType !=
-                        SystemPartitioningHandle::SINGLE) {
-
-                    if(atoi(degree.c_str()) != -1)
-                    {
-                        shared_ptr<TaskIntraParaUpdateRequest> intraRequest  = make_shared<TaskIntraParaUpdateRequest>("-1","incre",
-                                                                                                                       degree);
-                        scheduler->updateIntraTaskParallelism(executions,executions[i].getStageExecution()->getStageId().getId(),intraRequest);
-                    }
-
-                }
-            }
-        }
-    }
-
-    static void addStageConcurrency(shared_ptr<SqlQueryScheduler> scheduler,string degree,int stageId)
-    {
-        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
-            return;
-
-        vector<StageExecutionAndScheduler> executions = scheduler->stageExeSchedulers;
-
-        int flag = false;
-        int index = 0;
-        for (int i = 0; i < executions.size(); i++) {
-            if(executions[i].getStageExecution()->getStageId().getId() == stageId) {
-                flag = true;
-                index = i;
-            }
-        }
-        if(!flag)
-            return;
-
-
-        auto handle = executions[index].getStageExecution()->getFragment()->getPartitionHandle();
-        if(handle != NULL && handle->getConnectorHandle()->getHandleId().compare("SystemPartitioningHandle") == 0) {
-
-            if(static_pointer_cast<SystemPartitioningHandle>((handle)->getConnectorHandle())->partitioningType !=
-               SystemPartitioningHandle::SINGLE) {
-
-                if(atoi(degree.c_str()) != -1)
-                {
-                    shared_ptr<TaskIntraParaUpdateRequest> intraRequest  = make_shared<TaskIntraParaUpdateRequest>("-1","incre",
-                                                                                                                   degree);
-                    scheduler->updateIntraTaskParallelism(executions,executions[index].getStageExecution()->getStageId().getId(),intraRequest);
-                }
-            }
-        }
-
-
-    }
-
-    static void addQueryParallelism(shared_ptr<SqlQueryScheduler> scheduler,string degree)
-    {
-        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
-            return;
-
-        vector<StageExecutionAndScheduler> executions = scheduler->stageExeSchedulers;
-
-        for (int i = 0; i < executions.size(); i++) {
-            auto handle = executions[i].getStageExecution()->getFragment()->getPartitionHandle();
-            if (handle != NULL &&
-                handle->getConnectorHandle()->getHandleId().compare("SystemPartitioningHandle") == 0) {
-                if (static_pointer_cast<SystemPartitioningHandle>((handle)->getConnectorHandle())->partitioningType !=
-                    SystemPartitioningHandle::SINGLE) {
-
-                    int addConcur = atoi(degree.c_str());
-                    if (addConcur != -1)
-                        scheduler->addMulConcurrencyForOneStage(executions,
-                                                                executions[i].getStageExecution()->getStageId().getId(),
-                                                                addConcur);
-                }
-            }
-        }
-    }
-
-    static void addQueryParallelismUsingInitialNodes(shared_ptr<SqlQueryScheduler> scheduler,string degree)
-    {
-        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
-            return;
-
-        vector<StageExecutionAndScheduler> executions = scheduler->stageExeSchedulers;
-
-        for (int i = 0; i < executions.size(); i++) {
-            auto handle = executions[i].getStageExecution()->getFragment()->getPartitionHandle();
-            if (handle != NULL &&
-                handle->getConnectorHandle()->getHandleId().compare("SystemPartitioningHandle") == 0) {
-                if (static_pointer_cast<SystemPartitioningHandle>((handle)->getConnectorHandle())->partitioningType !=
-                    SystemPartitioningHandle::SINGLE) {
-
-                    int addConcur = atoi(degree.c_str());
-                    if (addConcur != -1)
-                        scheduler->addMulConcurrencyForOneStageByNodesGroup(executions,
-                                                                executions[i].getStageExecution()->getStageId().getId(),
-                                                                addConcur);
-                }
-            }
-        }
-    }
-
-
-    static void addStageAllTaskIntraPipelineConcurrent(shared_ptr<SqlQueryScheduler> scheduler,string stageId,string pipelineId)
-    {
-        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
-            return;
-
-        shared_ptr<TaskIntraParaUpdateRequest> intraRequest  = make_shared<TaskIntraParaUpdateRequest>(pipelineId,"incre","1");
-        scheduler->updateIntraTaskParallelism(scheduler->stageExeSchedulers,atoi(stageId.c_str()),intraRequest);
-    }
-
-    static void addStageTaskIntraPipelineConcurrentByTaskId(shared_ptr<SqlQueryScheduler> scheduler,string stageId,int taskId,string pipelineId)
-    {
-        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
-            return;
-
-        shared_ptr<TaskIntraParaUpdateRequest> intraRequest  = make_shared<TaskIntraParaUpdateRequest>(pipelineId,"incre","1");
-        scheduler->updateIntraTaskParallelismByTaskId(scheduler->stageExeSchedulers,atoi(stageId.c_str()),taskId,intraRequest);
-
-    }
-
-
-    static void addStageTaskIntraExtensionPipelineConcurrentByTaskId(shared_ptr<SqlQueryScheduler> scheduler,string extensionType,string stageId,int taskId,string pipelineId)
-    {
-        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
-            return;
-
-
-
-        shared_ptr<TaskIntraParaUpdateRequest> intraRequest  = make_shared<TaskIntraParaUpdateRequest>(pipelineId,"incre","1",extensionType);
-        scheduler->updateIntraTaskParallelismByTaskId(scheduler->stageExeSchedulers,atoi(stageId.c_str()),taskId,intraRequest);
-
-    }
-
-    static void closeStageTaskIntraExtensionPipelineConcurrentByTaskId(shared_ptr<SqlQueryScheduler> scheduler,string extensionType,string stageId,int taskId,string pipelineId)
-    {
-        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
-            return;
-
-        shared_ptr<TaskIntraParaUpdateRequest> intraRequest  = make_shared<TaskIntraParaUpdateRequest>(pipelineId,"decre","1",extensionType);
-        scheduler->updateIntraTaskParallelismByTaskId(scheduler->stageExeSchedulers,atoi(stageId.c_str()),taskId,intraRequest);
-
-    }
-
-    static void closeStageAllTaskIntraPipelineConcurrent(shared_ptr<SqlQueryScheduler> scheduler,string stageId,string pipelineId)
-    {
-        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
-            return;
-
-        shared_ptr<TaskIntraParaUpdateRequest> intraRequest  = make_shared<TaskIntraParaUpdateRequest>(pipelineId,"decre","1");
-        scheduler->updateIntraTaskParallelism(scheduler->stageExeSchedulers,atoi(stageId.c_str()),intraRequest);
-    }
+    //---------------------------------------------------Stage Info ----------------------------------------------------------//
 
     static std::string convertDoubleToString(const long double value,const int precision = 0)
     {
@@ -818,15 +564,12 @@ public:
         return stream.str();
     }
 
-
     static string getQueryStagesThroughputs(shared_ptr<SqlQueryScheduler> scheduler)
     {
         vector<StageExecutionAndScheduler> executions = scheduler->stageExeSchedulers;
         nlohmann::json throughputs;
         for(auto exe : executions)
         {
-
-
 
             double through = exe.getStageExecution()->getStageThroughput();
 
@@ -861,11 +604,288 @@ public:
         return result;
     }
 
-    static bool moveTaskOperatorTest(shared_ptr<SqlQueryScheduler> scheduler,string para)
+    static bool isStageScalable(shared_ptr<SqlQueryScheduler> scheduler,int stageId)
     {
         if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
             return false;
 
+        vector<StageExecutionAndScheduler> executions = scheduler->stageExeSchedulers;
+        for (int i = 0; i < executions.size(); i++) {
+            if (executions[i].getStageExecution()->getStageId().getId() == stageId) {
+                return executions[i].getStageExecution()->isStageScalable();
+            }
+        }
+
+        return false;
+    }
+
+    static bool isStageExist(shared_ptr<SqlQueryScheduler> scheduler,int stageId)
+    {
+        vector<StageExecutionAndScheduler> executions = scheduler->stageExeSchedulers;
+        for (int i = 0; i < executions.size(); i++) {
+            if (executions[i].getStageExecution()->getStageId().getId() == stageId) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    //---------------------------------------------------Dynamic schedule-----------------------------------------------------------//
+
+
+    static void addStageConcurrent(shared_ptr<SqlQueryScheduler> scheduler,int stageId)
+    {
+        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
+            return;
+
+
+        if(!scheduler->scheduleLock->tune_lock())
+            return;
+        scheduler->addMulConcurrencyForOneStage(scheduler->stageExeSchedulers,stageId,1);
+        scheduler->scheduleLock->tune_unlock();
+
+    }
+
+    static void addStageMulConcurrent(shared_ptr<SqlQueryScheduler> scheduler,int stageId,int taskNum)
+    {
+        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
+            return;
+
+
+        if(!scheduler->scheduleLock->tune_lock())
+            return;
+        scheduler->addMulConcurrencyForOneStage(scheduler->stageExeSchedulers,stageId,taskNum);
+        scheduler->scheduleLock->tune_unlock();
+    }
+
+    static void addStageMulConcurrentByNodesGroup(shared_ptr<SqlQueryScheduler> scheduler,int stageId,int taskNum)
+    {
+        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
+            return;
+
+        if(!scheduler->scheduleLock->tune_lock())
+            return;
+        scheduler->addMulConcurrencyForOneStageByNodesGroup(scheduler->stageExeSchedulers,stageId,taskNum);
+        scheduler->scheduleLock->tune_unlock();
+    }
+
+    static void decreaseStageParallelism(shared_ptr<SqlQueryScheduler> scheduler,int stageId,int degree)
+    {
+        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
+            return;
+
+        if(!scheduler->scheduleLock->tune_lock())
+            return;
+        scheduler->decreaseParallelismForOneStage(scheduler->stageExeSchedulers,stageId,degree);
+        scheduler->scheduleLock->tune_unlock();
+    }
+
+    static void decreaseStageTaskGroupParallelism(shared_ptr<SqlQueryScheduler> scheduler,int stageId)
+    {
+        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
+            return;
+
+        if(!scheduler->scheduleLock->tune_lock())
+            return;
+        scheduler->decreaseTaskGroupParallielismForOneStage(scheduler->stageExeSchedulers,stageId);
+        scheduler->scheduleLock->tune_unlock();
+    }
+
+
+    static void addQueryConcurrency(shared_ptr<SqlQueryScheduler> scheduler,string degree)
+    {
+        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
+            return;
+        if(!scheduler->scheduleLock->tune_lock())
+            return;
+
+        vector<StageExecutionAndScheduler> executions = scheduler->stageExeSchedulers;
+
+        for (int i = 0; i < executions.size(); i++) {
+            auto handle = executions[i].getStageExecution()->getFragment()->getPartitionHandle();
+            if(handle != NULL && handle->getConnectorHandle()->getHandleId().compare("SystemPartitioningHandle") == 0) {
+
+                if(static_pointer_cast<SystemPartitioningHandle>((handle)->getConnectorHandle())->partitioningType !=
+                        SystemPartitioningHandle::SINGLE) {
+
+                    if(atoi(degree.c_str()) != -1)
+                    {
+                        shared_ptr<TaskIntraParaUpdateRequest> intraRequest  = make_shared<TaskIntraParaUpdateRequest>("-1","incre",
+                                                                                                                       degree);
+                        scheduler->updateIntraTaskParallelism(executions,executions[i].getStageExecution()->getStageId().getId(),intraRequest);
+                    }
+
+                }
+            }
+        }
+
+        scheduler->scheduleLock->tune_unlock();
+    }
+
+    static void addStageConcurrency(shared_ptr<SqlQueryScheduler> scheduler,string degree,int stageId)
+    {
+        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
+            return;
+
+        if(!scheduler->scheduleLock->tune_lock())
+            return;
+
+        vector<StageExecutionAndScheduler> executions = scheduler->stageExeSchedulers;
+
+        int flag = false;
+        int index = 0;
+        for (int i = 0; i < executions.size(); i++) {
+            if(executions[i].getStageExecution()->getStageId().getId() == stageId) {
+                flag = true;
+                index = i;
+            }
+        }
+        if(!flag)
+            return;
+
+
+        auto handle = executions[index].getStageExecution()->getFragment()->getPartitionHandle();
+        if(handle != NULL && handle->getConnectorHandle()->getHandleId().compare("SystemPartitioningHandle") == 0) {
+
+            if(static_pointer_cast<SystemPartitioningHandle>((handle)->getConnectorHandle())->partitioningType !=
+               SystemPartitioningHandle::SINGLE) {
+
+                if(atoi(degree.c_str()) != -1)
+                {
+                    shared_ptr<TaskIntraParaUpdateRequest> intraRequest  = make_shared<TaskIntraParaUpdateRequest>("-1","incre",
+                                                                                                                   degree);
+                    scheduler->updateIntraTaskParallelism(executions,executions[index].getStageExecution()->getStageId().getId(),intraRequest);
+                }
+            }
+        }
+
+        scheduler->scheduleLock->tune_unlock();
+
+    }
+
+    static void addQueryParallelism(shared_ptr<SqlQueryScheduler> scheduler,string degree)
+    {
+        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
+            return;
+        if(!scheduler->scheduleLock->tune_lock())
+            return;
+
+        vector<StageExecutionAndScheduler> executions = scheduler->stageExeSchedulers;
+
+        for (int i = 0; i < executions.size(); i++) {
+            auto handle = executions[i].getStageExecution()->getFragment()->getPartitionHandle();
+            if (handle != NULL &&
+                handle->getConnectorHandle()->getHandleId().compare("SystemPartitioningHandle") == 0) {
+                if (static_pointer_cast<SystemPartitioningHandle>((handle)->getConnectorHandle())->partitioningType !=
+                    SystemPartitioningHandle::SINGLE) {
+
+                    int addConcur = atoi(degree.c_str());
+                    if (addConcur != -1)
+                        scheduler->addMulConcurrencyForOneStage(executions,
+                                                                executions[i].getStageExecution()->getStageId().getId(),
+                                                                addConcur);
+                }
+            }
+        }
+
+        scheduler->scheduleLock->tune_unlock();
+    }
+
+    static void addQueryParallelismUsingInitialNodes(shared_ptr<SqlQueryScheduler> scheduler,string degree)
+    {
+        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
+            return;
+
+        if(!scheduler->scheduleLock->tune_lock())
+            return;
+
+        vector<StageExecutionAndScheduler> executions = scheduler->stageExeSchedulers;
+
+        for (int i = 0; i < executions.size(); i++) {
+            auto handle = executions[i].getStageExecution()->getFragment()->getPartitionHandle();
+            if (handle != NULL &&
+                handle->getConnectorHandle()->getHandleId().compare("SystemPartitioningHandle") == 0) {
+                if (static_pointer_cast<SystemPartitioningHandle>((handle)->getConnectorHandle())->partitioningType !=
+                    SystemPartitioningHandle::SINGLE) {
+
+                    int addConcur = atoi(degree.c_str());
+                    if (addConcur != -1)
+                        scheduler->addMulConcurrencyForOneStageByNodesGroup(executions,
+                                                                executions[i].getStageExecution()->getStageId().getId(),
+                                                                addConcur);
+                }
+            }
+        }
+
+        scheduler->scheduleLock->tune_unlock();
+    }
+
+
+    static void addStageAllTaskIntraPipelineConcurrent(shared_ptr<SqlQueryScheduler> scheduler,string stageId,string pipelineId)
+    {
+        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
+            return;
+        if(!scheduler->scheduleLock->tune_lock())
+            return;
+
+
+        shared_ptr<TaskIntraParaUpdateRequest> intraRequest  = make_shared<TaskIntraParaUpdateRequest>(pipelineId,"incre","1");
+        scheduler->updateIntraTaskParallelism(scheduler->stageExeSchedulers,atoi(stageId.c_str()),intraRequest);
+
+        scheduler->scheduleLock->tune_unlock();
+    }
+
+
+    static void addStageTaskIntraExtensionPipelineConcurrentByTaskId(shared_ptr<SqlQueryScheduler> scheduler,string extensionType,string stageId,int taskId,string pipelineId)
+    {
+        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
+            return;
+        if(!scheduler->scheduleLock->tune_lock())
+            return;
+
+
+        shared_ptr<TaskIntraParaUpdateRequest> intraRequest  = make_shared<TaskIntraParaUpdateRequest>(pipelineId,"incre","1",extensionType);
+        scheduler->updateIntraTaskParallelismByTaskId(scheduler->stageExeSchedulers,atoi(stageId.c_str()),taskId,intraRequest);
+
+        scheduler->scheduleLock->tune_unlock();
+
+    }
+
+    static void closeStageTaskIntraExtensionPipelineConcurrentByTaskId(shared_ptr<SqlQueryScheduler> scheduler,string extensionType,string stageId,int taskId,string pipelineId)
+    {
+        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
+            return;
+        if(!scheduler->scheduleLock->tune_lock())
+            return;
+
+        shared_ptr<TaskIntraParaUpdateRequest> intraRequest  = make_shared<TaskIntraParaUpdateRequest>(pipelineId,"decre","1",extensionType);
+        scheduler->updateIntraTaskParallelismByTaskId(scheduler->stageExeSchedulers,atoi(stageId.c_str()),taskId,intraRequest);
+
+        scheduler->scheduleLock->tune_unlock();
+
+    }
+
+    static void closeStageAllTaskIntraPipelineConcurrent(shared_ptr<SqlQueryScheduler> scheduler,string stageId,string pipelineId)
+    {
+        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
+            return;
+        if(!scheduler->scheduleLock->tune_lock())
+            return;
+
+        shared_ptr<TaskIntraParaUpdateRequest> intraRequest  = make_shared<TaskIntraParaUpdateRequest>(pipelineId,"decre","1");
+        scheduler->updateIntraTaskParallelism(scheduler->stageExeSchedulers,atoi(stageId.c_str()),intraRequest);
+
+        scheduler->scheduleLock->tune_unlock();
+    }
+
+   //-------------------------------------------------Sideway Missions-----------------------------------------------------------------//
+
+
+    static bool moveTaskOperatorTest(shared_ptr<SqlQueryScheduler> scheduler,string para)
+    {
+        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
+            return false;
 
 
         vector<StageExecutionAndScheduler> executions = scheduler->stageExeSchedulers;
@@ -976,6 +996,11 @@ public:
         scheduler->closeGPUTaskForStage(stageId);
     }
 
+
+
+
+    //-------------------------------------------------------static schedule--------------------------------------------------------------------------------//
+
     static void schedule(shared_ptr<SqlQueryScheduler> scheduler) {
 
         spdlog::debug(scheduler->session->getQueryId() +" starts initial schedule!");
@@ -1054,10 +1079,7 @@ public:
 
 
         shared_ptr<DataPage> result;
-
         scheduler->openIQRS();
-
-
         spdlog::debug(scheduler->session->getQueryId() +" initial schedule finished!");
 
         Timer timer;
@@ -1069,20 +1091,6 @@ public:
 
             int counter = 0;
 
-            /*
-            timer.set();
-            if(timer.checkGap(300)) {
-                for(auto exe : executions)
-                {
-                    double through = exe.getStageExecution()->getStageThroughput();
-                    spdlog::debug(
-                            "Throughput_Stage_" + to_string(exe.getStageExecution()->getStageId().getId()) + "====>" +
-                            to_string(through));
-                }
-            }*/
-
-
-
             for(auto exe : executions)
             {
                 if(exe.getStageExecution()->getState()->isDone())
@@ -1090,14 +1098,18 @@ public:
                 else
                     exe.getStageExecution()->getStateChangeListener()->listen();
             }
+
             if(counter == executions.size())
             {
-                if(infoTag == true) {
-                    spdlog::info("Query finished!");
-                    infoTag = false;
+                if(!scheduler->sidewayExchangeSystem->noSidewayTasks())
+                    scheduler->sidewayExchangeSystem->listenAllMissionsStatus();
+                else {
+                    if(infoTag == true) {
+                        spdlog::info("Query finished!");
+                        infoTag = false;
+                    }
+                    scheduler->stateMachine->finished();
                 }
-                scheduler->stateMachine->finished();
-
             }
 
 
@@ -1126,8 +1138,6 @@ public:
 
         }
 
-
-
         double originTime = 0.0;
         double actualTime = 0.0;
         double exeTime = 0.0;
@@ -1152,10 +1162,6 @@ public:
 
             spdlog::info( to_string(exe.getStageExecution()->getMaxHashTableBuildTimeofTasks()));
 
-            //auto jbs = exe.getStageExecution()->getJoinIdToBuildTime();
-            //nlohmann::json json;
-            //json["joinToBuildTime"] = jbs;
-            //spdlog::info(json.dump());
         }
 
         scheduler->originTime = originTime;

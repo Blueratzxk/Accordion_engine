@@ -53,7 +53,7 @@ public:
     {
         if(this->taskContext != NULL) {
 
-            if(this->taskContext->getOutputTupleWidth() < 0 && !(*result).empty()&&!(*result)[0]->isEndPage()&&!(*result)[0]->isEmptyPage())
+            if(this->taskContext->getOutputTupleWidth() < 0 && !(*result).empty()&&!(*result)[0]->isEndPage()&&!(*result)[0]->isEmptyPage()&&!(*result)[0]->isAbortPage())
             {
                 int tupleByteWidth = 0;
                 for(auto type : (*result)[0]->get()->schema()->fields()) {
@@ -73,7 +73,7 @@ public:
     {
         if(this->taskContext != NULL) {
 
-            if(this->taskContext->getOutputTupleWidth() < 0 && !(result).empty()&&!(result)[0]->isEndPage()&&!(result)[0]->isEmptyPage())
+            if(this->taskContext->getOutputTupleWidth() < 0 && !(result).empty()&&!(result)[0]->isEndPage()&&!(result)[0]->isEmptyPage()&&!(result)[0]->isAbortPage())
             {
                 int tupleByteWidth = 0;
                 for(auto type : (result)[0]->get()->schema()->fields()) {

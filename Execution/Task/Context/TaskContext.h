@@ -39,6 +39,7 @@ class TaskContext:public std::enable_shared_from_this<TaskContext>
     shared_ptr<TaskId> taskId;
     int taskGeneration;
     atomic<long> currentTotalTupleCount = 0;
+    atomic<long> currentTotalRequestTupleCount = 0;
     atomic<long> remainingTableTupleCount = 0;
     atomic<long> bufferRemainingTupleCount = 0;
     atomic<bool> remainingTupleReport = true;
@@ -104,6 +105,8 @@ public:
         return this->taskGeneration;
     }
 
+
+    void addTotalRequestTupleCount(long increment);
 
     atomic<long>& getAllBuildCount();
     atomic<long>& getAllBuildProgress();

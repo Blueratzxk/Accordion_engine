@@ -6,6 +6,7 @@
 #define OLVP_SIDEWAYEXCHANGESYSTEM_HPP
 
 #include "SidewayDataExchangeScheduler.hpp"
+#include "../SqlScheduleLock.hpp"
 
 class SidewayExchangeSystem
 {
@@ -21,9 +22,20 @@ class SidewayExchangeSystem
 
     atomic<bool> sidewayExecutorActivated = false;
 
+    SimpleEvent missionsStatusEvent;
+    shared_ptr<SqlScheduleLock> sqlScheduleLock;
+
+    bool nodeDrainingState = false;
+
+    enum NodeDrainingState
+    {
+        START,FINISHED
+    }DrainingState = FINISHED;
+
 public:
-    SidewayExchangeSystem(vector<StageExecutionAndScheduler> stageExeSchedulers){
+    SidewayExchangeSystem(vector<StageExecutionAndScheduler> stageExeSchedulers, shared_ptr<SqlScheduleLock> sqlScheduleLock){
         this->stageExeSchedulers = stageExeSchedulers;
+        this->sqlScheduleLock = sqlScheduleLock;
     }
 
     shared_ptr<SqlStageExecution> getStageExecution(int stageId)
@@ -54,6 +66,26 @@ public:
         executor.detach();
     }
 
+    bool noSidewayTasks()
+    {
+        bool state = false;
+        lock.lock();
+        if(this->sidewayExchangeTaskQueue.empty() && (!this->sidewayExecutorActivated))
+            state = true;
+        lock.unlock();
+        return state;
+    }
+
+    void listenAllMissionsStatus()
+    {
+        this->missionsStatusEvent.listen();
+    }
+
+    void notifyAllMissionsStatus()
+    {
+        this->missionsStatusEvent.notify();
+    }
+
     static void sidewayExecutor(SidewayExchangeSystem *system){
 
         system->sidewayExecutorActivated = true;
@@ -67,6 +99,7 @@ public:
 
             system->lock.unlock();
             if(queueEmpty) {
+                system->notifyAllMissionsStatus();
                 break;
             }
 
@@ -86,6 +119,11 @@ public:
 
             if(scheduler->needRecordInfo())
                 system->finishedSidewayExchangeTasks.push_back(scheduler);
+
+            if(system->DrainingState == FINISHED)
+                system->sqlScheduleLock->sideway_unlock();
+
+            system->notifyAllMissionsStatus();
 
         }
 
@@ -394,12 +432,25 @@ public:
             this->releaseExecutor();
     }
 
+    void NodeDrainingStart()
+    {
+        this->DrainingState = START;
+        this->sqlScheduleLock->sideway_lock();
+    }
+    void NodeDrainingFinished()
+    {
+        this->DrainingState = FINISHED;
+    }
+
     void processNodeDraining(string nodeUrl)
     {
+        NodeDrainingStart();
+
         processActiveStageTaskMigration(nodeUrl);
         processActiveStageBufferMigration(nodeUrl);
         resetNodeAliveStatus(nodeUrl);
 
+        NodeDrainingFinished();
 
     }
 

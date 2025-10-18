@@ -220,4 +220,8 @@ void TaskContext::savePagesForInterTaskMission(string operatorId,vector<shared_p
     this->queryContext.lock()->saveInterTaskPages(sourceId,pages);
 }
 
+void TaskContext::addTotalRequestTupleCount(long increment) {
+    this->currentTotalRequestTupleCount+=increment;
+}
+
 #endif //OLVP_TASKCONTEXT_CPP
