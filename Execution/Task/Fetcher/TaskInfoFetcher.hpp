@@ -405,7 +405,7 @@ class TaskInfoFetcher : public enable_shared_from_this<TaskInfoFetcher>
     int delay = 100;
     shared_mutex lock;
     shared_ptr<TaskInfo> taskInfo = NULL;
-
+    shared_ptr<RestfulClient> restfulClient = make_shared<RestfulClient>();
     atomic<bool> finished = false;
 
     atomic<bool> abortFetch = false;
@@ -414,9 +414,12 @@ class TaskInfoFetcher : public enable_shared_from_this<TaskInfoFetcher>
 
     shared_ptr<throughputWindow> tw;
     shared_ptr<CpuUsageWindow> cw;
+    shared_ptr<throughputWindow> requestTw;
 
     double throughput = 0;
     double throughputBytes = 0;
+
+    double requestThroughput = 0;
 
     double maxRemainingTuples = 0;
     double remainingTuples = 0;
@@ -443,7 +446,7 @@ class TaskInfoFetcher : public enable_shared_from_this<TaskInfoFetcher>
 
     bool hasThroughput = false;
 
-    shared_ptr<RestfulClient> restfulClient = make_shared<RestfulClient>();
+
 
     map<string,double> joinIdToBuildTime;
 
@@ -462,6 +465,7 @@ public:
 
         tw = make_shared<throughputWindow>(20);
         cw = make_shared<CpuUsageWindow>(3);
+        requestTw = make_shared<throughputWindow>(50);
         bufferDescWindow = make_shared<BufferInfoWindow>(50);
 
         ExecutionConfig config;
@@ -499,6 +503,7 @@ public:
         long a = (taskThroughputInfo1.getCurrentTupleCount() - this->taskThroughputInfo->getCurrentTupleCount());
         double b = (taskThroughputInfo1.getTimeStamp()-this->taskThroughputInfo->getTimeStamp());
         double c = (taskThroughputInfo1.getThroughputBytes() - this->taskThroughputInfo->getThroughputBytes());
+        long requestThroughputDiff = (taskThroughputInfo1.getCurrentRequestTuplesCount() - this->taskThroughputInfo->getCurrentRequestTuplesCount());
 
         if(a > 0)
             this->hasThroughput = true;
@@ -506,10 +511,12 @@ public:
             this->hasThroughput = false;
 
         this->throughput = ((double)a)/b;
+        this->requestThroughput = ((double)requestThroughputDiff)/b;
         this->throughputBytes = c/b;
         this->bufferInfoDescriptor = this->taskInfo->getTaskInfoDescriptor()->getBufferInfoDescriptor();
 
         tw->put(this->throughput);
+        requestTw->put(this->requestThroughput);
         tw->putThroughBytes(this->throughputBytes);
         cw->put(this->taskInfo->getTaskInfoDescriptor()->getTaskCpuUsageDescriptor());
         this->allThreadsNums = this->taskInfo->getTaskInfoDescriptor()->getTaskCpuUsageDescriptor().getDriverNum() + this->taskInfo->getTaskInfoDescriptor()->getTaskCpuUsageDescriptor().getShufflerNum();
@@ -613,6 +620,14 @@ public:
     double getAvgThroughput()
     {
         return tw->getAvgTP();
+    }
+    double getRequestThroughput()
+    {
+        return this->requestThroughput;
+    }
+    double getAvgRequestThroughput()
+    {
+        return this->requestTw->getAvgTP();
     }
     double getAvgThroughputBytes()
     {

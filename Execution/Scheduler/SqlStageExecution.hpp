@@ -311,6 +311,63 @@ public:
         return ratio;
     }
 
+    void displayEachTaskThroughputInfo()
+    {
+        updateEachTaskParallelismFactor();
+        auto allTasks = this->getAllTasks();
+        string result;
+        result.append("Stage:"+to_string(this->stageId)+" ");
+        result.append("Request throughputs:");
+        for(auto task : allTasks)
+        {
+            if(!task->isDone())
+                result.append(to_string(task->getTaskId()->getId())
+                +":"+to_string(task->getTaskInfoFetcher()->getRequestThroughput())
+                +"|"+to_string(task->getTaskInfoFetcher()->getAvgRequestThroughput()))
+                .append(" ")
+                .append("["+ to_string(task->getParallelismFactor())+"]");
+        }
+        spdlog::info(result);
+    }
+
+    void updateEachTaskParallelismFactor()
+    {
+        set<shared_ptr<HttpRemoteTask>> normalTasks;
+        set<shared_ptr<HttpRemoteTask>> heteroTasks;
+
+        auto allTasks = this->getAllTasks();
+        for(auto task : allTasks)
+        {
+            if(!task->isDone())
+            {
+                if(task->getExtensions().empty())
+                    normalTasks.insert(task);
+                else
+                    heteroTasks.insert(task);
+            }
+        }
+        double normalTaskAvgRequestTp = 0.0;
+        int validValueCount = 0;
+        for(auto task : normalTasks)
+        {
+            auto avgTp = task->getTaskInfoFetcher()->getAvgRequestThroughput();
+            if(avgTp > 0) {
+                normalTaskAvgRequestTp += avgTp;
+                validValueCount++;
+            }
+        }
+        normalTaskAvgRequestTp /= validValueCount;
+
+        for(auto hetero : heteroTasks)
+        {
+            auto heteroAvgRequestTp = hetero->getTaskInfoFetcher()->getAvgRequestThroughput();
+            if(heteroAvgRequestTp > 0)
+                hetero->updateParallelismFactor(static_cast<int>(std::round(heteroAvgRequestTp/normalTaskAvgRequestTp)));
+        }
+
+
+    }
+
     string getStageThroughputInfo()
     {
         vector<shared_ptr<TaskInfo>> taskInfos;
@@ -705,11 +762,25 @@ public:
         int activeTaskCount = 0;
         for(auto task : allTasks)
         {
-            if(!task->isDone())
+            if(!task->isDone() && task->getExtensions().empty())
                 activeTaskCount++;
         }
         return activeTaskCount;
     }
+
+    int getCurrentStageDOPFactor()
+    {
+        auto allTasks = this->getAllTasks();
+        int dopFactor = 0;
+        for(auto task : allTasks)
+        {
+            if(!task->isDone())
+                dopFactor+=task->getParallelismFactor();
+        }
+        return dopFactor;
+    }
+
+
     vector<shared_ptr<HttpRemoteTask>> getSourceTasks()
     {
         vector<shared_ptr<HttpRemoteTask>> remoteTasks;
@@ -721,7 +792,7 @@ public:
         }
         return remoteTasks;
     }
-    TaskId getMinTaskId()
+    TaskId getMinTaskIdForDecreaseDOP()
     {
         tasksLock.lock();
         int min = INT32_MAX;
@@ -730,6 +801,8 @@ public:
         for(int i = 0 ; i < this->allTasks.size() ; i++)
         {
             TaskId id = allTasks[i];
+            if(isExtendedTask(id.getId()))
+                continue;
 
             int tid = id.getId();
             if(tid < min)
@@ -754,9 +827,24 @@ public:
         return ids;
     }
 
+    bool isExtendedTask(int taskId)
+    {
+        for(auto task: this->tasks)
+        {
+            vector<shared_ptr<HttpRemoteTask>> nodeTasks = task.second;
+            for(auto nodeTask : nodeTasks)
+            {
+                if(nodeTask->getTaskId()->getId() == taskId)
+                    if(!nodeTask->getExtensions().empty())
+                        return true;
+            }
+        }
+        return false;
+    }
+
     void finishATaskBySourceStageTasks()
     {
-        TaskId minId = this->getMinTaskId();
+        TaskId minId = this->getMinTaskIdForDecreaseDOP();
         vector<shared_ptr<HttpRemoteTask>> sourceStageTasks = this->getSourceTasks();
         vector<string> bufferIds = {to_string(minId.getId())};
 

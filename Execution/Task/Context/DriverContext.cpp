@@ -194,4 +194,9 @@ string DriverContext::getTaskId() {
     return this->pipelineContext.lock()->getTaskId();
 }
 
+void DriverContext::addRequestedTupleCountFromUpstream(long increment)
+{
+    return this->pipelineContext.lock()->addRequestedTupleCountFromUpstream(increment);
+}
+
 #endif //OLVP_DRIVERCONTEXT_CPP

@@ -630,6 +630,14 @@ public:
         return false;
     }
 
+    static void displayAllTasksThroughputsInfo(shared_ptr<SqlQueryScheduler> scheduler)
+    {
+        vector<StageExecutionAndScheduler> executions = scheduler->stageExeSchedulers;
+        for (int i = 0; i < executions.size(); i++) {
+            executions[i].getStageExecution()->displayEachTaskThroughputInfo();
+        }
+    }
+
 
     //---------------------------------------------------Dynamic schedule-----------------------------------------------------------//
 

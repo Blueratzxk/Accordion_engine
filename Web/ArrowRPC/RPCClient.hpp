@@ -315,6 +315,14 @@ public:
         if(haveNotSendEndpage)
             buffer->enqueuePages(pagesReturn);
 
+        if(RPC->driverContext != NULL) {
+            int count = 0;
+            for (auto r: (pagesReturn))
+                if(r != NULL && !r->isAbortPage() && !r->isEmptyPage() && !r->isEndPage())
+                count += r->getElementsCount();
+            RPC->driverContext->addRequestedTupleCountFromUpstream(count);
+        }
+
         if(endPageCompensationNum > 0)
             for(int i = 0 ; i < endPageCompensationNum ; i++)
                 buffer->enqueuePages({DataPage::getEndPage()});

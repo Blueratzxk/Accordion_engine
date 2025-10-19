@@ -224,6 +224,10 @@ public:
                     QueryServer::getQueryServer()->getPPM()->test();
                 }
             }
+            else if(cmd == "tp")
+            {
+                QueryServer::getQueryServer()->displayQueryTasksThroughputsInfo();
+            }
             else if(cmd == "drain")
             {
                 ClusterServer::cleanTheNode();

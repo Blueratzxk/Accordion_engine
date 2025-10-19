@@ -108,6 +108,8 @@ public:
     void closeExtendedRemoteSourceDriver(set<string> extendedOpTypes);
 
     string getTaskId();
+
+    void addRequestedTupleCountFromUpstream(long increment);
 };
 
 #endif //OLVP_DRIVERCONTEXT_H

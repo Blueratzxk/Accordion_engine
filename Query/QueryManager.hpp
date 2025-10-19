@@ -967,6 +967,13 @@ public:
         else
             return "NULL";
     }
+    void displayQueryTasksThroughputsInfo()
+    {
+        for(auto query : (*this->querys)) {
+            if(!query.second->isQueryFinished())
+                query.second->displayAllTasksThroughputsInfo();
+        }
+    }
 
 
     void drainNode(string nodeUrl)
@@ -978,7 +985,6 @@ public:
             if(!query.second->getState()->isFinished()) {
                 spdlog::info("Query:" + query.first + " is draining node " + nodeUrl + "!");
                 query.second->Dynamic_drainNode(nodeUrl);
-
             }
 
         }

@@ -128,6 +128,10 @@ public:
     {
         this->stageTuningTime[stageId] = TimeCommon::getCurrentTimeStamp();
         int curDOP = this->sqlQueryExecution->getScheduler()->getStageExecutionAndSchedulerByStagId(stageId)->getStageExecution()->getCurrentStageDOP();
+        int virtualDOP = this->sqlQueryExecution->getScheduler()->getStageExecutionAndSchedulerByStagId(stageId)->getStageExecution()->getCurrentStageDOPFactor();
+
+        if(virtualDOP > curDOP)
+            spdlog::info("We have heterogeneous nodes! Virtual DOP is "+ to_string(virtualDOP)+"!");
 
         if(curDOP > targetDOP)
             turnDownStageDOP(sqlQueryExecution,stageId,curDOP-targetDOP);

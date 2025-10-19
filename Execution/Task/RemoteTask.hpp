@@ -52,6 +52,8 @@ class HttpRemoteTask
 
     bool isAbandoned = false;
 
+    int parallelismFactor = 1;
+
 public:
     HttpRemoteTask(shared_ptr<Event> eventListener,shared_ptr<TaskId> taskId,shared_ptr<PlanFragment> fragment,string nodeLocation,
                    shared_ptr<OutputBufferSchema> schema,shared_ptr<TaskSource> initial_taskSources,shared_ptr<Session> session,
@@ -68,6 +70,18 @@ public:
         this->taskInfoFetcher = make_shared<TaskInfoFetcher>(this->taskId,this->httpRequestLocation,this->eventListener);
         this->restfulClient = make_shared<RestfulClient>();
 
+    }
+
+    void updateParallelismFactor(int factor)
+    {
+        if(factor <= 0)
+            this->parallelismFactor = 1;
+        else
+            this->parallelismFactor = factor;
+    }
+    int getParallelismFactor()
+    {
+        return this->parallelismFactor;
     }
 
     void setGetFinalTaskInfo()

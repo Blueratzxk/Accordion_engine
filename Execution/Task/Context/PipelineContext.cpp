@@ -207,6 +207,11 @@ int PipelineContext::getTaskGeneration() {
 
 string PipelineContext::getTaskId() {
     return this->taskContext.lock()->getTaskId()->ToString();
-};
+}
+
+void PipelineContext::addRequestedTupleCountFromUpstream(long increment)
+{
+    this->taskContext.lock()->addTotalRequestTupleCount(increment);
+}
 
 #endif //OLVP_PIPELINECONTEXT_CPP

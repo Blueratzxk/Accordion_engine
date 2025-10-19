@@ -15,6 +15,7 @@ class TaskThroughputInfo
     long lastEnqueuedTuples;
     long throughputBytes;
     long totalTuplesBytes;
+    long currentRequestTuplesCount;
 public:
     TaskThroughputInfo()
     {
@@ -25,30 +26,10 @@ public:
         this->remainingTuples = -1;
         this->lastEnqueuedTuples = -1;
         this->totalTuplesBytes = 0;
+        this->currentRequestTuplesCount = 0;
     }
-    /*
-    TaskThroughputInfo(long count,long bytes)
-    {
-        this->currentTupleCount = count;
-        this->throughputBytes = bytes;
-        this->timeStamp = TimeCommon::getCurrentTimeStamp();
 
-        this->remainingTuples = -1;
-        this->lastEnqueuedTuples = -1;
-        this->remainingBufferTuples = 0;
-    }
-    TaskThroughputInfo(long count,long bytes,long remainingBufferTuples,long remainingTuples)
-    {
-        this->currentTupleCount = count;
-        this->throughputBytes = bytes;
-        this->timeStamp = TimeCommon::getCurrentTimeStamp();
-        this->throughputBytes = 0;
-        this->remainingTuples = remainingTuples;
-        this->remainingBufferTuples = remainingBufferTuples;
-        this->lastEnqueuedTuples = -1;
-    }
-     */
-    TaskThroughputInfo(long count,long bytes,long remainingBufferTuples,long remainingTuples, long lastEnqueuedTuples,long totalTupleBytes)
+    TaskThroughputInfo(long count,long bytes,long remainingBufferTuples,long remainingTuples, long lastEnqueuedTuples,long totalTupleBytes, long currentRequestTuplesCount)
     {
         this->currentTupleCount = count;
         this->throughputBytes = bytes;
@@ -57,10 +38,11 @@ public:
         this->remainingBufferTuples = remainingBufferTuples;
         this->lastEnqueuedTuples = lastEnqueuedTuples;
         this->totalTuplesBytes = totalTupleBytes;
+        this->currentRequestTuplesCount = currentRequestTuplesCount;
     }
 
 
-    TaskThroughputInfo(long count,long bytes,long long timeStamp, long remainingBufferTuples,long remainingTuples, long lastEnqueuedTuples,long totalTupleBytes)
+    TaskThroughputInfo(long count,long bytes,long long timeStamp, long remainingBufferTuples,long remainingTuples, long lastEnqueuedTuples,long totalTupleBytes,long currentRequestTuplesCount)
     {
         this->currentTupleCount = count;
         this->throughputBytes = bytes;
@@ -69,17 +51,9 @@ public:
         this->remainingBufferTuples = remainingBufferTuples;
         this->lastEnqueuedTuples = lastEnqueuedTuples;
         this->totalTuplesBytes = totalTupleBytes;
+        this->currentRequestTuplesCount = currentRequestTuplesCount;
     }
-    /*
-      TaskThroughputInfo(long count,long bytes,long long timeStamp)
-      {
-          this->currentTupleCount = count;
-          this->throughputBytes = bytes;
-          this->timeStamp = timeStamp;
-          this->remainingTuples = -1;
-          this->lastEnqueuedTuples = -1;
-      }
-  */
+
 
     long getCurrentTupleCount()
     {
@@ -114,6 +88,11 @@ public:
         return this->totalTuplesBytes;
     }
 
+    long getCurrentRequestTuplesCount()
+    {
+        return this->currentRequestTuplesCount;
+    }
+
     static string Serialize(TaskThroughputInfo desc)
     {
         nlohmann::json json;
@@ -125,6 +104,7 @@ public:
         json["lastEnqueuedTuples"] = desc.lastEnqueuedTuples;
         json["throughputBytes"] = desc.throughputBytes;
         json["throughputBytes"] = desc.totalTuplesBytes;
+        json["currentRequestTuplesCount"] = desc.currentRequestTuplesCount;
 
         string result = json.dump();
         return result;
@@ -136,7 +116,10 @@ public:
         vector<shared_ptr<TaskThroughputInfo>> pipelineDescriptors;
 
 
-        return make_shared<TaskThroughputInfo>(json["currentTupleCount"],json["throughputBytes"],json["timeStamp"],json["remainingBufferTuples"],json["remainingTuples"],json["lastEnqueuedTuples"],json["throughputBytes"]);
+        return make_shared<TaskThroughputInfo>(json["currentTupleCount"],json["throughputBytes"],
+                                               json["timeStamp"],json["remainingBufferTuples"],
+                                               json["remainingTuples"],json["lastEnqueuedTuples"],
+                                               json["throughputBytes"],json["currentRequestTuplesCount"]);
     }
 
 

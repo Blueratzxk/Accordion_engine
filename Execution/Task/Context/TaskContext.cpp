@@ -79,7 +79,7 @@ shared_ptr<OutputBuffer> TaskContext::getOutputBuffer() {
 TaskThroughputInfo TaskContext::getTaskThroughputInfo() {
     return TaskThroughputInfo(this->currentTotalTupleCount,this->currentTotalTupleCount*this->outputTupleByteWidth,
                               this->getRemainingBufferTupleCount(),this->getRemainingTableTupleCount(),
-                              this->lastEnqueuedTupleCount,this->totalInputBytes);
+                              this->lastEnqueuedTupleCount,this->totalInputBytes,this->currentTotalRequestTupleCount);
 }
 
 JoinInfoDescriptor TaskContext::getJoinInfoDescriptor() {

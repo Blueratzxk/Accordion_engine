@@ -105,6 +105,9 @@ public:
     void savePagesForInterTaskMission(string componentId,vector<shared_ptr<DataPage>> pages);
     string getTaskId();
 
+    void addRequestedTupleCountFromUpstream(long increment);
+
+
 };
 
 #endif //OLVP_PIPELINECONTEXT_H

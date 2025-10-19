@@ -511,14 +511,15 @@ public:
     }
     string getQueryThroughputsSnapShot()
     {
-
         return this->scheduler->getQueryStagesThroughputs(this->scheduler);
     }
-
     string getQueryThroughputsInfoSnapShot()
     {
-
         return this->scheduler->getQueryStagesThroughputsInfo(this->scheduler);
+    }
+    void displayAllTasksThroughputsInfo()
+    {
+        this->scheduler->displayAllTasksThroughputsInfo(this->scheduler);
     }
 
     bool submitTaskMigrationMission(int stageId,vector<int> taskIds)
