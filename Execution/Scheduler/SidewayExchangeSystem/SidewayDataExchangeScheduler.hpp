@@ -43,6 +43,9 @@ public:
             this->scheduler = scheduler;
         }
 
+        set<string> getNewTaskIds(){return this->newTaskIds;}
+        set<string> getOriginTaskIds(){return this->originTaskIds;}
+
         bool isSchedulingFinished()
         {
             if(this->missionType == OPERATOR_MIGRATION) {
@@ -127,7 +130,7 @@ public:
                     if(!this->originTasksFinishSignalSended)
                         for (auto task: this->originTaskIds) {
                             TaskId id;
-                            this->scheduler->sqlStageExecution->finishTaskByTaskId(id.StringToObject(task)->getId());
+                            this->scheduler->sqlStageExecution->finishTaskByTaskId(id.StringToObject(task)->getId(),id.StringToObject(task)->getGeneration());
                         }
 
                     for (auto task: this->originTaskIds)
@@ -144,7 +147,7 @@ public:
                     if(!this->originTasksFinishSignalSended)
                         for (auto task: this->originTaskIds) {
                             TaskId id;
-                            this->scheduler->sqlStageExecution->finishTaskByTaskId(id.StringToObject(task)->getId());
+                            this->scheduler->sqlStageExecution->finishTaskByTaskId(id.StringToObject(task)->getId(),id.StringToObject(task)->getGeneration());
                         }
 
                     for (auto task: this->originTaskIds) {
@@ -202,6 +205,11 @@ private:
 
 
     string nodeDrainingMissionHelper_nodeUrl;
+
+
+    set<string> newTaskIdStrs;
+    set<string> originTaskIdStrs;
+
 public:
 
     SidewayDataExchangeScheduler(MissionType type,shared_ptr<SqlStageExecution> sqlStageExecution,shared_ptr<StageScheduler> stageScheduler,shared_ptr<StageLinkage> stageLinkage,vector<int> taskIds)
@@ -260,7 +268,6 @@ public:
         return TimeCommon::getTimeStamp(this->startSchedulingTime);
     }
     string getFinishedSchedulingTime (){
-
         return TimeCommon::getTimeStamp(this->finishedSchedulingTime);
     }
 
@@ -346,10 +353,8 @@ public:
         vector<shared_ptr<HttpRemoteTask>> newTasks = result.getNewTasks();
 
         for(auto newTask : newTasks)
-            spdlog::info("Task "+newTask->getTaskId()->ToString()+" scheduled node is "+newTask->getIP());
+            spdlog::info("Origin Task "+ to_string(taskId)+" migrate to Task "+newTask->getTaskId()->ToString()+" scheduled node is "+newTask->getIP());
 
-        set<string> newTaskIdStrs;
-        set<string> originTaskIdStrs;
         originTaskIdStrs.insert(taskIdString);
 
         for(auto task : newTasks) {
@@ -362,9 +367,50 @@ public:
 
         //this->sqlStageExecution->finishTaskByTaskId(taskId);
 
-        this->sidewayMonitorPanel = make_shared<SidewayMonitorPanel>(this,this->missionType,newTaskIdStrs,originTaskIdStrs);
+        //this->sidewayMonitorPanel = make_shared<SidewayMonitorPanel>(this,this->missionType,newTaskIdStrs,originTaskIdStrs);
 
         return true;
+    }
+
+    set<string> getNewTaskIds()
+    {
+        set<string> ids = this->sidewayMonitorPanel->getNewTaskIds();
+        set<string> tids;
+        TaskId Tid;
+        for(auto id : ids) {
+            if (this->missionType == OPERATOR_MIGRATION_PARTITIONED_HASH_JOIN) {
+
+                if (Tid.StringToObject(id)->getStageExecutionId().getId() > 0) {
+                    tids.insert(to_string(Tid.StringToObject(id)->getId()) + "(" +
+                                to_string(Tid.StringToObject(id)->getStageExecutionId().getId()) + ")");
+                } else
+                    tids.insert(to_string(Tid.StringToObject(id)->getId()));
+            } else
+                tids.insert(to_string(Tid.StringToObject(id)->getId()));
+        }
+        return tids;
+    }
+    set<string> getOriginTaskIds()
+    {
+        set<string> ids = this->sidewayMonitorPanel->getOriginTaskIds();
+        set<string> tids;
+        TaskId Tid;
+        for(auto id : ids) {
+
+            if(this->missionType == OPERATOR_MIGRATION_PARTITIONED_HASH_JOIN) {
+
+                if(Tid.StringToObject(id)->getStageExecutionId().getId() > 0)
+                {
+                    tids.insert(to_string(Tid.StringToObject(id)->getId()) + "(" +
+                               to_string(Tid.StringToObject(id)->getStageExecutionId().getId()) + ")");
+                }
+                else
+                    tids.insert(to_string(Tid.StringToObject(id)->getId()));
+            }
+            else
+                tids.insert(to_string(Tid.StringToObject(id)->getId()));
+        }
+        return tids;
     }
 
     bool closeOriginAndCreateNewOne(int taskId)
@@ -388,8 +434,7 @@ public:
         for(auto newTask : newTasks)
             spdlog::info("Task "+newTask->getTaskId()->ToString()+" scheduled node is "+newTask->getIP());
 
-        set<string> newTaskIdStrs;
-        set<string> originTaskIdStrs;
+
         originTaskIdStrs.insert(taskIdString);
 
         for(auto task : newTasks) {
@@ -402,7 +447,7 @@ public:
 
         this->sqlStageExecution->finishTaskByTaskId(taskId);
 
-        this->sidewayMonitorPanel = make_shared<SidewayMonitorPanel>(this,CLOSE_AND_CREATE,newTaskIdStrs,originTaskIdStrs);
+        //this->sidewayMonitorPanel = make_shared<SidewayMonitorPanel>(this,CLOSE_AND_CREATE,newTaskIdStrs,originTaskIdStrs);
 
         return true;
     }
@@ -447,8 +492,6 @@ public:
         vector<shared_ptr<HttpRemoteTask>> newTasks = result.getNewTasks();
 
 
-        set<string> newTaskIdStrs;
-        set<string> originTaskIdStrs;
         originTaskIdStrs.insert(taskIdString);
 
         for(auto task : newTasks) {
@@ -460,7 +503,7 @@ public:
 
 
 
-        this->sidewayMonitorPanel = make_shared<SidewayMonitorPanel>(this,this->missionType,newTaskIdStrs,originTaskIdStrs);
+        //this->sidewayMonitorPanel = make_shared<SidewayMonitorPanel>(this,this->missionType,newTaskIdStrs,originTaskIdStrs);
 
         return true;
     }
@@ -510,8 +553,7 @@ public:
         for(auto newTask : newTasks)
             spdlog::info("Task "+newTask->getTaskId()->ToString()+" scheduled node is "+newTask->getIP());
 
-        set<string> newTaskIdStrs;
-        set<string> originTaskIdStrs;
+
         originTaskIdStrs.insert(taskIdString);
 
         for(auto task : newTasks) {
@@ -525,7 +567,7 @@ public:
         this->stageLinkage->processScheduleResultsToReplaceSourceTasks(newTasks,{taskId});
 
 
-        this->sidewayMonitorPanel = make_shared<SidewayMonitorPanel>(this,this->missionType,newTaskIdStrs,originTaskIdStrs);
+        //this->sidewayMonitorPanel = make_shared<SidewayMonitorPanel>(this,this->missionType,newTaskIdStrs,originTaskIdStrs);
 
         return true;
     }
@@ -538,7 +580,6 @@ public:
         vector<shared_ptr<HttpRemoteTask>> originTaskPtrs;
         shared_ptr<HttpRemoteTask> oldTaskPtr = NULL;
 
-        set<string> originTaskIdStrs;
 
         for(auto taskId : taskIds) {
             for (auto task: tasks)
@@ -577,8 +618,6 @@ public:
             task->setMigratedBufferTask();
 
 
-        set<string> newTaskIdStrs;
-
 
         for(auto task : newTasks) {
             this->monitoredTaskIds.push_back(task->getTaskId()->ToString());
@@ -592,10 +631,7 @@ public:
 
         this->stageLinkage->processScheduleResultsToReplaceSourceTasks(newTasks,taskIds);
 
-
-
-
-        this->sidewayMonitorPanel = make_shared<SidewayMonitorPanel>(this,this->missionType,newTaskIdStrs,originTaskIdStrs);
+        //this->sidewayMonitorPanel = make_shared<SidewayMonitorPanel>(this,this->missionType,newTaskIdStrs,originTaskIdStrs);
 
         return true;
 
@@ -633,27 +669,46 @@ public:
         return true;
     }
 
+    set<string> getMigratedOps()
+    {
+        return this->opsNeededToMigrate;
+    }
+
+    string getMigratedStageId()
+    {
+        return to_string(this->sqlStageExecution->getStageId().getId());
+    }
 
     bool schedule()
     {
+
+        bool status = true;
+        set<bool> allStatus;
+
         if(this->missionType == BUFFER_MIGRATION && this->dataExchangeMode == MANY_TO_MANY)
         {
-            return migrateBuffersManyToMany(this->taskIds,this->targetTaskNumber);
+            auto re = migrateBuffersManyToMany(this->taskIds,this->targetTaskNumber);
+            allStatus.insert(re);
         }
-
-        if(this->getMissionType() == NODE_STATUS_RESETTING) {
+        else if(this->getMissionType() == NODE_STATUS_RESETTING) {
             string nodeUrl = this->getNodeDrainingMissionHelper_nodeUrl();
             ClusterServer::getNodesManager()->resetNodeAliveStatus(nodeUrl);
             set<string> nullSet;
-            this->sidewayMonitorPanel = make_shared<SidewayMonitorPanel>(this,NODE_STATUS_RESETTING,nullSet,nullSet);
-            return true;
+            allStatus.insert(true);
+        }
+        else {
+            for (auto taskId: this->taskIds){
+                auto re = schedule(taskId);
+                allStatus.insert(re);
+            }
         }
 
-        for(auto taskId : this->taskIds)
-            if(!schedule(taskId))
-                return false;
+        this->sidewayMonitorPanel = make_shared<SidewayMonitorPanel>(this,this->missionType,newTaskIdStrs,originTaskIdStrs);
 
-        return true;
+        if(allStatus.contains(true))
+            return true;
+
+        return false;
     }
 
     bool isSchedulingFinished()

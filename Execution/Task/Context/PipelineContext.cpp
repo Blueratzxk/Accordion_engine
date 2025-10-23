@@ -214,4 +214,22 @@ void PipelineContext::addRequestedTupleCountFromUpstream(long increment)
     this->taskContext.lock()->addTotalRequestTupleCount(increment);
 }
 
+void PipelineContext::reportBuildTuples(string buildOpId,int tuples)
+{
+    this->taskContext.lock()->reportBuildTuples(buildOpId,tuples);
+}
+
+void PipelineContext::reportJoinTuples(string joinOpId,int tuples)
+{
+    this->taskContext.lock()->reportJoinTuples(joinOpId,tuples);
+}
+void PipelineContext::reportExternalUploadTuples(string opId,int tuples)
+{
+    this->taskContext.lock()->reportExternalUploadTuples(opId,tuples);
+}
+void PipelineContext::reportExternalFulfillTuples(string opId,int tuples)
+{
+    this->taskContext.lock()->reportExternalFulfillTuples(opId,tuples);
+}
+
 #endif //OLVP_PIPELINECONTEXT_CPP

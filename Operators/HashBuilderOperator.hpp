@@ -181,6 +181,7 @@ public:
 
                 this->driverContext->reportBuildTime(buildTime);
                 this->driverContext->reportBuildComputingTime(joinId,buildComputingTime);
+                this->driverContext->reportBuildTuples(this->operatorId,this->tupleCounter);
 
                 return;
         }

@@ -166,8 +166,8 @@ public:
        this->lock.unlock();
 
         if(completed) {
-            supplyLookupSources();
             this->lookupSourceCompleted = true;
+            supplyLookupSources();
         }
 
 

@@ -40,6 +40,11 @@ public:
         return this->stageExecutionId;
     }
 
+    int getGeneration()
+    {
+        return this->stageExecutionId.getId();
+    }
+
 
     QueryId getQueryId()
     {

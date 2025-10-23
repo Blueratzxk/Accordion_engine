@@ -59,6 +59,7 @@ class LookupJoinOperator :public Operator{
     string buildSideRemoteSourceOperatorId;
 
     long inputPageCounter = 0;
+    int tupleCounter = 0;
 
     bool operatorMigration = false;
 
@@ -102,6 +103,7 @@ public:
             inputPageCounter++;
 
 
+
         } else {
 
             this->inputPage = input;
@@ -125,12 +127,23 @@ public:
         else
         {
             auto table = getLookupSourceData();
-            if(table == NULL)
-                this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId, {DataPage::getEndPage()});
+            if(table == NULL) {
+                this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId,
+                                                                  {DataPage::getEndPage()});
+
+                this->driverContext->reportExternalUploadTuples(this->operatorId,-1);
+
+            }
             else {
                 auto batches = table->CombineChunksToBatch();
-                this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId,{make_shared<DataPage>(batches.ValueOrDie())});
+                auto uploadedPage = make_shared<DataPage>(batches.ValueOrDie());
+                this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId,{uploadedPage});
                 this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId,{DataPage::getEndPage()});
+
+                int tupleCount = 0;
+                tupleCount += uploadedPage->getElementsCount();
+                this->driverContext->reportExternalUploadTuples(this->operatorId,tupleCount);
+
             }
         }
         return {this->buildSideRemoteSourceOperatorId};
@@ -156,12 +169,19 @@ public:
             if(this->operatorMigration)
             {
                 auto table = getLookupSourceData();
-                if(table == NULL)
-                    this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId, {DataPage::getEndPage()});
+                if(table == NULL) {
+                    this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId,
+                                                                      {DataPage::getEndPage()});
+                    this->driverContext->reportExternalUploadTuples(this->operatorId,-1);
+                }
                 else {
                     auto batches = table->CombineChunksToBatch();
-                    this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId,{make_shared<DataPage>(batches.ValueOrDie())});
+                    auto uploadedPage = make_shared<DataPage>(batches.ValueOrDie());
+                    this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId,{uploadedPage});
                     this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId,{DataPage::getEndPage()});
+
+
+                    this->driverContext->reportExternalUploadTuples(this->operatorId,uploadedPage->getElementsCount());
                 }
             }
             return true;

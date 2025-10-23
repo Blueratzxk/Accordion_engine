@@ -83,7 +83,7 @@ TaskThroughputInfo TaskContext::getTaskThroughputInfo() {
 }
 
 JoinInfoDescriptor TaskContext::getJoinInfoDescriptor() {
-    return JoinInfoDescriptor(this->joinNum,this->buildNums,this->getBuildTime(),this->getBuildComputingTime(),this->joinIdToBuildTime,this->allBuildCount,this->allBuildProgress);
+    return JoinInfoDescriptor(this->joinNum,this->buildNums,this->getBuildTime(),this->getBuildComputingTime(),this->joinIdToBuildTime,this->allBuildCount,this->allBuildProgress,this->buildTuples);
 }
 
 void TaskContext::addTotalTupleCount(long increment) {

@@ -106,8 +106,11 @@ public:
     string getTaskId();
 
     void addRequestedTupleCountFromUpstream(long increment);
+    void reportBuildTuples(string buildOpId,int tuples);
+    void reportJoinTuples(string joinOpId,int tuples);
 
-
+    void reportExternalUploadTuples(string opId,int tuples);
+    void reportExternalFulfillTuples(string opId,int tuples);
 };
 
 #endif //OLVP_PIPELINECONTEXT_H

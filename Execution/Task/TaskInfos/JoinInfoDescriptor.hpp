@@ -17,11 +17,15 @@ class JoinInfoDescriptor
     long allBuildCount = 0;
     long allBuildProgress = 0;
 
+    map<string,int> buildTuples;
+
 public:
 
     JoinInfoDescriptor(){}
 
-    JoinInfoDescriptor( int joinNums,int buildNums,double buildTime,double buildComputingTime,map<string,double> joinIdToBuildTime, long allBuildCount,long allBuildProgress)
+    JoinInfoDescriptor( int joinNums,int buildNums,double buildTime,double buildComputingTime,
+                        map<string,double> joinIdToBuildTime, long allBuildCount,
+                        long allBuildProgress,map<string,int> buildTuples)
     {
         this->joinNums = joinNums;
         this->buildNums = buildNums;
@@ -30,6 +34,7 @@ public:
         this->joinIdToBuildTime = joinIdToBuildTime;
         this->allBuildCount = allBuildCount;
         this->allBuildProgress = allBuildProgress;
+        this->buildTuples = buildTuples;
     }
 
     int getJoinNums(){return this->joinNums;}
@@ -39,6 +44,8 @@ public:
 
     long getAllBuildCount(){return this->allBuildCount;}
     long getAllBuildProgress(){return this->allBuildProgress;}
+
+    map<string,int> getBuildTuples(){return this->buildTuples;}
 
 
     map<string,double> getJoinIdToBuildTime(){return this->joinIdToBuildTime;}
@@ -54,7 +61,7 @@ public:
         json["joinIdToBuildTime"] = joinInfoDescriptor.joinIdToBuildTime;
         json["allBuildCount"] = joinInfoDescriptor.allBuildCount;
         json["allBuildProgress"] = joinInfoDescriptor.allBuildProgress;
-
+        json["buildTuples"] = joinInfoDescriptor.buildTuples;
 
         string result = json.dump();
         return result;
@@ -70,7 +77,8 @@ public:
                                                         json["buildComputingTime"],
                                                         json["joinIdToBuildTime"],
                                                       json["allBuildCount"],
-                                                      json["allBuildProgress"]);
+                                                      json["allBuildProgress"],
+                                                      json["buildTuples"]);
 
         return  result;
     }

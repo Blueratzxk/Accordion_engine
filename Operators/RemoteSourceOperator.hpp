@@ -82,10 +82,14 @@ public:
 
     void fulfillExternalEventWithPages(vector<std::shared_ptr<DataPage>> pages) override
     {
+        int tupleCount = 0;
         for(auto page : pages)
-            if(!page->isEndPage())
+            if(!page->isEndPage()) {
                 this->sidewayPages.push_back(page);
+                tupleCount += page->getElementsCount();
+            }
 
+        this->driverContexts->reportExternalFulfillTuples(this->operatorId,tupleCount);
         this->waitInterTaskSync = false;
         this->sidewayTaskEvent->notify();
     }

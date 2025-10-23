@@ -14,6 +14,7 @@ class SidewayExchangeSystem
 
 
     list<shared_ptr<SidewayDataExchangeScheduler>> sidewayExchangeTaskQueue;
+
     list<shared_ptr<SidewayDataExchangeScheduler>> finishedSidewayExchangeTasks;
 
     list<shared_ptr<SidewayDataExchangeScheduler>> sidewayExchangeTasks;
@@ -25,12 +26,17 @@ class SidewayExchangeSystem
     SimpleEvent missionsStatusEvent;
     shared_ptr<SqlScheduleLock> sqlScheduleLock;
 
-    bool nodeDrainingState = false;
+    atomic<bool> nodeDrainingScheduleFinished = false;
 
     enum NodeDrainingState
     {
         START,FINISHED
     }DrainingState = FINISHED;
+
+    list<pair<shared_ptr<std::chrono::system_clock::time_point>,shared_ptr<std::chrono::system_clock::time_point>>> nodeDrainingRecords;
+
+    shared_ptr<std::chrono::system_clock::time_point> nodeDrainingStartTime = NULL;
+    shared_ptr<std::chrono::system_clock::time_point> nodeDrainingFinishTime = NULL;
 
 public:
     SidewayExchangeSystem(vector<StageExecutionAndScheduler> stageExeSchedulers, shared_ptr<SqlScheduleLock> sqlScheduleLock){
@@ -115,13 +121,17 @@ public:
             if(scheduler->schedule())
                 while(!scheduler->isSchedulingFinished()) sleep_for(std::chrono::milliseconds(200));
 
+
             spdlog::info("Sideway exchange schedule finished!");
 
             if(scheduler->needRecordInfo())
                 system->finishedSidewayExchangeTasks.push_back(scheduler);
 
-            if(system->DrainingState == FINISHED)
+            if(system->sidewayExchangeTaskQueue.empty() && system->nodeDrainingScheduleFinished) {
+
+                system->NodeDrainingFinished();
                 system->sqlScheduleLock->sideway_unlock();
+            }
 
             system->notifyAllMissionsStatus();
 
@@ -165,19 +175,36 @@ public:
             this->releaseExecutor();
     }
 
-    nlohmann::json getSchedulingTimes()
+    nlohmann::json getSchedulingInfos()
     {
 
-        nlohmann::json times;
+        nlohmann::json infos;
         for(auto schedule: this->finishedSidewayExchangeTasks)
         {
-            nlohmann::json time;
-            time["sidewayType"] = schedule->getMigrationType();
-            time["start"] = schedule->getStartSchedulingTime();
-            time["finish"] = schedule->getFinishedSchedulingTime();
-            times.push_back(time);
+            nlohmann::json info;
+            info["sidewayType"] = schedule->getMigrationType();
+            info["stageId"] = schedule->getMigratedStageId();
+            info["operators"] = schedule->getMigratedOps();
+            info["start"] = schedule->getStartSchedulingTime();
+            info["finish"] = schedule->getFinishedSchedulingTime();
+            info["newTaskIds"] = schedule->getNewTaskIds();
+            info["originTaskIds"] = schedule->getOriginTaskIds();
+            infos.push_back(info);
         }
-        return times;
+
+        for(auto record: this->nodeDrainingRecords)
+        {
+            nlohmann::json info;
+            info["sidewayType"] = "NodeDraining";
+            info["stageId"] = "NULL";
+            info["operators"] = "NULL";
+            info["start"] = TimeCommon::getTimeStamp(record.first);
+            info["finish"] = TimeCommon::getTimeStamp(record.second);
+            info["newTaskIds"] = "NULL";
+            info["originTaskIds"] = "NULL";
+            infos.push_back(info);
+        }
+        return infos;
     }
 
 
@@ -201,7 +228,7 @@ public:
         for(auto id : newestTaskIds)
             taskGroupIds.push_back(id.getId());
 
-        auto sidewayTask = make_shared<SidewayDataExchangeScheduler>(type,stageExe,stageSche,stageLink,taskGroupIds);
+        auto sidewayTask = make_shared<SidewayDataExchangeScheduler>(type,stageExe,stageSche,stageLink,taskIds);
         sidewayTask->setStartTime();
         this->sidewayExchangeTasks.push_back(sidewayTask);
 
@@ -435,22 +462,26 @@ public:
     void NodeDrainingStart()
     {
         this->DrainingState = START;
+        this->nodeDrainingStartTime =  make_shared<std::chrono::system_clock::time_point>(std::chrono::system_clock::now());
         this->sqlScheduleLock->sideway_lock();
+        this->nodeDrainingScheduleFinished = false;
     }
     void NodeDrainingFinished()
     {
         this->DrainingState = FINISHED;
+        this->nodeDrainingFinishTime =  make_shared<std::chrono::system_clock::time_point>(std::chrono::system_clock::now());
+        this->nodeDrainingRecords.push_back({this->nodeDrainingStartTime,this->nodeDrainingFinishTime});
     }
 
     void processNodeDraining(string nodeUrl)
     {
         NodeDrainingStart();
-
         processActiveStageTaskMigration(nodeUrl);
         processActiveStageBufferMigration(nodeUrl);
         resetNodeAliveStatus(nodeUrl);
 
-        NodeDrainingFinished();
+        this->nodeDrainingScheduleFinished = true;
+
 
     }
 

@@ -11,6 +11,7 @@
 #include "../../../Execution/Task/Statistics/CPU/TaskCpuUsageDescriptor.hpp"
 #include "../../../Execution/Buffer/BufferInfoDescriptor.hpp"
 #include "../../../Execution/Task/TaskInfos/JoinInfoDescriptor.hpp"
+#include "../../../Execution/Task/TaskInfos/SidewayMissionInfoDescriptor.hpp"
 class TaskInfoDescriptor
 {
     string taskId;
@@ -21,12 +22,14 @@ class TaskInfoDescriptor
     TaskCpuUsageDescriptor taskCpuUsageDescriptor;
     BufferInfoDescriptor bufferInfoDescriptor;
     JoinInfoDescriptor joinInfoDescriptor;
+    SidewayMissionInfoDescriptor sidewayMissionInfoDescriptor;
 
 
 
 public:
     TaskInfoDescriptor(string taskId,string taskState,vector<shared_ptr<PipelineDescriptor>> pipelineDescriptor,double runningTime,
-                       TaskThroughputInfo taskThroughputInfo,JoinInfoDescriptor joinInfoDescriptor,BufferInfoDescriptor bufferInfoDescriptor)
+                       TaskThroughputInfo taskThroughputInfo,JoinInfoDescriptor joinInfoDescriptor,BufferInfoDescriptor bufferInfoDescriptor,
+                       SidewayMissionInfoDescriptor sidewayMissionInfoDescriptor)
     {
         this->taskId = taskId;
         this->taskState = taskState;
@@ -36,6 +39,7 @@ public:
         this->joinInfoDescriptor = joinInfoDescriptor;
 
         this->bufferInfoDescriptor = bufferInfoDescriptor;
+        this->sidewayMissionInfoDescriptor = sidewayMissionInfoDescriptor;
     }
 
     TaskInfoDescriptor(string taskId,string taskState,vector<shared_ptr<PipelineDescriptor>> pipelineDescriptor,shared_ptr<TaskContext> taskContext)
@@ -49,6 +53,8 @@ public:
         this->joinInfoDescriptor = taskContext->getJoinInfoDescriptor();
 
         this->bufferInfoDescriptor = taskContext->getBufferInfoDescriptor();
+
+        this->sidewayMissionInfoDescriptor = taskContext->getSidewayMissionInfoDescriptor();
 
     }
     TaskInfoDescriptor(string taskId,string taskState)
@@ -99,6 +105,11 @@ public:
         return this->joinInfoDescriptor;
     }
 
+    SidewayMissionInfoDescriptor getSidewayMissionInfoDescriptor()
+    {
+        return this->sidewayMissionInfoDescriptor;
+    }
+
     string ToString()
     {
         string result;
@@ -139,6 +150,63 @@ public:
         result.append("\"buildComputingTime\":");
         result.append("\""+to_string(this->joinInfoDescriptor.getBuildComputingTime())+"\"");
         result.append(",");
+
+        auto bts = this->joinInfoDescriptor.getBuildTuples();
+        result.append("\"BuildTuples\":");
+        result.append("[");
+
+        for(auto item : bts)
+        {
+            result.append("{\"");
+            result.append(item.first);
+            result.append("\":\"");
+            result.append(to_string(item.second));
+            result.append("\"},");
+        }
+        if(!bts.empty())
+            result.pop_back();
+        result.append("]");
+        result.append(",");
+
+
+
+
+        auto sidewayUpload = this->sidewayMissionInfoDescriptor.getSidewayUploadTuples();
+        result.append("\"sidewayUpload\":");
+        result.append("[");
+        for(auto item : sidewayUpload)
+        {
+            result.append("{\"");
+            result.append(item.first);
+            result.append("\":\"");
+            result.append(to_string(item.second));
+            result.append("\"},");
+        }
+        if(!sidewayUpload.empty())
+            result.pop_back();
+        result.append("]");
+        result.append(",");
+
+
+
+        auto sidewayfulfill = this->sidewayMissionInfoDescriptor.getSidewayFulfillTuples();
+        result.append("\"sidewayFulfill\":");
+        result.append("[");
+        for(auto item : sidewayfulfill)
+        {
+            result.append("{\"");
+            result.append(item.first);
+            result.append("\":\"");
+            result.append(to_string(item.second));
+            result.append("\"},");
+        }
+        if(!sidewayfulfill.empty())
+            result.pop_back();
+        result.append("]");
+        result.append(",");
+
+
+
         result.append("\"Pipeline Descriptors\":");
         result.append("[");
         for(auto desc : this->pipelineDescriptor)
@@ -177,6 +245,8 @@ public:
 
         json["bufferInfoDescriptor"] = BufferInfoDescriptor::Serialize(taskDescriptor.bufferInfoDescriptor);
 
+        json["sidewayMissionInfoDescriptor"] = SidewayMissionInfoDescriptor::Serialize(taskDescriptor.sidewayMissionInfoDescriptor);
+
         string result = json.dump();
         return result;
     }
@@ -198,7 +268,8 @@ public:
 
        auto result = make_shared<TaskInfoDescriptor>(json["taskId"],json["taskState"],pipelineDescriptors,json["runningTime"],
                                                      ttinfo, *JoinInfoDescriptor::Deserialize(json["joinInfoDescriptor"]),
-                                                     *BufferInfoDescriptor::Deserialize(json["bufferInfoDescriptor"]));
+                                                     *BufferInfoDescriptor::Deserialize(json["bufferInfoDescriptor"]),
+                                                     *SidewayMissionInfoDescriptor::Deserialize( json["sidewayMissionInfoDescriptor"]));
        result->addTaskCpuUsageDescriptor(taskCpuUsageDescriptor);
        return  result;
     }

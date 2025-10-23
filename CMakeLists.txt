@@ -543,6 +543,7 @@ add_executable(OLVP main.cpp
         System/SystemEventMonitor.hpp
         Execution/Event/ParameterizedEvent.hpp
         Execution/Scheduler/SqlScheduleLock.hpp
+        Execution/Task/TaskInfos/SidewayMissionInfoDescriptor.hpp
 
 
 )

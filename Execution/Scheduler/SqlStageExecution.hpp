@@ -866,12 +866,12 @@ public:
         tasksLock.unlock();
     }
 
-    void finishTaskByTaskId(int taskId)
+    void finishTaskByTaskId(int taskId,int gen = -1)
     {
         TaskId targetId;
         auto allTasks = getAllTasks();
         for(auto task : allTasks) {
-            if(task->getTaskId()->getId() == taskId)
+            if(task->getTaskId()->getId() == taskId && task->getTaskId()->getGeneration() == gen)
                 targetId = *task->getTaskId();
         }
         vector<shared_ptr<HttpRemoteTask>> sourceStageTasks = this->getSourceTasks();

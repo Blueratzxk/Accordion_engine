@@ -418,7 +418,7 @@ public:
 
     nlohmann::json getSidewayScheduleInfoJsons()
     {
-        return this->sidewayExchangeSystem->getSchedulingTimes();
+        return this->sidewayExchangeSystem->getSchedulingInfos();
     }
 
     void addMulConcurrencyForOneStage(vector<StageExecutionAndScheduler> executions, int stageId,int taskNums)

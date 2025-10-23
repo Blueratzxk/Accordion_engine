@@ -183,7 +183,9 @@ return this->pipelineContext.lock()->getAllBuildProgress();
 }
 
 void DriverContext::savePagesForInterTaskMission(string componentId,vector<shared_ptr<DataPage>> pages) {
+
     this->pipelineContext.lock()->savePagesForInterTaskMission(componentId,pages);
+
 }
 
 int DriverContext::getTaskGeneration() {
@@ -198,5 +200,25 @@ void DriverContext::addRequestedTupleCountFromUpstream(long increment)
 {
     return this->pipelineContext.lock()->addRequestedTupleCountFromUpstream(increment);
 }
+
+void DriverContext::reportBuildTuples(string buildOpId,int tuples)
+{
+    this->pipelineContext.lock()->reportBuildTuples(buildOpId,tuples);
+}
+
+void DriverContext::reportJoinTuples(string buildOpId,int tuples)
+{
+    this->pipelineContext.lock()->reportBuildTuples(buildOpId,tuples);
+}
+
+void DriverContext::reportExternalUploadTuples(string opId,int tuples)
+{
+    this->pipelineContext.lock()->reportExternalUploadTuples(opId,tuples);
+}
+void DriverContext::reportExternalFulfillTuples(string opId,int tuples)
+{
+    this->pipelineContext.lock()->reportExternalFulfillTuples(opId,tuples);
+}
+
 
 #endif //OLVP_DRIVERCONTEXT_CPP

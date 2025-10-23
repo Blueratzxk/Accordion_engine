@@ -40,7 +40,7 @@ private:
     std::shared_ptr<DataPage> inputPage = NULL;
     std::shared_ptr<DataPage> outPutPage = NULL;
 
-
+    int tupleCounter = 0;
     std::shared_ptr<arrow::Schema> inputSchema = NULL;
 
     vector<int> outputChannels;
@@ -91,6 +91,8 @@ public:
 
             if(this->firstStartBuildTime == NULL)
                 this->firstStartBuildTime = make_shared<std::chrono::system_clock::time_point>(std::chrono::system_clock::now());
+
+            this->tupleCounter += this->inputPage->getElementsCount();
         }
         else
         {
@@ -143,6 +145,7 @@ public:
 
                this->driverContext->reportBuildTime(buildTime);
                this->driverContext->reportBuildComputingTime(joinId,buildComputingTime);
+               this->driverContext->reportBuildTuples(this->operatorId,this->tupleCounter);
 
                return;
         }

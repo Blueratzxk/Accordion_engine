@@ -64,6 +64,8 @@ public:
 
         json["bufferInfoDescriptor"] = BufferInfoDescriptor::Serialize(taskInfo.taskInfoDescriptor->getBufferInfoDescriptor());
 
+        json["sidewayMissionInfoDescriptor"] = SidewayMissionInfoDescriptor::Serialize(taskInfo.taskInfoDescriptor->getSidewayMissionInfoDescriptor());
+
 
         json["taskCpuUsageDescriptor"] = TaskCpuUsageDescriptor::Serialize(taskInfo.getTaskInfoDescriptor()->getTaskCpuUsageDescriptor());
 
@@ -103,7 +105,8 @@ public:
         auto taskInfoDesc = make_shared<TaskInfoDescriptor>(json["taskId"],json["status"],pInfos,json["runningTime"],
                                                             *TaskThroughputInfo::Deserialize(json["taskThroughputInfo"]),
                                                             *JoinInfoDescriptor::Deserialize(json["joinInfoDescriptor"]),
-                                                            *BufferInfoDescriptor::Deserialize(json["bufferInfoDescriptor"]));
+                                                            *BufferInfoDescriptor::Deserialize(json["bufferInfoDescriptor"]),
+                                                            *SidewayMissionInfoDescriptor::Deserialize(json["sidewayMissionInfoDescriptor"]));
 
         taskInfoDesc->addTaskCpuUsageDescriptor(TaskCpuUsageDescriptor::Deserialize(json["taskCpuUsageDescriptor"]));
 

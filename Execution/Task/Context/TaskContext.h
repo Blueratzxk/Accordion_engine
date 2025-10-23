@@ -20,6 +20,7 @@ using namespace std;
 #include "../TasksRuntimeStats.hpp"
 #include "../../../Execution/Buffer/BufferInfoDescriptor.hpp"
 #include "../../../Execution/Task/TaskInfos/JoinInfoDescriptor.hpp"
+#include "../../../Execution/Task/TaskInfos/SidewayMissionInfoDescriptor.hpp"
 class PipelineContext;
 class QueryContext;
 class OutputBuffer;
@@ -78,6 +79,14 @@ class TaskContext:public std::enable_shared_from_this<TaskContext>
 
     atomic<long> allBuildCount = 0;
     atomic<long> allBuildProgress = 0;
+
+    map<string,int> buildTuples;
+
+    map<string,int> joinTuples;
+
+    map<string,int> externalUploadTuples;
+    map<string,int> externalFulfillTuples;
+
 
 public:
     TaskContext(shared_ptr<TasksRuntimeStats> tasksRuntimeStats,weak_ptr<QueryContext> queryContext,shared_ptr<TaskId> taskId,int generation,shared_ptr<TaskStateMachine> stateMachine,shared_ptr<OutputBuffer> outputBuffer);
@@ -144,6 +153,11 @@ public:
                                     this->exchangeBufferSizeTurnUpCounter,this->exchangeBufferSizeTurnDownCounter);
     }
 
+    SidewayMissionInfoDescriptor getSidewayMissionInfoDescriptor()
+    {
+        return SidewayMissionInfoDescriptor(this->externalUploadTuples,this->externalFulfillTuples);
+    }
+
     JoinInfoDescriptor getJoinInfoDescriptor();
 
     int getOutputTupleWidth()
@@ -198,6 +212,25 @@ public:
                 spdlog::debug("Total build time interval in this task is "+to_string(duration_millsecond) +" !!");
             }
         }
+    }
+
+    void reportBuildTuples(string buildOpId,int tuples)
+    {
+        this->buildTuples[buildOpId] = tuples;
+    }
+
+    void reportJoinTuples(string joinOpId,int tuples)
+    {
+        this->joinTuples[joinOpId] = tuples;
+    }
+
+    void reportExternalUploadTuples(string opId,int tuples)
+    {
+        this->externalUploadTuples[opId] = tuples;
+    }
+    void reportExternalFulfillTuples(string opId,int tuples)
+    {
+        this->externalFulfillTuples[opId] = tuples;
     }
 
     shared_ptr<TaskId> getTaskId()

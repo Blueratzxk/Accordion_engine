@@ -18,8 +18,7 @@ using namespace std;
 
 class PipelineContext;
 
-class DriverContext : public enable_shared_from_this<DriverContext>
-{
+class DriverContext : public enable_shared_from_this<DriverContext> {
 
     weak_ptr<PipelineContext> pipelineContext;
     shared_ptr<vector<shared_ptr<Operator>>> driver = NULL;
@@ -40,11 +39,11 @@ public:
 
     weak_ptr<PipelineContext> getPipelineContext();
 
-    void setDownStreamHaveJoin(string val)
-    {
+    void setDownStreamHaveJoin(string val) {
         this->downStreamHaveJoin = val;
     }
-    string getDownStreamHaveJoin(){
+
+    string getDownStreamHaveJoin() {
         return this->downStreamHaveJoin;
     }
 
@@ -54,6 +53,7 @@ public:
 
 
     shared_ptr<vector<shared_ptr<Operator>>> getDriver();
+
     void setDriver(shared_ptr<vector<shared_ptr<Operator>>> physicalPipeline);
 
     void addRemoteSourceLocation(set<std::shared_ptr<Split>> scheduledSplits);
@@ -93,15 +93,17 @@ public:
 
     void reportBuildTime(double time);
 
-    void reportBuildComputingTime(string joinId,double time);
+    void reportBuildComputingTime(string joinId, double time);
 
     void addTids(set<__pid_t> ids);
+
     void removeTids(set<__pid_t> ids);
 
     void addExchangeBufferTurnUpCounter();
+
     void addExchangeBufferTurnDownCounter();
 
-    void savePagesForInterTaskMission(string componentId,vector<shared_ptr<DataPage>> pages);
+    void savePagesForInterTaskMission(string componentId, vector<shared_ptr<DataPage>> pages);
 
     int getTaskGeneration();
 
@@ -110,6 +112,12 @@ public:
     string getTaskId();
 
     void addRequestedTupleCountFromUpstream(long increment);
-};
 
+    void reportBuildTuples(string buildOpId, int tuples);
+
+    void reportJoinTuples(string joinOpId, int tuples);
+
+    void reportExternalUploadTuples(string opId,int tuples);
+    void reportExternalFulfillTuples(string opId,int tuples);
+};
 #endif //OLVP_DRIVERCONTEXT_H
