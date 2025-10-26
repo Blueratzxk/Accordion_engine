@@ -12,57 +12,6 @@
 #include "../../../Web/ArrowRPC/InterTaskRPCClient.hpp"
 using namespace std;
 
-class InterTaskDataHandle
-{
-    bool status;
-    string message;
-    map<string,set<string>> sourceIdMap;
-public:
-    InterTaskDataHandle()
-    {
-        this->status = true;
-    }
-    InterTaskDataHandle(bool status, string message) {
-        this->status = status;
-        this->message = message;
-    }
-
-    InterTaskDataHandle(bool status, string message, map<string,set<string>> sourceIdMap)
-    {
-        this->status = status;
-        this->message = message;
-        this->sourceIdMap = sourceIdMap;
-    }
-
-    bool getStatus(){return this->status;}
-    map<string,set<string>> getSourceIdMap(){return this->sourceIdMap;}
-    string getMessage(){return this->message;}
-
-    static string Serialize(InterTaskDataHandle interTaskDataHandle)
-    {
-        nlohmann::json json;
-
-        json["status"] = interTaskDataHandle.status;
-        json["sourceIdMap"] = interTaskDataHandle.sourceIdMap;
-        json["message"] = interTaskDataHandle.message;
-
-        string result = json.dump();
-        return result;
-    }
-
-    static shared_ptr<InterTaskDataHandle> Deserialize(string interTaskDataHandle)
-    {
-        nlohmann::json json = nlohmann::json::parse(interTaskDataHandle);
-
-
-        auto result = make_shared<InterTaskDataHandle>(json["status"],json["message"],json["sourceIdMap"]);
-
-        return  result;
-    }
-
-
-};
-
 class InterTaskDataExchangeManager:public enable_shared_from_this<InterTaskDataExchangeManager>{
 
     map<string, std::shared_ptr<InterTaskRPCClient>> interTaskRpcClients;

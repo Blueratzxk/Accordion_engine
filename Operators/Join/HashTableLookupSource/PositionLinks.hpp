@@ -9,9 +9,15 @@
 class PositionLinks
 {
 
+    string type;
 public:
-    PositionLinks(){
+    PositionLinks(string type) {
+        this->type = type;
+    }
 
+    string getType()
+    {
+        return this->type;
     }
 
 
@@ -25,8 +31,15 @@ public:
 class PositionLinksFactory
 {
 
+    string type;
 public:
-
+    PositionLinksFactory(string type){
+        this->type = type;
+    }
+    string getType()
+    {
+        return this->type;
+    }
     virtual long checksum(){return 0;};
     virtual std::shared_ptr<PositionLinks> create() = 0;
 };
@@ -34,14 +47,24 @@ public:
 
 class PositionLinksFactoryBuilder{
 
+    string type;
 public:
-    PositionLinksFactoryBuilder(){}
+    PositionLinksFactoryBuilder(string type){this->type = type;}
+
+    string getType()
+    {
+        return this->type;
+    }
 
     virtual int link(int left, int right) = 0;
 
     virtual std::shared_ptr<PositionLinksFactory> build() = 0;
 
     virtual bool isEmpty() = 0;
+
+    virtual void setPositionLinks(shared_ptr<int> positionLinks) = 0;
+
+    virtual std::shared_ptr<int> getPositionLinks() = 0;
 
 };
 

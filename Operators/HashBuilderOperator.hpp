@@ -66,10 +66,16 @@ private:
 
     string testStr;
     string testStr2;
+
+
+    atomic<bool> waitSidewayTaskSync = false;
+
+    vector<shared_ptr<DataPage>> externalBuildComponents;
+
+    shared_ptr<DataPage> table;
+
+
 public:
-
-
-
 
     HashBuilderOperator(string operatorId,string joinId,shared_ptr<DriverContext> driverContext,int partitionIndex,std::shared_ptr<PartitionedLookupSourceFactory> lookupSourceFactory,
                         vector<int> outputChannels,vector<int> hashChannels) :Operator("HashBuilderOperator"){
@@ -93,6 +99,55 @@ public:
         return this->state;
     }
 
+    void waitSidewayDataSync()
+    {
+        this->waitSidewayTaskSync = true;
+    }
+
+
+    shared_ptr<LookupSourceSupplier> installHashTable()
+    {
+        shared_ptr<JoinHashComponent> joinHashComponent = make_shared<JoinHashComponent>();
+        vector<shared_ptr<DataPage>> ownPages;
+        for(auto page : externalBuildComponents)
+        {
+            if(page->isEndPage())
+                continue;
+            int partitionId = joinHashComponent->getComponentPartitionId(page);
+            if(partitionId == partitionIndex)
+                ownPages.push_back(page);
+        }
+        this->externalBuildComponents = ownPages;
+
+        joinHashComponent->fromDataPages(this->externalBuildComponents);
+        this->table = joinHashComponent->getTable();
+
+        return installLookupSource(joinHashComponent);
+    }
+
+
+    shared_ptr<LookupSourceSupplier> installLookupSource(shared_ptr<JoinHashComponent> joinHashComponent)
+    {
+        this->pagesIndex->addPage(this->table);
+        this->driverContext->getBuildAllCount() += pagesIndex->getPositionCount();
+
+        shared_ptr<LookupSourceSupplier> partition = pagesIndex->createLookupSourceSupplierFromComponents(this->hashChannels,this->outputChannels,this->driverContext->getBuildProgress(),joinHashComponent);
+        this->lookupSourceSupplier = partition;
+        return partition;
+
+    }
+
+
+    void fulfillExternalEventWithPages(vector<std::shared_ptr<DataPage>> pages) override
+    {
+        externalBuildComponents = pages;
+        if (!this->finished) {
+            this->finishBuild();
+            spdlog::debug("JoinHash Build Finished!");
+            spdlog::info("HashBuilder operator processes " + to_string(this->pageCounter) + " pages, " + to_string(this->tupleCounter) + " tuples!");
+        }
+        this->finished = true;
+    }
 
     void updateIndex(std::shared_ptr<DataPage>  page)
     {
@@ -102,6 +157,7 @@ public:
 
 
     void addInput(std::shared_ptr<DataPage> input) override {
+
         if (input != NULL && !input->isEndPage()) {
 
             if (input->isAbortPage()) {
@@ -124,6 +180,14 @@ public:
             pageCounter++;
             this->tupleCounter += this->inputPage->getElementsCount();
         } else {
+
+            if(this->waitSidewayTaskSync) {
+
+                this->firstStartBuildTime = make_shared<std::chrono::system_clock::time_point>(
+                        std::chrono::system_clock::now());
+                return;
+            }
+
             if (!this->finished) {
                 this->finishBuild();
                 spdlog::debug("JoinHash Build Finished!");
@@ -144,9 +208,14 @@ public:
         return partition;
     }
 
+
     void finishInput()
     {
-        std::shared_ptr<LookupSourceSupplier> partition = buildLookupSource();
+        std::shared_ptr<LookupSourceSupplier> partition;
+        if(!this->waitSidewayTaskSync)
+            partition = buildLookupSource();
+        else
+            partition = installHashTable();
         this->lookupSourceFactory->lendPartitionLookupSource(partitionIndex, partition);
 
         state = State::LOOKUP_SOURCE_BUILT;

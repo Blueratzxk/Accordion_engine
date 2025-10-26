@@ -70,19 +70,23 @@ private:
     MissionType missionType;
 
     InterTaskSourceDescriptor interTaskSourceDescriptor;
+    string parameters;
 public:
-    InterTaskMissionDescriptor(MissionType missionType,set<string> sourceTypes,InterTaskSourceDescriptor interTaskSourceDescriptor){
+    InterTaskMissionDescriptor(MissionType missionType,set<string> sourceTypes,InterTaskSourceDescriptor interTaskSourceDescriptor,string parameters){
         this->missionType = missionType;
         this->sourceTypes = sourceTypes;
         this->interTaskSourceDescriptor = interTaskSourceDescriptor;
+        this->parameters = parameters;
     }
 
-    InterTaskMissionDescriptor(MissionType missionType,set<string> sourceTypes){
+    InterTaskMissionDescriptor(MissionType missionType,string parameters,set<string> sourceTypes){
         this->missionType = missionType;
+        this->parameters = parameters;
         this->sourceTypes = sourceTypes;
     }
-    InterTaskMissionDescriptor(MissionType missionType,InterTaskSourceDescriptor interTaskSourceDescriptor){
+    InterTaskMissionDescriptor(MissionType missionType,string parameters,InterTaskSourceDescriptor interTaskSourceDescriptor){
         this->missionType = missionType;
+        this->parameters = parameters;
         this->interTaskSourceDescriptor = interTaskSourceDescriptor;
     }
 
@@ -91,6 +95,7 @@ public:
     MissionType getMissionType(){return this->missionType;}
     set<string> getSourceTypes(){return this->sourceTypes;}
     InterTaskSourceDescriptor getInterTaskSourceDescriptor(){return this->interTaskSourceDescriptor;}
+    string getParameters(){return this->parameters;}
 
     static string Serialize(InterTaskMissionDescriptor interTaskMissionDescriptor) {
 
@@ -99,6 +104,7 @@ public:
         json["missionType"] = interTaskMissionDescriptor.missionType;
         json["sourceTypes"] = interTaskMissionDescriptor.sourceTypes;
         json["interTaskSourceDescriptor"] = InterTaskSourceDescriptor::Serialize(interTaskMissionDescriptor.interTaskSourceDescriptor);
+        json["parameters"] = interTaskMissionDescriptor.parameters;
 
         string result = json.dump();
         return result;
@@ -108,7 +114,7 @@ public:
     {
         nlohmann::json json = nlohmann::json::parse(interTaskMissionDescriptor);
 
-        return make_shared<InterTaskMissionDescriptor>(json["missionType"],json["sourceTypes"],InterTaskSourceDescriptor::Deserialize(json["interTaskSourceDescriptor"]));
+        return make_shared<InterTaskMissionDescriptor>(json["missionType"],json["sourceTypes"],InterTaskSourceDescriptor::Deserialize(json["interTaskSourceDescriptor"]),json["parameters"]);
     }
 
 

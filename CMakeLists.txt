@@ -544,6 +544,13 @@ add_executable(OLVP main.cpp
         Execution/Event/ParameterizedEvent.hpp
         Execution/Scheduler/SqlScheduleLock.hpp
         Execution/Task/TaskInfos/SidewayMissionInfoDescriptor.hpp
+        Operators/Join/BuildComponents/JoinBuildComponents.hpp
+        Operators/Join/BuildComponents/HashJoinBuildComponents.hpp
+        Operators/Join/BuildComponents/JoinHashComponent.hpp
+        Execution/Scheduler/SidewayExchangeSystem/OperatorResponse.hpp
+        Execution/Scheduler/SidewayExchangeSystem/SidewayPreparationResponse.hpp
+        Execution/Scheduler/SidewayExchangeSystem/SidewayMissionHandle.hpp
+        Split/NULLSplit.hpp
 
 
 )

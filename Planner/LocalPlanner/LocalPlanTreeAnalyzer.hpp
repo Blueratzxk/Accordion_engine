@@ -230,8 +230,20 @@ public:
         string nextBuildLogicalOperatorId = ((LocalExecutionPlanContext*)context)->getNextLogicalOperatorId();
         PhysicalOperation *sourceBuild = (PhysicalOperation*)Visit(node->getBuild(),context);
 
+
+
+        bool buildSidewayDataSync = false;
+        if(condition != NULL && condition->getConditionType() == TaskExecutionCondition::OPERATOR_MIGRATION) {
+            if(condition->getParameters() == "DIRECT_HASHTABLE_INSTALL")
+                buildSidewayDataSync = true;
+        }
+
+
         string remoteSourceIdOfBuildSide = ((LocalExecutionPlanContext*)context)->getCurrentRemoteSourceOperatorId();
         auto build = make_shared<Logical_HashBuilderOperator>(nextBuildLogicalOperatorId,node->getId(),lookupSourceFactory,node->getLookupJoinDescriptor().getBuildOutputChannels(),node->getLookupJoinDescriptor().getBuildHashChannels());
+        if(buildSidewayDataSync)
+            build->waitSidewayDataSync();
+
         PhysicalOperation *buildPipeline = new PhysicalOperation(build,sourceBuild);
 
 
@@ -265,7 +277,7 @@ public:
         string nextProbeLogicalOperatorId = ((LocalExecutionPlanContext*)context)->getNextLogicalOperatorId();
         auto hashProbe = make_shared<Logical_LookupJoinOperator>(nextProbeLogicalOperatorId,probeInputSchema,
                                                                  buildInputSchema,buildOutputSchema,joinProbeFactory,
-                                                                 lookupSourceFactory,build,remoteSourceIdOfBuildSide);
+                                                                 lookupSourceFactory,build,remoteSourceIdOfBuildSide,nextBuildLogicalOperatorId);
 
 
 
@@ -379,10 +391,9 @@ public:
         bool sidewayDataSync = false;
         if(condition != NULL && condition->getConditionType() == TaskExecutionCondition::OPERATOR_MIGRATION) {
 
-            auto sourceTypes = condition->getMigratedOperators().getOperator_Type_Id_Map();
-            for(auto source : sourceTypes)
-                if(source.first == "LookupJoinOperator" && source.second.contains("NotBuildCompleteYet") && source.second.contains(nextLogicalOperatorId))
-                    sidewayDataSync = true;
+            shared_ptr<SidewayPreparationResponse> sidewayPreparationResponse = condition->getMigratedOperators().getSidewayPreparationResponse();
+            if(sidewayPreparationResponse->isSourceTypeHasNotBuildCompleteStateAndHasOperatorId("LookupJoinOperator",nextLogicalOperatorId))
+                sidewayDataSync = true;
         }
 
 

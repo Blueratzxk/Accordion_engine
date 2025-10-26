@@ -27,7 +27,7 @@
 #include <future>
 
 #include "../FunctionExtension/OperatorExtension.h"
-
+#include "../Split/NULLSplit.hpp"
 
 using namespace std::chrono;
 
@@ -401,7 +401,10 @@ public:
         for(auto split : splits)
         {
             multiRemoteTask[split->getPlanNodeId()].insert(split->getSplit());
-            addrs[split->getPlanNodeId()].push_back(static_pointer_cast<RemoteSplit>(split->getSplit()->getConnectorSplit())->getTaskId()->ToString());
+            if(split->getSplit()->getConnectorSplit()->getId() == "NULLSplit")
+                addrs[split->getPlanNodeId()].push_back("NULL location");
+            else
+                addrs[split->getPlanNodeId()].push_back(static_pointer_cast<RemoteSplit>(split->getSplit()->getConnectorSplit())->getTaskId()->ToString());
         }
 
         for(auto task : multiRemoteTask) {
@@ -562,15 +565,15 @@ public:
                     if(taskSource == NULL)
                         return false;
 
-                    auto typeIdMap = condition->getMigratedOperators().getOperator_Type_Id_Map();
-                    set<string> targetOperatorIds;
 
 
-                    for(auto item : typeIdMap)
-                        if(item.first == source)
-                            targetOperatorIds.insert(item.second.begin(),item.second.end());
+                    auto sidewayPreparationResponse = condition->getMigratedOperators().getSidewayPreparationResponse();
 
-                    if(targetOperatorIds.contains("NotBuildCompleteYet"))
+                    set<string> targetOperatorIds = sidewayPreparationResponse->getOperatorIdsNeedMigrationByOperatorType(source);
+                    set<string> operatorIdsNeedClosed = sidewayPreparationResponse->getOperatorIdsNeedCloseByOperatorType(source);
+
+
+                    if(sidewayPreparationResponse->hasNotBuildCompleteState())
                         return false;
 
                     string oldTaskId = condition->getMigratedOperators().getTaskId();
@@ -590,16 +593,21 @@ public:
                             auto loperators = logicalPipeline.first->getLogicalPipelines();
 
                             shared_ptr<InterTaskSplit> interTaskSplit = NULL;
-                            for(auto op : loperators)
-                            {
-                                if(targetOperatorIds.contains(op->getLogicalOperatorId()))
-                                {
-                                    interTaskSplit = make_shared<InterTaskSplit>(this->taskId,
-                                                                                      oldTaskId+"$"+op->getLogicalOperatorId(),
-                                                                                      make_shared<Location>(ip,"9081",
-                                                                                                            to_string(this->taskId->getId())));
+                            shared_ptr<NULLSplit> nullSplit = NULL;
 
-                                     }
+                            for(auto op : loperators) {
+
+                                if (targetOperatorIds.contains(op->getLogicalOperatorId()))
+                                    interTaskSplit = make_shared<InterTaskSplit>(this->taskId, oldTaskId + "$" +
+                                                                                               op->getLogicalOperatorId(),
+                                                                                 make_shared<Location>(ip, "9081",
+                                                                                                       to_string(
+                                                                                                               this->taskId->getId())));
+                                else if(operatorIdsNeedClosed.contains(op->getLogicalOperatorId()))
+                                {
+                                    nullSplit = make_shared<NULLSplit>();
+                                }
+
                             }
 
                             shared_ptr<ScheduledSplit> newSplit = split;
@@ -608,6 +616,13 @@ public:
                                                                        make_shared<Split>(ConnectorId("interTask"),
                                                                                           interTaskSplit));
                                 interTaskSplit = NULL;
+                            }
+                            if(nullSplit != NULL)
+                            {
+                                newSplit = make_shared<ScheduledSplit>(split->getPlanNodeId(),
+                                                                       make_shared<Split>(ConnectorId("nullSplit"),
+                                                                                          nullSplit));
+                                nullSplit = NULL;
                             }
                             if(planNodeId.get().find("RemoteSource") == string::npos)
                                 tableScanSplits.insert(newSplit);

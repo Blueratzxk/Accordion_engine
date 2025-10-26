@@ -57,6 +57,7 @@ class LookupJoinOperator :public Operator{
     shared_ptr<DriverContext> driverContext;
 
     string buildSideRemoteSourceOperatorId;
+    string buildOperatorId;
 
     long inputPageCounter = 0;
     int tupleCounter = 0;
@@ -71,7 +72,7 @@ public:
 
     LookupJoinOperator(string operatorId,shared_ptr<DriverContext> driverContext,std::shared_ptr <arrow::Schema> probeSchema,
                        std::shared_ptr <arrow::Schema> buildOutputSchema,std::shared_ptr<JoinProbeFactory> joinProbeFactory,
-                       std::shared_ptr<LookupSourceFactory> lookupSourceFactory,string buildSideRemoteSourceOperatorId):Operator("LookupJoinOperator") {
+                       std::shared_ptr<LookupSourceFactory> lookupSourceFactory,string buildSideRemoteSourceOperatorId,string buildOperatorId):Operator("LookupJoinOperator") {
 
         this->operatorId = operatorId;
         this->finished = false;
@@ -85,6 +86,7 @@ public:
         this->driverContext = driverContext;
 
         this->buildSideRemoteSourceOperatorId = buildSideRemoteSourceOperatorId;
+        this->buildOperatorId = buildOperatorId;
     }
 
 
@@ -117,38 +119,80 @@ public:
         return provider->getSourceData();
     }
 
-
-    list<string> externalEvent() override
+    shared_ptr<OperatorResponse> getJoinBuildComponents()
     {
-        if(!this->lookupsourceStatus) {
-            this->operatorMigration = true;
-            return {"NotBuildCompleteYet",this->buildSideRemoteSourceOperatorId};
-        }
-        else
+        std::shared_ptr<PartitionedLookupSourceFactory::DefaultLookupSourceProvider> provider = static_pointer_cast<PartitionedLookupSourceFactory::DefaultLookupSourceProvider>(this->lookupSourceProvider);
+
+
+        spdlog::info("LookupJoinOperator !#@!#@!@@!#!##@!!@##@!#@!#!#@!111111");
+        auto buildComponents = provider->getBuildComponents();
+        vector<shared_ptr<DataPage>> pagesToUpload;
+        for(auto com : buildComponents)
         {
+            auto pages = com->ToDataPages();
+            for(auto page : pages)
+                pagesToUpload.push_back(page);
+        }
+        spdlog::info("LookupJoinOperator !#@!#@!@@!#!##@!!@##@!#@!#!#@!222222");
+        this->driverContext->savePagesForInterTaskMission(this->buildOperatorId,pagesToUpload);
+        this->driverContext->savePagesForInterTaskMission(this->buildOperatorId,{DataPage::getEndPage()});
+
+        spdlog::info("LookupJoinOperator !#@!#@!@@!#!##@!!@##@!#@!#!#@!33333");
+        shared_ptr<OperatorResponse> response = make_shared<OperatorResponse>();
+        response->addOperatorId(this->buildOperatorId,OperatorResponse::MIGRATION);
+        response->addOperatorId(this->buildSideRemoteSourceOperatorId,OperatorResponse::CLOSE);
+        return response;
+    }
+
+
+    shared_ptr<OperatorResponse> externalEvent(string parameters) override {
+        if (!this->lookupsourceStatus) {
+            this->operatorMigration = true;
+            shared_ptr<OperatorResponse> response = make_shared<OperatorResponse>();
+            response->addOperatorId(this->buildSideRemoteSourceOperatorId,OperatorResponse::NOT_BUILD_COMPLETE);
+
+            return response;
+
+        } else {
             auto table = getLookupSourceData();
-            if(table == NULL) {
+            if (table == NULL) {
                 this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId,
                                                                   {DataPage::getEndPage()});
 
-                this->driverContext->reportExternalUploadTuples(this->operatorId,-1);
+                this->driverContext->reportExternalUploadTuples(this->operatorId, -1);
 
-            }
-            else {
+                shared_ptr<OperatorResponse> response = make_shared<OperatorResponse>();
+                response->addOperatorId(this->buildSideRemoteSourceOperatorId,OperatorResponse::MIGRATION);
+
+                return response;
+
+
+            } else {
+
+                if (parameters == "DIRECT_HASHTABLE_INSTALL") {
+                    return this->getJoinBuildComponents();
+                }
+
+
                 auto batches = table->CombineChunksToBatch();
                 auto uploadedPage = make_shared<DataPage>(batches.ValueOrDie());
-                this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId,{uploadedPage});
-                this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId,{DataPage::getEndPage()});
+                this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId,
+                                                                  {uploadedPage});
+                this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId,
+                                                                  {DataPage::getEndPage()});
 
                 int tupleCount = 0;
                 tupleCount += uploadedPage->getElementsCount();
-                this->driverContext->reportExternalUploadTuples(this->operatorId,tupleCount);
+                this->driverContext->reportExternalUploadTuples(this->operatorId, tupleCount);
 
+                shared_ptr<OperatorResponse> response = make_shared<OperatorResponse>();
+                response->addOperatorId(this->buildSideRemoteSourceOperatorId,OperatorResponse::MIGRATION);
+
+                return response;
             }
         }
-        return {this->buildSideRemoteSourceOperatorId};
-    }
 
+    }
 
     bool tryFetchLookupSourceProvider()
     {

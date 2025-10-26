@@ -6,6 +6,7 @@
 #include "TaskContext.h"
 #include "DriverContext.h"
 
+
 QueryContext::QueryContext() {
     this->interTaskDataExchangeManager = make_shared<InterTaskDataExchangeManager>();
 }
@@ -61,7 +62,7 @@ shared_ptr<RuntimeConfigParser> QueryContext::getRuntimeConfigs()
     return this->runtimeConfigs;
 }
 
-bool QueryContext::prepareInterTaskDataByComponentId(TaskId taskId,set<string> sourceTypes,map<string,set<string>> &sourceIdMap) {
+bool QueryContext::prepareInterTaskDataByComponentId(TaskId taskId,set<string> sourceTypes,shared_ptr<SidewayPreparationResponse> preparationResponse,string parameters) {
 
     string queryId = taskId.getQueryId().getId();
     shared_ptr<TaskContext> context;
@@ -83,6 +84,11 @@ bool QueryContext::prepareInterTaskDataByComponentId(TaskId taskId,set<string> s
     }
 
     set<bool> results;
+
+    bool lookupJoinOperatorPrepared = false;
+
+
+
     for(auto driver : allDrivers)
     {
         shared_ptr<vector<shared_ptr<Operator>>> physicalPipeline;
@@ -92,14 +98,17 @@ bool QueryContext::prepareInterTaskDataByComponentId(TaskId taskId,set<string> s
             {
                 if(sourceTypes.contains(op->getOperatorType()))
                 {
-                    list<string> ids = op->externalEvent();
-                    results.insert(!ids.empty());
-                    if(!ids.empty()) {
-                        for(auto id : ids)
-                            sourceIdMap[op->getOperatorType()].insert(id);
-                    }
+                   shared_ptr<OperatorResponse> response = op->externalEvent(parameters);
+                   preparationResponse->addSourceResponse(op->getOperatorType(),response);
+
+
+                    if(op->getOperatorType() == "lookupJoinOperator")
+                        lookupJoinOperatorPrepared = true;
                 }
             }
+
+            if(lookupJoinOperatorPrepared)
+                break;
         }
     }
 

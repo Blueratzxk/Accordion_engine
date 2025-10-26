@@ -110,18 +110,21 @@ class FinalAggregationOperator:public Operator {
 public:
 
 
-    list<string> externalEvent() override
+    shared_ptr<OperatorResponse> externalEvent(string parameter) override
     {
         return migrateOperator();
     }
 
-    list<string> migrateOperator()
+    shared_ptr<OperatorResponse> migrateOperator()
     {
         if(this->finished)
-            return {};
+            return NULL;
+
+        auto response = make_shared<OperatorResponse>();
+        response->addOperatorId(this->operatorId,OperatorResponse::MIGRATION);
 
         operatorMigration = true;
-        return {this->getOperatorId()};
+        return response;
     }
 
     string  transformIntermiediate(string functionName,string outputName,string inputKey)

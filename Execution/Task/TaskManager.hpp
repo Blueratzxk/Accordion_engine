@@ -21,6 +21,8 @@
 #include "../../Descriptor/TaskUpdateRequest.hpp"
 #include "../../Descriptor/InterTaskMissionDescriptor.hpp"
 
+#include "../Execution/Scheduler/SidewayExchangeSystem/SidewayMissionHandle.hpp"
+
 class TaskManager
 {
 
@@ -125,17 +127,19 @@ public:
             string sourceIp = condition->getMigratedOperators().getIP();
             string sourcePort = condition->getMigratedOperators().getPort();
             string preTaskId = condition->getMigratedOperators().getTaskId();
+            string parameters = condition->getParameters();
 
             int bufferId = 0;
             set<string> targetOperatorIds;
             set<string> operatorsNeedTransferService;
             operatorsNeedTransferService = condition->getMigratedOperators().getOperatorsNeedInterTaskExchange();
-            auto idmaps = condition->getMigratedOperators().getOperator_Type_Id_Map();
+            //auto idmaps = condition->getMigratedOperators().getOperator_Type_Id_Map();
+
+            auto sidewayPreparationResponse = condition->getMigratedOperators().getSidewayPreparationResponse();
 
             for(auto op : operatorsNeedTransferService)
             {
-                auto ids = idmaps[op];
-                ids.erase("NotBuildCompleteYet");
+                auto ids = sidewayPreparationResponse->getOperatorIdsNeedMigrationByOperatorType(op);
                 targetOperatorIds.insert(ids.begin(),ids.end());
             }
 
@@ -144,7 +148,7 @@ public:
                 string trueSourceId = preTaskId+"$"+target;
                 InterTaskSourceDescriptor interTaskSourceDescriptor(sourceIp,sourcePort,trueSourceId, to_string(bufferId),target);
 
-                auto mission = make_shared<InterTaskMissionDescriptor>(InterTaskMissionDescriptor::INTERTASK_EXCHANGE_SERVICE,
+                auto mission = make_shared<InterTaskMissionDescriptor>(InterTaskMissionDescriptor::INTERTASK_EXCHANGE_SERVICE,parameters,
                                                                        interTaskSourceDescriptor);
 
                 this->createInterTaskMission(taskId,*mission);
@@ -260,12 +264,15 @@ public:
         if(sqlTaskPtr == NULL) {
             return InterTaskDataHandle(false,"Task not exist!");
         }
-        map<string,set<string>> sourceIdMap;
+
+
+        shared_ptr<SidewayPreparationResponse> sidewayPreparationResponse = make_shared<SidewayPreparationResponse>();
+
         bool re = false;
         if(interTaskMissionDescriptor.getMissionType() == InterTaskMissionDescriptor::OPERATOR_MIGRATION) {
 
             re = this->queryContext->prepareInterTaskDataByComponentId(taskId,
-                                                                       interTaskMissionDescriptor.getSourceTypes(),sourceIdMap);
+                                                                       interTaskMissionDescriptor.getSourceTypes(),sidewayPreparationResponse,interTaskMissionDescriptor.getParameters());
         }
         else if(interTaskMissionDescriptor.getMissionType() == InterTaskMissionDescriptor::INTERTASK_EXCHANGE_SERVICE) {
             this->queryContext->releaseRemoteInterTaskDataFetcher(taskId.ToString(),
@@ -278,7 +285,7 @@ public:
         string message = "No problem!";
         if(re == false)
             message = "PrepareInterTaskDataByComponentId failed!";
-        return InterTaskDataHandle(re,message,sourceIdMap);
+        return InterTaskDataHandle(re,message,sidewayPreparationResponse);
     }
 
     vector<shared_ptr<DataPage>> getInterTaskPages(TaskId taskId,string componentId,string bufferId,int pageNums)

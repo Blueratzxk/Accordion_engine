@@ -1510,7 +1510,7 @@ public:
         return result;
     }
 
-    shared_ptr<InterTaskDataHandle> taskMigrationPreparation(int taskId,set<string> operatorTypes)
+    shared_ptr<InterTaskDataHandle> taskMigrationPreparation(int taskId,set<string> operatorTypes,string parameters)
     {
 
         shared_ptr<HttpRemoteTask> target = NULL;
@@ -1528,7 +1528,7 @@ public:
         shared_ptr<InterTaskDataHandle> handle;
         if (target != NULL && !target->isDone()) {
             result = target->createInterTaskMission(
-                    make_shared<InterTaskMissionDescriptor>(InterTaskMissionDescriptor::OPERATOR_MIGRATION,operatorTypes));
+                    make_shared<InterTaskMissionDescriptor>(InterTaskMissionDescriptor::OPERATOR_MIGRATION,parameters,operatorTypes));
             if(result == "NULL")
                 return NULL;
             handle = InterTaskDataHandle::Deserialize(result);

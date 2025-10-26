@@ -36,6 +36,20 @@ public:
 
     }
 
+    PagesHash(int positionCount,int hashSize,std::shared_ptr<PagesHashStrategy> pagesHashStrategy,
+              std::shared_ptr<PositionLinksFactoryBuilder> positionLinks,atomic<long> &buildProgress,shared_ptr<int> hashKeyArrayForInstall,
+              shared_ptr<uint8_t> positionToHashesForInstall,shared_ptr<int> positionLinkForInstall)
+    {
+        this->positionCount = positionCount;
+        this->pagesHashStrategy = pagesHashStrategy;
+        this->positionLinks = positionLinks;
+        this->hashKeyArray = hashKeyArrayForInstall;
+        this->positionToHashes = positionToHashesForInstall;
+        this->positionLinks->setPositionLinks(positionLinkForInstall);
+        this->hashSize = hashSize;
+        this->mask = this->hashSize - 1;
+    }
+
     vector<std::shared_ptr<arrow::ChunkedArray>> getChunkedArrayVector()
     {
         return pagesHashStrategy->getChunkedArrayVector();
@@ -92,6 +106,13 @@ public:
 
     }
 
+    std::shared_ptr<int> getHashKeyArray(){
+        return this->hashKeyArray;
+    }
+
+    std::shared_ptr<uint8_t>  getPositionToHashes(){
+        return this->positionToHashes;
+    }
 
 
     int getAddressIndex(int position, std::shared_ptr<DataPage> hashChannelsPage)
@@ -135,6 +156,11 @@ public:
     int getPositionCount()
     {
         return this->positionCount;
+    }
+
+    int getHashSize()
+    {
+        return this->hashSize;
     }
 
     static int getHashPosition(uint64_t rawHash, uint64_t mask)

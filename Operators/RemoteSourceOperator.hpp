@@ -112,6 +112,8 @@ public:
             }
             else if(split->getConnectorSplit()->getId() == "InterTaskSplit")
                 this->client->addLocation(static_pointer_cast<InterTaskSplit>(split->getConnectorSplit()));
+            else if(split->getConnectorSplit()->getId() == "NULLSplit")
+                this->client->addLocation(static_pointer_cast<NULLSplit>(split->getConnectorSplit()));
             else
                 spdlog::critical("RemoteSourceOperator: Unknown spilt type "+split->getConnectorSplit()->getId()+"!");
 
@@ -199,6 +201,8 @@ public:
             this->firstOutputCall = false;
             return NULL;
         }
+
+
 
         wait:
 

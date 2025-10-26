@@ -6,6 +6,8 @@
 #define OLVP_TASKEXECUTIONCONDITION_HPP
 
 
+#include "SidewayPreparationResponse.hpp"
+
 class MigratedBufferAddress
 {
     vector<string> TaskId;
@@ -85,7 +87,7 @@ class MigratedOperators
     string IP;
     string Port;
 
-    map<string,set<string>> operator_Type_Id_Map;
+    shared_ptr<SidewayPreparationResponse> sidewayPreparationResponse;
 
 public:
     MigratedOperators()
@@ -93,17 +95,18 @@ public:
         this->TaskId = "";
         this->IP = "";
         this->Port = "";
+        this->sidewayPreparationResponse = make_shared<SidewayPreparationResponse>();
 
     }
 
-    MigratedOperators(set<string> sourceTypes,map<string,set<string>> operator_Type_Id_Map,set<string> operatorsNeedInterTaskExchange,string TaskId, string IP, string Port)
+    MigratedOperators(set<string> sourceTypes,shared_ptr<SidewayPreparationResponse> sidewayPreparationResponse,set<string> operatorsNeedInterTaskExchange,string TaskId, string IP, string Port)
     {
         this->TaskId = TaskId;
         this->IP = IP;
         this->Port = Port;
         this->sourceTypes = sourceTypes;
         this->operatorsNeedInterTaskExchange = operatorsNeedInterTaskExchange;
-        this->operator_Type_Id_Map = operator_Type_Id_Map;
+        this->sidewayPreparationResponse = sidewayPreparationResponse;
     }
 
     string getTaskId(){return TaskId;}
@@ -112,7 +115,7 @@ public:
 
     set<string> getSourceTypes(){return this->sourceTypes;}
     set<string> getOperatorsNeedInterTaskExchange(){return this->operatorsNeedInterTaskExchange;}
-    map<string,set<string>> getOperator_Type_Id_Map(){return this->operator_Type_Id_Map;}
+    shared_ptr<SidewayPreparationResponse> getSidewayPreparationResponse(){return this->sidewayPreparationResponse;}
 
     static string Serialize(MigratedOperators migratedOperators)
     {
@@ -123,7 +126,7 @@ public:
         json["Port"] = migratedOperators.Port;
         json["SourceTypes"] = migratedOperators.sourceTypes;
         json["operatorsNeedInterTaskExchange"] = migratedOperators.operatorsNeedInterTaskExchange;
-        json["operator_Type_Id_Map"] = migratedOperators.operator_Type_Id_Map;
+        json["sidewayPreparationResponse"] = SidewayPreparationResponse::Serialize(*migratedOperators.sidewayPreparationResponse);
         string result = json.dump();
 
         return result;
@@ -132,22 +135,12 @@ public:
     static MigratedOperators Deserialize(string migratedBufferAddress)
     {
         nlohmann::json json = nlohmann::json::parse(migratedBufferAddress);
-        return MigratedOperators(json["SourceTypes"],json["operator_Type_Id_Map"],json["operatorsNeedInterTaskExchange"],json["TaskId"],json["IP"],json["Port"]);
+        return MigratedOperators(json["SourceTypes"],SidewayPreparationResponse::Deserialize(json["sidewayPreparationResponse"]),json["operatorsNeedInterTaskExchange"],json["TaskId"],json["IP"],json["Port"]);
     }
 
 
 };
 
-class ConditionExecutionResult
-{
-    set<string> operatorIds;
-public:
-    ConditionExecutionResult(){}
-
-    void addOperatorId(string operatorId){operatorIds.insert(operatorId);}
-
-    set<string> getOperatorIds(){return operatorIds;}
-};
 
 class TaskExecutionCondition
 {
@@ -161,6 +154,7 @@ public:
 
 private:
     ConditionType conditionType;
+    string parameters;
 
     MigratedBufferAddress migratedBufferAddress;
     MigratedOperators migratedOperators;
@@ -173,34 +167,40 @@ public:
         this->conditionType = NO_CONDITION;
     }
 
-    TaskExecutionCondition(ConditionType conditionType,MigratedBufferAddress migratedBufferAddress,MigratedOperators migratedOperators,string extension){
+    TaskExecutionCondition(ConditionType conditionType,string parameters,MigratedBufferAddress migratedBufferAddress,MigratedOperators migratedOperators,string extension){
         this->migratedBufferAddress = migratedBufferAddress;
         this->migratedOperators = migratedOperators;
         this->conditionType = conditionType;
         this->extension = extension;
+        this->parameters = parameters;
 
     }
 
-    TaskExecutionCondition(ConditionType conditionType,MigratedOperators migratedOperators){
+    TaskExecutionCondition(ConditionType conditionType,string parameters,MigratedOperators migratedOperators){
 
         this->conditionType = conditionType;
         this->migratedOperators = migratedOperators;
+        this->parameters = parameters;
 
     }
 
-    TaskExecutionCondition(ConditionType conditionType, MigratedBufferAddress migratedBufferAddress){
+    TaskExecutionCondition(ConditionType conditionType,string parameters, MigratedBufferAddress migratedBufferAddress){
         this->migratedBufferAddress = migratedBufferAddress;
         this->conditionType = conditionType;
+        this->parameters = parameters;
     }
 
-    TaskExecutionCondition(ConditionType conditionType,string extension){
+    TaskExecutionCondition(ConditionType conditionType,string parameters,string extension){
         this->conditionType = conditionType;
         this->extension = extension;
+        this->parameters = parameters;
     }
 
     MigratedBufferAddress getMigratedBufferAddress(){return migratedBufferAddress;}
 
     MigratedOperators getMigratedOperators(){return migratedOperators;}
+
+    string getParameters(){return this->parameters;}
 
     ConditionType getConditionType(){return this->conditionType;}
 
@@ -211,6 +211,7 @@ public:
         nlohmann::json json;
 
         json["conditionType"] = taskExecutionCondition->conditionType;
+        json["parameters"] = taskExecutionCondition->parameters;
         json["migratedBufferAddress"] = MigratedBufferAddress::Serialize(taskExecutionCondition->migratedBufferAddress);
         json["migratedOperators"] = MigratedOperators::Serialize(taskExecutionCondition->migratedOperators);
         json["extension"] = taskExecutionCondition->extension;
@@ -228,7 +229,7 @@ public:
         MigratedBufferAddress migratedBufferAddress = MigratedBufferAddress::Deserialize(json["migratedBufferAddress"]);
         MigratedOperators migratedOperators = MigratedOperators::Deserialize(json["migratedOperators"]);
 
-        return make_shared<TaskExecutionCondition>(json["conditionType"],migratedBufferAddress,migratedOperators,json["extension"]);
+        return make_shared<TaskExecutionCondition>(json["conditionType"],json["parameters"],migratedBufferAddress,migratedOperators,json["extension"]);
     }
 
 

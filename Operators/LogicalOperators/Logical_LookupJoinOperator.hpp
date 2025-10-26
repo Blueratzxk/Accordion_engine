@@ -25,6 +25,7 @@ class Logical_LookupJoinOperator :public LogicalOperator{
     shared_ptr<LogicalOperator> hashBuilderLogicalOperator = NULL;
 
     string buildSideRemoteSourceOperatorId;
+    string buildOperatorId;
 
     string operatorId;
 public:
@@ -38,7 +39,7 @@ public:
                                std::shared_ptr<JoinProbeFactory> joinProbeFactory,
                                std::shared_ptr<LookupSourceFactory> lookupSourceFactory,
                                shared_ptr<LogicalOperator> hashBuilderLogicalOperator,
-                               string buildSideRemoteSourceOperatorId) :LogicalOperator("Logical_LookupJoinOperator")  {
+                               string buildSideRemoteSourceOperatorId,string buildOperatorId) :LogicalOperator("Logical_LookupJoinOperator")  {
 
         this->joinProbeFactory = joinProbeFactory;
         this->lookupSourceFactory = lookupSourceFactory;
@@ -47,6 +48,7 @@ public:
         this->buildInputSchema = buildInputSchema;
         this->hashBuilderLogicalOperator = hashBuilderLogicalOperator;
         this->buildSideRemoteSourceOperatorId = buildSideRemoteSourceOperatorId;
+        this->buildOperatorId = buildOperatorId;
 
         this->operatorId = operatorId;
 
@@ -71,12 +73,12 @@ public:
     std::shared_ptr<Operator> getOperator(shared_ptr<DriverContext> driverContext) {
 
         return std::make_shared<LookupJoinOperator>(this->operatorId,driverContext,this->probeSchema,this->buildOutputSchema,this->joinProbeFactory,
-                                                    this->lookupSourceFactory,this->buildSideRemoteSourceOperatorId);
+                                                    this->lookupSourceFactory,this->buildSideRemoteSourceOperatorId,this->buildOperatorId);
     }
     std::shared_ptr<void> getOperatorNonType(shared_ptr<DriverContext> driverContext) {
 
         return std::make_shared<LookupJoinOperator>(this->operatorId,driverContext,this->probeSchema,this->buildOutputSchema,this->joinProbeFactory,
-                                                    this->lookupSourceFactory,this->buildSideRemoteSourceOperatorId);
+                                                    this->lookupSourceFactory,this->buildSideRemoteSourceOperatorId,this->buildOperatorId);
     }
 
     string getLogicalOperatorId() override

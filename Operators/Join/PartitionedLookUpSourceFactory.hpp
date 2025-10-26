@@ -10,6 +10,7 @@
 #include "PartitionedLookupSource.hpp"
 #include "tbb/concurrent_queue.h"
 
+#include "BuildComponents/JoinHashComponent.hpp"
 using namespace std;
 
 
@@ -119,6 +120,34 @@ public:
         return table.ValueOrDie();
     }
 
+    map<int,shared_ptr<arrow::Table>> getSourceDataByPartition()
+    {
+        map<int,shared_ptr<arrow::Table>> partitionToBatch;
+
+        for(int index = 0 ; index < this->partitions.size() ; index++) {
+            if(partitions[index] == NULL)
+                continue;
+            auto temp = partitions[index]->get()->getChunkedArrayVector();
+            auto tempTable = arrow::Table::Make(inputSchema,temp,temp[0]->length());
+            auto batch = tempTable->CombineChunksToBatch().ValueOrDie();
+            partitionToBatch[index] = arrow::Table::FromRecordBatches({batch}).ValueOrDie();
+        }
+
+        return partitionToBatch;
+    }
+
+    vector<shared_ptr<JoinBuildComponents>> getBuildComponents()
+    {
+        vector<shared_ptr<JoinBuildComponents>> components;
+        for(int i = 0 ; i < this->partitions.size() ; i++)
+        {
+            auto coms = partitions[i]->getBuildComponents(i);
+            components.push_back(coms);
+        }
+        return components;
+    }
+
+
 
     int getPartitionAssign()
     {
@@ -211,6 +240,38 @@ public:
                 return this->sourceFactory->getSourceData();
             else
                 return NULL;
+        }
+
+        map<int,shared_ptr<arrow::Table>> getSourceDataByPartition()
+        {
+            map<int,shared_ptr<arrow::Table>> re;
+            if(this->sourceFactory->lookupSourceCompleted)
+                re = this->sourceFactory->getSourceDataByPartition();
+
+            return re;
+        }
+
+        vector<shared_ptr<JoinBuildComponents>>  getBuildComponents()
+        {
+            vector<shared_ptr<JoinBuildComponents>> buildComponents;
+            if(this->sourceFactory->lookupSourceCompleted)
+                buildComponents = this->sourceFactory->getBuildComponents();
+
+
+            map<int,shared_ptr<arrow::Table>> re = getSourceDataByPartition();
+
+
+            for(auto com : buildComponents)
+            {
+                if(com->getJoinType() == "JoinHashComponent")
+                {
+                    auto component = static_pointer_cast<JoinHashComponent>(com);
+                    component->setTable(re[component->getPartitionId()]);
+                }
+            }
+
+
+            return buildComponents;
         }
 
 

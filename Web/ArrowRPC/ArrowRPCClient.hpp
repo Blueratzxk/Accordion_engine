@@ -22,7 +22,7 @@ class ArrowRPCClient
 {
 
 public:
-    enum ExchangeType {NORMAL,SIDEWAY};
+    enum ExchangeType {NORMAL,SIDEWAY,NULL_EXCHANGE};
 
 private:
     string clientBufferIp;
@@ -53,6 +53,11 @@ public:
         this->exchangeType = NORMAL;
     }
 
+    ArrowRPCClient(shared_ptr<DriverContext> driverContext){
+        this->driverContext = driverContext;
+        this->exchangeType = NULL_EXCHANGE;
+    }
+
     ArrowRPCClient(shared_ptr<DriverContext> driverContext, string ip,string port, string interTaskSourceId){
         this->driverContext = driverContext;
         this->clientBufferIp = ip;
@@ -67,14 +72,9 @@ public:
         if(this->client != NULL)
             return arrow::Status::OK();
 
-
-
-
         // callOptions
         ARROW_ASSIGN_OR_RAISE(this->location,arrow::flight::Location::ForGrpcTcp(this->clientBufferIp,atoi(this->clientBufferPort.c_str())));
         ARROW_ASSIGN_OR_RAISE(this->client, arrow::flight::FlightClient::Connect(location));
-
-
 
     //    cout << "Connected to " << location.ToString() << std::endl;
         return arrow::Status::OK();
@@ -212,6 +212,14 @@ public:
 
     arrow::Status getOnceBatches(vector<shared_ptr<DataPage>> &pagesReturn,int dataSize,int *tagIn)
     {
+
+        if(this->exchangeType == NULL_EXCHANGE)
+        {
+            pagesReturn.push_back(DataPage::getEndPage());
+            (*tagIn) = 2;
+            return arrow::Status::OK();
+        }
+
         std::unique_ptr<arrow::flight::FlightStreamReader> stream;
         arrow::flight::Ticket ticket;
 

@@ -520,7 +520,7 @@ public:
 
                 if (executions[i].getStageExecution()->isStageScalable()) {
 
-                    shared_ptr<TaskExecutionCondition> condition = make_shared<TaskExecutionCondition>(TaskExecutionCondition::HETERO_TASK_SCHEDULE,"GPU");
+                    shared_ptr<TaskExecutionCondition> condition = make_shared<TaskExecutionCondition>(TaskExecutionCondition::HETERO_TASK_SCHEDULE,"","GPU");
 
                     auto result = (static_pointer_cast<NormalStageScheduler>(executions[i].getStageScheduler()))->addHeteroTask("GPU",condition);
                     if(result.getNewTasks().empty()) {
@@ -905,7 +905,7 @@ public:
         }
         else if(para == "moveh")
         {
-            scheduler->sidewayExchangeSystem->submitSidewayExchangeTask(1,{0},SidewayDataExchangeScheduler::OPERATOR_MIGRATION);
+            scheduler->sidewayExchangeSystem->submitSidewayExchangeTask(1,{0},SidewayDataExchangeScheduler::OPERATOR_MIGRATION_DIRECT_HASH_TABLE_INSTALL);
             return true;
         }
         else if(para == "clone")

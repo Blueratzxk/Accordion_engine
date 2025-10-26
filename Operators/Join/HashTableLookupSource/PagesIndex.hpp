@@ -72,6 +72,23 @@ public:
     }
 
 
+    std::shared_ptr<LookupSourceSupplier> createLookupSourceSupplierFromComponents(vector<int> hashChannels,vector<int> outputChannels,atomic<long> &buildProgress,shared_ptr<JoinBuildComponents> joinBuildComponents)
+    {
+        if(this->positionCount == 0)
+            return NULL;
+
+        vector<std::shared_ptr<arrow::DataType>> types;
+        for(int i = 0 ; i < this->pageSchema->num_fields() ; i++)
+        {
+            types.push_back(this->pageSchema->field(i)->type());
+        }
+
+        std::shared_ptr<PagesHashStrategy> hashStrategy = std::make_shared<SimplePagesHashStrategy>(types,this->channels,hashChannels,outputChannels);
+
+        return std::make_shared<JoinHashSupplier>(hashStrategy,this->positionCount,buildProgress,joinBuildComponents);
+    }
+
+
 
 
 };

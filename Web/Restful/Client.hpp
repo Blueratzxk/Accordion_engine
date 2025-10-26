@@ -25,6 +25,8 @@ class RestfulClient
 
     mutex lock;
 
+    int timeout = 100;
+
     bool debug = false;
 
     RestClient::Connection* getConnection(string ip)
@@ -69,7 +71,7 @@ public:
 
         conn->AppendHeader("Content-Type", "application/json");
         conn->AppendHeader("Connection", "keep-alive");
-        conn->SetTimeout(1);
+        conn->SetTimeout(this->timeout);
 
         int curlCode = 0;
         int tryCount = 5;
@@ -116,7 +118,7 @@ public:
         conn->AppendHeader("Connection","keep-alive");
 
 
-        conn->SetTimeout(1);
+        conn->SetTimeout(this->timeout);
 
         RestClient::Response r;
         int curlCode = 0;
@@ -160,7 +162,7 @@ public:
 
         conn->AppendHeader("Content-Type", "application/json");
         conn->AppendHeader("Connection","keep-alive");
-        conn->SetTimeout(1);
+        conn->SetTimeout(this->timeout);
 
         RestClient::Response r;
         int curlCode = 0;
@@ -169,7 +171,7 @@ public:
 
             conn->AppendHeader("Content-Type", "application/json");
             conn->AppendHeader("Connection","keep-alive");
-            conn->SetTimeout(1);
+            conn->SetTimeout(this->timeout);
 
             r = conn->post(addrDest, "");
             curlCode = r.curlCode;
@@ -211,7 +213,7 @@ public:
         conn->AppendHeader("Content-Type", "application/json");
         conn->AppendHeader("Connection","keep-alive");
 
-        conn->SetTimeout(1);
+        conn->SetTimeout(this->timeout);
 
         RestClient::Response r;
         int curlCode = 0;
@@ -256,7 +258,7 @@ public:
         conn->AppendHeader("Content-Type", "application/json");
         conn->AppendHeader("Connection", "keep-alive");
 
-        conn->SetTimeout(1);
+        conn->SetTimeout(this->timeout);
 
         RestClient::Response r;
         int curlCode = 0;
@@ -296,7 +298,7 @@ public:
         this->mutexes[handle]->lock();
         conn->AppendHeader("Content-Type", "application/json");
         conn->AppendHeader("Connection", "keep-alive");
-        conn->SetTimeout(1);
+        conn->SetTimeout(this->timeout);
 
         int curlCode = 0;
         int tryCount = 5;

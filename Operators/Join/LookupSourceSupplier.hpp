@@ -6,7 +6,7 @@
 #define OLVP_LOOKUPSOURCESUPPLIER_HPP
 
 #include <string>
-
+#include "BuildComponents/JoinBuildComponents.hpp"
 class LookupSourceSupplier
 {
     std::string id;
@@ -21,6 +21,8 @@ public:
     }
 
     virtual std::shared_ptr<LookupSource> get() = 0;
+
+    virtual  shared_ptr<JoinBuildComponents> getBuildComponents(int partitionId){return NULL;}
 };
 
 #endif //OLVP_LOOKUPSOURCESUPPLIER_HPP

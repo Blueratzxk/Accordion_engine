@@ -32,6 +32,8 @@ private:
 
     std::shared_ptr<PartitionedLookupSourceFactory> lookupSourceFactory;
 
+    bool sidewayDataSync = false;
+
 public:
 
 
@@ -50,17 +52,28 @@ public:
         this->operatorId = operatorId;
     }
 
+    void waitSidewayDataSync()
+    {
+        this->sidewayDataSync = true;
+    }
+
     vector<int> getOutputChannels(){return outputChannels;}
     vector<int> getHashChannels(){return hashChannels;}
 
 
     std::shared_ptr<Operator> getOperator(shared_ptr<DriverContext> driverContext) {
 
-        return std::make_shared<HashBuilderOperator>(this->operatorId,joinId,driverContext,this->lookupSourceFactory->getPartitionAssign(),this->lookupSourceFactory,this->outputChannels,this->hashChannels);
+        auto op = std::make_shared<HashBuilderOperator>(this->operatorId,joinId,driverContext,this->lookupSourceFactory->getPartitionAssign(),this->lookupSourceFactory,this->outputChannels,this->hashChannels);
+        if(this->sidewayDataSync)
+            op->waitSidewayDataSync();
+        return  op;
     }
     std::shared_ptr<void> getOperatorNonType(shared_ptr<DriverContext> driverContext) {
 
-        return std::make_shared<HashBuilderOperator>(this->operatorId,joinId,driverContext,this->lookupSourceFactory->getPartitionAssign(),this->lookupSourceFactory,this->outputChannels,this->hashChannels);
+        auto op = std::make_shared<HashBuilderOperator>(this->operatorId,joinId,driverContext,this->lookupSourceFactory->getPartitionAssign(),this->lookupSourceFactory,this->outputChannels,this->hashChannels);
+        if(this->sidewayDataSync)
+            op->waitSidewayDataSync();
+        return op;
     }
 
 

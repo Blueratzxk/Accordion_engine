@@ -15,6 +15,7 @@ public:
         OPERATOR_MIGRATION,
         BUFFER_MIGRATION,
         OPERATOR_MIGRATION_PARTITIONED_HASH_JOIN,
+        OPERATOR_MIGRATION_DIRECT_HASH_TABLE_INSTALL,
         CLOSE_AND_CREATE,
         NODE_STATUS_RESETTING
     };
@@ -48,12 +49,11 @@ public:
 
         bool isSchedulingFinished()
         {
-            if(this->missionType == OPERATOR_MIGRATION) {
+            if(this->missionType == OPERATOR_MIGRATION || this->missionType == OPERATOR_MIGRATION_DIRECT_HASH_TABLE_INSTALL) {
                 if (this->scheduler->opsNeededToMigrate.contains("LookupJoinOperator")) {
 
                     bool buildComplete = true;
-                    for(auto source : this->scheduler->sourceIdMap)
-                        if (source.second.contains("NotBuildCompleteYet"))
+                    if(this->scheduler->sidewayPreparationResponse->hasNotBuildCompleteState())
                             buildComplete = false;
 
                     if(!buildComplete)
@@ -73,12 +73,13 @@ public:
                             if (!this->scheduler->sqlStageExecution->isTaskDependenciesSatisfied(task))
                                 return false;
 
+                        if(this->missionType != OPERATOR_MIGRATION_DIRECT_HASH_TABLE_INSTALL)
                         if(!this->originTasksFinishSignalSended)
                             for (auto task: this->originTaskIds) {
                                 TaskId id;
                                 this->scheduler->sqlStageExecution->finishTaskByTaskId(id.StringToObject(task)->getId());
                             }
-
+                        if(this->missionType != OPERATOR_MIGRATION_DIRECT_HASH_TABLE_INSTALL)
                         for (auto task: this->originTaskIds) {
                             if (!this->scheduler->sqlStageExecution->isTaskFinished(task)) {
                                 spdlog::info(task + " is finished!");
@@ -121,9 +122,8 @@ public:
             else if(this->missionType == OPERATOR_MIGRATION_PARTITIONED_HASH_JOIN)
             {
                 bool buildComplete = true;
-                for(auto source : this->scheduler->sourceIdMap)
-                    if (source.second.contains("NotBuildCompleteYet"))
-                        buildComplete = false;
+                if(this->scheduler->sidewayPreparationResponse->hasNotBuildCompleteState())
+                    buildComplete = false;
 
                 if(!buildComplete)
                 {
@@ -197,6 +197,8 @@ private:
 
     map<string,set<string>> sourceIdMap;
 
+    shared_ptr<SidewayPreparationResponse> sidewayPreparationResponse;
+
     int targetTaskNumber = 0;
 
 
@@ -219,12 +221,14 @@ public:
         this->stageScheduler = stageScheduler;
         this->stageLinkage = stageLinkage;
         this->taskIds = taskIds;
+        this->sidewayPreparationResponse = make_shared<SidewayPreparationResponse>();
     }
 
     SidewayDataExchangeScheduler(MissionType type,string nodeUrl)
     {
         this->missionType = type;
         this->nodeDrainingMissionHelper_nodeUrl = nodeUrl;
+        this->sidewayPreparationResponse = make_shared<SidewayPreparationResponse>();
     }
 
     MissionType getMissionType(){
@@ -257,6 +261,8 @@ public:
             return "OPERATOR_MIGRATION_PARTITIONED_HASH_JOIN";
         else if(this->missionType == CLOSE_AND_CREATE)
             return "CLOSE_AND_CREATE";
+        else if(this->missionType == OPERATOR_MIGRATION_DIRECT_HASH_TABLE_INSTALL)
+            return "OPERATOR_MIGRATION_DIRECT_HASH_TABLE_INSTALL";
         else
             return "Unknown Migration Type!";
 
@@ -300,16 +306,24 @@ public:
         if(opsNeededToMigrate.empty())
             return false;
 
-        auto result = sqlStageExecution->taskMigrationPreparation(taskId,opsNeededToMigrate);
+        string parameters;
+        if(opsNeededToMigrate.contains("LookupJoinOperator"))
+            parameters = "DIRECT_HASHTABLE_INSTALL";
+        if(this->missionType == OPERATOR_MIGRATION_DIRECT_HASH_TABLE_INSTALL)
+            parameters = "DIRECT_HASHTABLE_INSTALL";
+
+
+
+        auto result = sqlStageExecution->taskMigrationPreparation(taskId,opsNeededToMigrate,parameters);
         if(result == NULL) {
             spdlog::info("Migrate operator preparation: rejected!");
             return false;
         }
         spdlog::info(result->getMessage());
 
-        this->sourceIdMap = result->getSourceIdMap();
-
-
+        this->sidewayPreparationResponse = result->getSidewayPreparationResponse();
+        if(this->sidewayPreparationResponse == NULL)
+            this->sidewayPreparationResponse = make_shared<SidewayPreparationResponse>();
 
         return result->getStatus();
     }
@@ -323,10 +337,18 @@ public:
             if(this->opsNeedInterTaskExchangeService.contains(op))
                 needExchangeService.insert(op);
 
-        for(auto source : this->sourceIdMap)
-            if (source.second.contains("NotBuildCompleteYet"))
-                return closeOriginAndCreateNewOne(taskId);
+        if(this->sidewayPreparationResponse->hasNotBuildCompleteState())
+            return closeOriginAndCreateNewOne(taskId);
 
+        string parameters;
+        if(this->missionType == OPERATOR_MIGRATION_DIRECT_HASH_TABLE_INSTALL) {
+            parameters = "DIRECT_HASHTABLE_INSTALL";
+            needExchangeService.insert("LookupJoinOperator");
+        }
+        if(opsNeededToMigrate.contains("LookupJoinOperator")) {
+            parameters = "DIRECT_HASHTABLE_INSTALL";
+            needExchangeService.insert("LookupJoinOperator");
+        }
 
 
         string taskIdString = "";
@@ -341,15 +363,17 @@ public:
                 port = task->getPORT();
             }
 
-        MigratedOperators migratedOperators(opsNeededToMigrate,this->sourceIdMap,needExchangeService,taskIdString,ip,port);
+        MigratedOperators migratedOperators(opsNeededToMigrate,this->sidewayPreparationResponse,needExchangeService,taskIdString,ip,port);
 
         if(this->stageScheduler->getSchedulerType() != "NormalStageScheduler") {
             spdlog::error("MigrateBuffers: don't support migrating buffers for " + this->stageScheduler->getSchedulerType() + "!");
             return false;
         }
 
+
+
         ScheduleResult result = (static_pointer_cast<NormalStageScheduler>(stageScheduler))->addConcurrentForInterTaskMission(
-                make_shared<TaskExecutionCondition>(TaskExecutionCondition::OPERATOR_MIGRATION,migratedOperators));
+                make_shared<TaskExecutionCondition>(TaskExecutionCondition::OPERATOR_MIGRATION,parameters,migratedOperators));
         vector<shared_ptr<HttpRemoteTask>> newTasks = result.getNewTasks();
 
         for(auto newTask : newTasks)
@@ -463,10 +487,11 @@ public:
             if(this->opsNeedInterTaskExchangeService.contains(op))
                 needExchangeService.insert(op);
 
-        for(auto source : this->sourceIdMap)
-            if (source.second.contains("NotBuildCompleteYet"))
-                needExchangeService.insert(source.first);
-
+        if(this->sidewayPreparationResponse->hasNotBuildCompleteState()) {
+            auto sources = this->sidewayPreparationResponse->getNotBuildCompleteStateSources();
+            for(auto source : sources)
+                needExchangeService.insert(source);
+        }
         string taskIdString = "";
         string ip;
         string port;
@@ -480,7 +505,7 @@ public:
         port = task->getPORT();
 
 
-        MigratedOperators migratedOperators(opsNeededToMigrate,this->sourceIdMap,needExchangeService,taskIdString,ip,port);
+        MigratedOperators migratedOperators(opsNeededToMigrate,this->sidewayPreparationResponse,needExchangeService,taskIdString,ip,port);
 
         if(this->stageScheduler->getSchedulerType() != "NormalStageScheduler") {
             spdlog::error("MigrateBuffers: don't support migrating buffers for " + this->stageScheduler->getSchedulerType() + "!");
@@ -488,7 +513,7 @@ public:
         }
 
         ScheduleResult result = (static_pointer_cast<NormalStageScheduler>(stageScheduler))->cloneTask(taskId,
-                make_shared<TaskExecutionCondition>(TaskExecutionCondition::OPERATOR_MIGRATION,migratedOperators));
+                make_shared<TaskExecutionCondition>(TaskExecutionCondition::OPERATOR_MIGRATION,"",migratedOperators));
         vector<shared_ptr<HttpRemoteTask>> newTasks = result.getNewTasks();
 
 
@@ -536,7 +561,7 @@ public:
 
         TaskId taskIdTemp;
         MigratedBufferAddress migratedBufferAddress({taskIdTemp.Serialize(*oldTaskPtr->getTaskId())},{oldTaskPtr->getIP()},{"9081"},{"-1"});
-        shared_ptr<TaskExecutionCondition> condition = make_shared<TaskExecutionCondition>(TaskExecutionCondition::BUFFER_MIGRATION,migratedBufferAddress);
+        shared_ptr<TaskExecutionCondition> condition = make_shared<TaskExecutionCondition>(TaskExecutionCondition::BUFFER_MIGRATION,"",migratedBufferAddress);
 
 
         if(this->stageScheduler->getSchedulerType() != "NormalStageScheduler") {
@@ -599,7 +624,7 @@ public:
 
         }
 
-        shared_ptr<TaskExecutionCondition> condition = make_shared<TaskExecutionCondition>(TaskExecutionCondition::BUFFER_MIGRATION,migratedBufferAddress);
+        shared_ptr<TaskExecutionCondition> condition = make_shared<TaskExecutionCondition>(TaskExecutionCondition::BUFFER_MIGRATION,"",migratedBufferAddress);
 
 
         vector<shared_ptr<HttpRemoteTask>> newTasks;
@@ -649,7 +674,7 @@ public:
 
     bool schedule(int taskId)
     {
-        if(this->missionType == OPERATOR_MIGRATION)
+        if(this->missionType == OPERATOR_MIGRATION || this->missionType == OPERATOR_MIGRATION_DIRECT_HASH_TABLE_INSTALL)
             return migrateOperators(taskId);
         else if(this->missionType == BUFFER_MIGRATION)
             return migrateBuffers(taskId);

@@ -18,9 +18,13 @@ class ArrayPositionLinks:public PositionLinks
 
 public:
 
-    ArrayPositionLinks(std::shared_ptr<int> positionLinks)
+    ArrayPositionLinks(std::shared_ptr<int> positionLinks) : PositionLinks("ArrayPositionLinks")
     {
         this->positionLinks = positionLinks;
+    }
+
+    std::shared_ptr<int> getPositionLinks(){
+        return this->positionLinks;
     }
 
     long getSizeInBytes(){return 0;}
@@ -41,7 +45,7 @@ class ArrayPositionLinksFactory:public PositionLinksFactory
 {
     std::shared_ptr<int> positionLinks;
 public:
-    ArrayPositionLinksFactory(std::shared_ptr<int> positionLinks)
+    ArrayPositionLinksFactory(std::shared_ptr<int> positionLinks) : PositionLinksFactory("ArrayPositionLinksFactory")
     {
         this->positionLinks = positionLinks;
     }
@@ -60,7 +64,7 @@ class ArrayPositionLinksFactoryBuilder:public PositionLinksFactoryBuilder
     int size;
 
 public:
-    ArrayPositionLinksFactoryBuilder(int size)
+    ArrayPositionLinksFactoryBuilder(int size) : PositionLinksFactoryBuilder("ArrayPositionLinksFactoryBuilder")
     {
         this->positionLinks = shared_ptr<int32_t> (new int32_t[size],[](int32_t *p){delete [] p;});
         memset((int*)this->positionLinks.get(),-1,size*sizeof(int));
@@ -73,6 +77,15 @@ public:
         return left;
     }
 
+    std::shared_ptr<int> getPositionLinks() override
+    {
+        return this->positionLinks;
+    }
+
+    void setPositionLinks(shared_ptr<int> positionLinks) override
+    {
+        this->positionLinks = positionLinks;
+    }
 
     std::shared_ptr<PositionLinksFactory> build() override
     {

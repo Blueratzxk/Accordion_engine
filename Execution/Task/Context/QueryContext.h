@@ -11,7 +11,7 @@
 //#include "../Id/TaskId.hpp"
 #include "../../../Session/RuntimeConfigParser.hpp"
 #include "../../Scheduler/SidewayExchangeSystem/InterTaskDataExchangeManager.hpp"
-
+#include "../Execution/Scheduler/SidewayExchangeSystem/SidewayPreparationResponse.hpp"
 class TaskContext;
 using namespace std;
 class QueryContext:public std::enable_shared_from_this<QueryContext>
@@ -53,7 +53,7 @@ public:
     }
 
 
-    bool prepareInterTaskDataByComponentId(TaskId taskId,set<string> sourceTypes,map<string,set<string>> &sourceIdMap);
+    bool prepareInterTaskDataByComponentId(TaskId taskId,set<string> sourceTypes,shared_ptr<SidewayPreparationResponse> preparationResponse,string parameters);
     void inputInterTaskDataByComponentId(TaskId taskId,string componentId,vector<shared_ptr<DataPage>> pages);
 };
 

@@ -8,7 +8,7 @@
 #include "ArrowRPCClient.hpp"
 #include "../../Split/RemoteSplit.hpp"
 #include "../../Split/InterTaskSplit.hpp"
-
+#include "../../Split/NULLSplit.hpp"
 class RPCClient : public std::enable_shared_from_this<RPCClient>
 {
     shared_ptr<DataPageRPCBuffer> buffer;
@@ -25,6 +25,8 @@ class RPCClient : public std::enable_shared_from_this<RPCClient>
     shared_ptr<DriverContext> driverContext = NULL;
 
     set<int> locationTaskIds;
+
+    atomic<int> nullIndex = 0;
 
 public:
     RPCClient(){
@@ -88,6 +90,24 @@ public:
             client = make_shared<ArrowRPCClient>(this->driverContext,remote->getLocation()->getIp(),remote->getLocation()->getPort(),remote->getSourceId());
             client->setBufferTarget(taskId,bufferId,"0");
             this->allClients[taskId] = client;
+
+        }
+        lock.unlock();
+
+    }
+
+    void addLocation(shared_ptr<NULLSplit> nullSource)
+    {
+        lock.lock();
+
+        nullIndex++;
+        string nullSplitName = "NULL_"+ to_string(nullIndex);
+
+        if(this->taskIdToLocationMap.count(nullSplitName) == 0) {
+            this->taskIdToLocationMap[nullSplitName] = nullSource;
+
+            shared_ptr<ArrowRPCClient>  client = make_shared<ArrowRPCClient>(this->driverContext);
+            this->allClients[nullSplitName] = client;
 
         }
         lock.unlock();

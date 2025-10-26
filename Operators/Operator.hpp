@@ -7,7 +7,7 @@
 
 #include "../common.h"
 #include "../Page/DataPage.hpp"
-
+#include "../Execution/Scheduler/SidewayExchangeSystem/OperatorResponse.hpp"
 using namespace std;
 
 class Operator {
@@ -19,7 +19,7 @@ public:
     virtual string getOperatorId() =0;
     virtual void addInput(std::shared_ptr<DataPage> input) {}
     virtual std::shared_ptr<DataPage> getOutput() { return NULL; }
-    virtual list<string> externalEvent(){return {};}
+    virtual shared_ptr<OperatorResponse> externalEvent(string parameters){return {};}
     virtual void fulfillExternalEventWithPages(vector<std::shared_ptr<DataPage>> pages){}
     virtual bool isFinished() { return true; }
     virtual bool isAborted() { return false; }
