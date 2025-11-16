@@ -10,6 +10,7 @@ class SplitRunner
 public:
 
     virtual void ProcessFor() = 0;
+    virtual void abort() = 0;
 
 };
 

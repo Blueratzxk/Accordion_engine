@@ -32,6 +32,7 @@ public:
     virtual void addTaskContext(shared_ptr<TaskContext> taskContext){}
     virtual void triggerNoteEvent(string taskId,string bufferId,string taskGeneration,string note){}
     virtual void regOutputOperator() {};
+    virtual void abort(){};
 };
 
 

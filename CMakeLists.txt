@@ -551,6 +551,8 @@ add_executable(OLVP main.cpp
         Execution/Scheduler/SidewayExchangeSystem/SidewayPreparationResponse.hpp
         Execution/Scheduler/SidewayExchangeSystem/SidewayMissionHandle.hpp
         Split/NULLSplit.hpp
+        TpchTest/Querys/SimpleTest/Query_SelectLineitem.hpp
+        Execution/Task/Fetcher/TaskResultProvider.hpp
 
 
 )

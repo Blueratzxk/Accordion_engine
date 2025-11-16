@@ -29,6 +29,10 @@ public:
         this->splitRunner->ProcessFor();
     }
 
+    void abort(){
+        this->splitRunner->abort();
+    }
+
 
 };
 

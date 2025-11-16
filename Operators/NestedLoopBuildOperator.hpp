@@ -177,6 +177,10 @@ public:
         return this->operatorId;
     }
 
+    void abort() override {
+        this->finished = true;
+    }
+
 
 };
 

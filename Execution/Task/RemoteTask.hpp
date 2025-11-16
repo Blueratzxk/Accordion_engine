@@ -294,9 +294,10 @@ public:
         this->restfulClient = NULL;
     }
 
+
     void abort()
     {
-
+        scheduleUpdate("","/v1/task/abortTask");
     }
 };
 #endif //OLVP_REMOTETASK_HPP

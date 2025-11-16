@@ -292,6 +292,18 @@ public:
         }
     }
 
+    void cancelLookupSource() override{
+
+        lock.lock();
+
+        for (auto promise = this->lookupSourcePromises.begin();
+             promise != this->lookupSourcePromises.end(); ++promise) {
+            (*promise)->set_value(std::make_shared<DefaultLookupSourceProvider>(this->getThisSharedPtr()));
+        }
+        this->lookupSourcePromises.clear();
+        lock.unlock();
+    }
+
     void supplyLookupSources()
     {
         lock.lock();

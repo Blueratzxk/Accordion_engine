@@ -511,6 +511,14 @@ public:
         return this->operatorId;
     }
 
+    void abort() override {
+        this->finished = true;
+        if(this->waitInterTaskSync) {
+            this->interTaskEvent->notify();
+            this->waitInterTaskSync = false;
+        }
+    }
+
 
 };
 

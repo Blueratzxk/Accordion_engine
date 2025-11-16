@@ -102,6 +102,8 @@
 
 #include "../TpchTest/Querys/SimpleTest/Query_SupplierJoinSupplier.hpp"
 
+#include "../TpchTest/Querys/SimpleTest/Query_SelectLineitem.hpp"
+
 #include "../Tuning/Prediction/PPM.hpp"
 #include "../Tuning/Prediction/ClusterContext.hpp"
 
@@ -241,6 +243,8 @@ public:
         regQueryList["Q_SupplierJoinSupplier"] = make_shared<Query_SupplierJoinSupplier>();
 
         regQueryList["Q_OM"] = make_shared<Query_OperatorMigration>();
+
+        regQueryList["Q_SL"] = make_shared<Query_SelectLineitem>();
 
 
   //      regQueryList["test1"] = this->getATestTree();
@@ -649,6 +653,36 @@ public:
             return queryExecution->getQueryResult();
         } else
             return "NULL";
+    }
+
+    string getQueryResultByCursor(string queryId,unsigned int index) {
+        shared_ptr<SqlQueryExecution> queryExecution = nullptr;
+
+        if ((*this->querys).find(queryId) != (*this->querys).end()) {
+            queryExecution = (*this->querys)[queryId];
+            return queryExecution->getQueryResultByCursor(index);
+        } else
+            return "NULL";
+    }
+
+    string produceAndGetQueryResult(string queryId) {
+        shared_ptr<SqlQueryExecution> queryExecution = nullptr;
+
+        if ((*this->querys).find(queryId) != (*this->querys).end()) {
+            queryExecution = (*this->querys)[queryId];
+            return queryExecution->produceAndGetQueryResult();
+        } else
+            return "NULL";
+    }
+
+    string abortQuery(string queryId) {
+        shared_ptr<SqlQueryExecution> queryExecution = nullptr;
+
+        if ((*this->querys).find(queryId) != (*this->querys).end()) {
+            queryExecution = (*this->querys)[queryId];
+            return queryExecution->abortQuery();
+        }
+        return "Query not found!";
     }
 
     bool isStageOfQueryScalable(string queryId,int stageId)

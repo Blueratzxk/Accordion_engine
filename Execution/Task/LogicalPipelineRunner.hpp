@@ -37,7 +37,11 @@ public:
         this->session = session;
     }
 
-
+    void abort () override
+    {
+        for(auto op : *this->driver)
+            op->abort();
+    }
 
     void ProcessFor() override
     {

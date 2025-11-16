@@ -54,7 +54,7 @@ void DriverContext::closeRemoteSourceDriver() {
 
         if ((*this->driver)[i]->getOperatorType() == "RemoteSourceOperator") {
 
-            static_pointer_cast<RemoteSourceOperator>((*this->driver)[i])->abort();
+            static_pointer_cast<RemoteSourceOperator>((*this->driver)[i])->closePageRequest();
             break;
         }
     }
@@ -73,7 +73,7 @@ void DriverContext::closeExtendedRemoteSourceDriver(set<string> extendedOpTypes)
     if(isExtendedDriver) {
         for (int i = 0; i < (*this->driver).size(); i++) {
             if ((*this->driver)[i]->getOperatorType() == "RemoteSourceOperator") {
-                static_pointer_cast<RemoteSourceOperator>((*this->driver)[i])->abort();
+                static_pointer_cast<RemoteSourceOperator>((*this->driver)[i])->closePageRequest();
                 break;
             }
         }

@@ -52,6 +52,11 @@ public:
         return  TaskServer::taskResourceManager->closeTask(*TaskId::Deserialize(taskId));
     }
 
+    static TaskInfo abortTask(string taskId)
+    {
+        return  TaskServer::taskResourceManager->abortTask(*TaskId::Deserialize(taskId));
+    }
+
     static TaskInfo getTaskInfo(string taskId)
     {
         TaskId id;

@@ -256,6 +256,24 @@ public:
         }
     }
 
+    TaskInfo abortTask(TaskId taskId)
+    {
+        shared_ptr<SqlTask> sqlTaskPtr = this->findTask(taskId);
+        if(sqlTaskPtr == NULL) {
+
+            vector<shared_ptr<PipelineDescriptor>> emptyDescs;
+            auto info = make_shared<TaskInfoDescriptor>("No TaskId","Cannot find this Task!");
+            return TaskInfo(info);
+
+        }
+        else
+        {
+            this->taskExecutor->killTasksByTaskId(taskId.ToString());
+            sqlTaskPtr->abortBuffer();
+            return sqlTaskPtr->getTaskInfo();
+        }
+    }
+
 
     InterTaskDataHandle createInterTaskMission(TaskId taskId,InterTaskMissionDescriptor interTaskMissionDescriptor)
     {

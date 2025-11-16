@@ -30,7 +30,7 @@ public:
     {
         vector<StageExecutionAndScheduler> stageTreeExecutions =  createStreamingLinkedStageExecutions(planRoot,NULL);
 
-        shared_ptr<OutputBufferSchema> rootStageSchema = OutputBufferSchema::createInitialEmptyOutputBufferSchema(OutputBufferSchema::BROADCAST);
+        shared_ptr<OutputBufferSchema> rootStageSchema = OutputBufferSchema::createInitialEmptyOutputBufferSchema(OutputBufferSchema::SIMPLE);
         rootStageSchema->changeBuffers({{"0",0}});
         rootStage = (stageTreeExecutions.end()-1)->getStageExecution();
         rootStage->setOutputBuffers(rootStageSchema);

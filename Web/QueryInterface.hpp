@@ -22,10 +22,27 @@ public:
     {
         return QueryServer::queryServer->getQueryInfo(queryId);
     }
+
+    static string abortQuery(string queryId)
+    {
+        return QueryServer::queryServer->abortQuery(queryId);
+    }
+
     static string getQueryResult(string queryId)
     {
         return QueryServer::queryServer->getQueryResult(queryId);
     }
+
+    static string getQueryResultByCursor(string queryId,unsigned int index)
+    {
+        return QueryServer::queryServer->getQueryResultByCursor(queryId,index);
+    }
+
+    static string produceAndGetQueryResult(string queryId)
+    {
+        return QueryServer::queryServer->produceAndGetQueryResult(queryId);
+    }
+
     static string getAllRunningQueryInfo() {
         return QueryServer::queryServer->getAllRunningQueryInfo();
     }

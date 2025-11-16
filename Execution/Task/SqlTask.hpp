@@ -303,7 +303,10 @@ public:
         return this->stateMachine;
     }
 
-
+    void abortBuffer()
+    {
+        this->buffer->abort();
+    }
 
     void close()
     {

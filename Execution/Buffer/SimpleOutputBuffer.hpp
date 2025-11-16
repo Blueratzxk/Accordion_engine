@@ -305,6 +305,11 @@ public:
             this->bufferIdToEndPage[bufferId] = true;
     }
 
+    void abort() override
+    {
+        this->endPageFounded = true;
+    }
+
 
     void setOutputBuffersSchema(OutputBufferSchema schema){
 

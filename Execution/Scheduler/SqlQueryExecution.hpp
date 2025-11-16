@@ -135,6 +135,12 @@ public:
         thread(SqlQueryScheduler::closeStageAllTaskIntraPipelineConcurrent,this->scheduler,stageId,pipelineId).detach();
         return "OK";
     }
+
+    string abortQuery()
+    {
+        thread(SqlQueryScheduler::abortQuery,this->scheduler).detach();
+        return "OK";
+    }
 };
 
 
@@ -186,8 +192,7 @@ public:
 
 };
 
-class SqlQueryExecution
-{
+class SqlQueryExecution {
     PlanNode *PlanNodeRoot;
     shared_ptr<SqlQueryScheduler> scheduler;
     shared_ptr<Session> session;
@@ -197,57 +202,52 @@ class SqlQueryExecution
     string rawSql;
 
 
-    bool isStageTuningKnob(shared_ptr<SqlStageExecution> stage)
-    {
-        if(stage->getFragment()->hasNodeType("FinalAggregationNode") ||
-           stage->getFragment()->hasNodeType("TaskOutputNode")||
-           stage->getFragment()->hasNodeType("TopKNode")||
-           stage->getFragment()->hasNodeType("TableScanNode"))
+    bool isStageTuningKnob(shared_ptr<SqlStageExecution> stage) {
+        if (stage->getFragment()->hasNodeType("FinalAggregationNode") ||
+            stage->getFragment()->hasNodeType("TaskOutputNode") ||
+            stage->getFragment()->hasNodeType("TopKNode") ||
+            stage->getFragment()->hasNodeType("TableScanNode"))
             return false;
         return true;
     }
 
 
-    void extractProgressAndTuner(shared_ptr<SqlStageExecution> stage,shared_ptr<ProgressAndTuner> progressAndTuner)
-    {
+    void extractProgressAndTuner(shared_ptr<SqlStageExecution> stage, shared_ptr<ProgressAndTuner> progressAndTuner) {
         shared_ptr<SqlStageExecution> tempStage = stage;
         list<shared_ptr<ProgressAndTuner>> dependencies;
 
-        if(tempStage->getFragment()->hasTableScan())
-        {
+        if (tempStage->getFragment()->hasTableScan()) {
             progressAndTuner->setTableScanProgress(tempStage->getStageId().getId());
             progressAndTuner->setExecutionDependencies(dependencies);
             return;
         }
 
         do {
-            if(this->isStageTuningKnob(tempStage))
+            if (this->isStageTuningKnob(tempStage))
                 progressAndTuner->addTuningKnobStage(tempStage->getStageId().getId());
 
             shared_ptr<StageExecutionAndScheduler> seas = this->scheduler->getStageExecutionAndSchedulerByStagId(
                     tempStage->getStageId().getId());
             auto childStages = seas->getStageLinkage()->getChildStages();
-            if(!childStages.empty())
+            if (!childStages.empty())
                 tempStage = childStages[0];
 
-            if(childStages.size() > 1)
-            {
+            if (childStages.size() > 1) {
 
-                for(int i = 1 ; i < childStages.size() ; i++) {
+                for (int i = 1; i < childStages.size(); i++) {
                     auto newProgressAndTuner = make_shared<ProgressAndTuner>();
                     extractProgressAndTuner(childStages[i], newProgressAndTuner);
                     dependencies.push_back(newProgressAndTuner);
                 }
             }
-        }
-        while(!tempStage->getFragment()->hasTableScan());
+        } while (!tempStage->getFragment()->hasTableScan());
         progressAndTuner->setTableScanProgress(tempStage->getStageId().getId());
         progressAndTuner->setExecutionDependencies(dependencies);
     }
 
 
 public:
-    SqlQueryExecution(string rawSql,shared_ptr<Session> session,PlanNode *root){
+    SqlQueryExecution(string rawSql, shared_ptr<Session> session, PlanNode *root) {
 
         this->PlanNodeRoot = root;
         this->session = session;
@@ -256,81 +256,69 @@ public:
     }
 
 
-
-    shared_ptr<map<int,shared_ptr<map<shared_ptr<ClusterNode>, set<shared_ptr<HttpRemoteTask>>>>>> getStagesNodeTaskMap()
-    {
+    shared_ptr<map<int, shared_ptr<map<shared_ptr<ClusterNode>, set<shared_ptr<HttpRemoteTask>>>>>>
+    getStagesNodeTaskMap() {
 
         return this->scheduler->getStagesNodeTaskMap();
     }
-    map<int,list<taskCpuNetUsageInfo>> getStagesCpuUsages()
-    {
+
+    map<int, list<taskCpuNetUsageInfo>> getStagesCpuUsages() {
 
         return this->scheduler->getStagesCpuUsages();
     }
 
-    map<int,pair<long,long>> getStageProcessingTimes()
-    {
+    map<int, pair<long, long>> getStageProcessingTimes() {
         return this->scheduler->getStageProcessingTimes();
     }
 
-    map<int,int> getStageDOPs()
-    {
+    map<int, int> getStageDOPs() {
         return this->scheduler->getStageDOPs();
     }
 
-    double getSingleTaskCpuUsageOfStage(int stageId)
-    {
+    double getSingleTaskCpuUsageOfStage(int stageId) {
         return this->scheduler->getSingleTaskOfStageCpuUsage(stageId);
     }
 
-    double getRemainingTaskCpuUsageOfStageByTaskThreadNums(int stageId)
-    {
+    double getRemainingTaskCpuUsageOfStageByTaskThreadNums(int stageId) {
         double result = this->scheduler->getStageRemainingCpuUsageRatioByTaskThreadNums(stageId);
 
         return result;
     }
 
-    void planDistribution(PlanNode *root)
-    {
+    void planDistribution(PlanNode *root) {
         stateMachine->planned();
         PlanTreeAnalyzer analyzer(root);
         shared_ptr<SubPlan> tree = analyzer.analyzeToSubPlanTree();
-        this->scheduler = make_shared<SqlQueryScheduler>(root,tree,this->session,this->stateMachine);
+        this->scheduler = make_shared<SqlQueryScheduler>(root, tree, this->session, this->stateMachine);
         this->dyScheduler = make_shared<Dynamic_scheduler>(this->scheduler);
         this->dyMonitor = make_shared<DynamicTuningMonitor>(this->scheduler);
     }
 
-    shared_ptr<QueryStateMachine> getState()
-    {
+    shared_ptr<QueryStateMachine> getState() {
         return this->stateMachine;
     }
 
-    shared_ptr<Session> getSession()
-    {
+    shared_ptr<Session> getSession() {
         return this->session;
     }
 
-    shared_ptr<SqlQueryScheduler> getScheduler()
-    {
+    shared_ptr<SqlQueryScheduler> getScheduler() {
         return this->scheduler;
     }
 
 
-
-    shared_ptr<ProgressAndTuner> getProgressAndTuner()
-    {
+    shared_ptr<ProgressAndTuner> getProgressAndTuner() {
         shared_ptr<ProgressAndTuner> result = make_shared<ProgressAndTuner>();
-        this->extractProgressAndTuner(this->scheduler->getRootStage(),result);
+        this->extractProgressAndTuner(this->scheduler->getRootStage(), result);
         return result;
     }
 
-    bool isQuerySilent()
-    {
-        if(this->stateMachine->isRunning()) {
+    bool isQuerySilent() {
+        if (this->stateMachine->isRunning()) {
             auto allStages = this->scheduler->getStageExeSchedulers();
             for (auto stage: allStages) {
                 if (!stage.getStageExecution()->getState()->isDone())
-                    if(stage.getStageExecution()->stageHasThroughput())
+                    if (stage.getStageExecution()->stageHasThroughput())
                         return false;
             }
             return true;
@@ -338,41 +326,34 @@ public:
         return true;
     }
 
-    bool isQueryFinished()
-    {
+    bool isQueryFinished() {
         return this->stateMachine->isFinished();
     }
-    bool isQueryCanceled()
-    {
+
+    bool isQueryCanceled() {
         return this->stateMachine->isCanceled();
     }
 
-    bool isQueryStart()
-    {
+    bool isQueryStart() {
         return this->stateMachine->isRunning();
     }
 
-    void start()
-    {
+    void start() {
         planDistribution(this->PlanNodeRoot);
-        thread(this->scheduler->schedule,scheduler).detach();
+        thread(this->scheduler->schedule, scheduler).detach();
     }
 
-    void moveTaskOperatorTest(string para)
-    {
-        thread(this->scheduler->moveTaskOperatorTest,scheduler,para).detach();
+    void moveTaskOperatorTest(string para) {
+        thread(this->scheduler->moveTaskOperatorTest, scheduler, para).detach();
     }
 
 
-    string getQueryExecutionInfo()
-    {
+    string getQueryExecutionInfo() {
 
-        if(this->stateMachine->getState() == QueryStateMachine::PLANNED)
-        {
+        if (this->stateMachine->getState() == QueryStateMachine::PLANNED) {
             return "[]";
         }
-        if(this->stateMachine->getState() == QueryStateMachine::CANCELED)
-        {
+        if (this->stateMachine->getState() == QueryStateMachine::CANCELED) {
             return "[]";
         }
         vector<string> infos = this->scheduler->getStagesInfo();
@@ -380,12 +361,11 @@ public:
         string result;
         result.append("[");
 
-        for(auto info : infos)
-        {
+        for (auto info: infos) {
             result.append(info);
             result.append(",");
         }
-        if(!infos.empty())
+        if (!infos.empty())
             result.pop_back();
 
         result.append("]");
@@ -397,16 +377,14 @@ public:
 
         return jsonResult;
     }
-    string getRawSql()
-    {
+
+    string getRawSql() {
         return this->rawSql;
     }
 
-    nlohmann::json getQueryExecutionInfoObj()
-    {
+    nlohmann::json getQueryExecutionInfoObj() {
 
-        if(this->stateMachine->getState() == QueryStateMachine::PLANNED)
-        {
+        if (this->stateMachine->getState() == QueryStateMachine::PLANNED) {
             return "[]";
         }
 
@@ -415,12 +393,11 @@ public:
         string result;
         result.append("[");
 
-        for(auto info : infos)
-        {
+        for (auto info: infos) {
             result.append(info);
             result.append(",");
         }
-        if(!infos.empty())
+        if (!infos.empty())
             result.pop_back();
 
         result.append("]");
@@ -429,15 +406,12 @@ public:
         nlohmann::json json = nlohmann::json::parse(result);
 
 
-
         return json;
     }
 
-    string getQueryExecutionInfoString()
-    {
+    string getQueryExecutionInfoString() {
 
-        if(this->stateMachine->getState() == QueryStateMachine::PLANNED)
-        {
+        if (this->stateMachine->getState() == QueryStateMachine::PLANNED) {
             return "[]";
         }
 
@@ -446,12 +420,11 @@ public:
         string result;
         result.append("[");
 
-        for(auto info : infos)
-        {
+        for (auto info: infos) {
             result.append(info);
             result.append(",");
         }
-        if(!infos.empty())
+        if (!infos.empty())
             result.pop_back();
 
         result.append("]");
@@ -461,98 +434,118 @@ public:
 
     }
 
-    string planTreeToJson()
-    {
+    string planTreeToJson() {
         PlanNodeTreeToJson pj;
         return pj.getJson(this->PlanNodeRoot);
 
     }
-    nlohmann::json planTreeToJsonObj()
-    {
+
+    nlohmann::json planTreeToJsonObj() {
         PlanNodeTreeToJson pj;
         return pj.getJsonObj(this->PlanNodeRoot);
 
     }
 
-    string getQueryResult()
-    {
 
-        if(!this->stateMachine->isFinished())
-        {
-            return "{\"status\":\"Task_Unfinished\"}";
-        }
+    string produceAndGetQueryResult() {
 
-
-
-
-        if(this->scheduler->getResultSet().empty())
+        if (this->scheduler->produceAndGetResults().empty())
             return "{\"status\":\"Result_Empty\"}";
 
-        string resultBatch = ArrowRecordBatchViewer::BatchRowsToString(this->scheduler->getResultSet().front()->get());
+        string resultBatch = ArrowRecordBatchViewer::BatchRowsToString(
+                this->scheduler->produceAndGetResults().front()->get());
         //this->scheduler->getResultSet().pop_front();
 
         return resultBatch;
 
     }
 
-    map<int,map<int,string>> getQueryBuildRecords()
-    {
+
+    string getQueryResult() {
+
+        auto result = this->scheduler->getResultSet();
+        if (result.empty())
+            return "{\"status\":\"Result_Empty\"}";
+
+        auto indexMeta = this->scheduler->getTaskResultMeta();
+        string resultBatch;
+        resultBatch.append("index:").append(to_string(indexMeta.first)).append("#").append(to_string(indexMeta.second)).append("\n");
+
+        resultBatch.append(ArrowRecordBatchViewer::BatchRowsToString(result.front()->get()));
+        return resultBatch;
+    }
+
+    string getQueryResultByCursor(unsigned int index) {
+
+        auto result = this->scheduler->getResultByCursor(index);
+        if (result.empty())
+            return "{\"status\":\"Result_Empty\"}";
+
+        auto indexMeta = this->scheduler->getTaskResultMeta();
+        string resultBatch;
+        resultBatch.append("index:").append(to_string(indexMeta.first)).append("#").append(to_string(indexMeta.second)).append("\n");
+
+        resultBatch.append(ArrowRecordBatchViewer::BatchRowsToString(result.front()->get()));
+        return resultBatch;
+    }
+
+    map<int, map<int, string>> getQueryBuildRecords() {
         return this->scheduler->getStagesBuildRecords();
     }
 
-    string getQueryExecutionTime()
-    {
+    string getQueryExecutionTime() {
         return this->scheduler->getRootStageExecutionTime();
     }
 
-    nlohmann::json getSidewayInfoJsons()
-    {
+    nlohmann::json getSidewayInfoJsons() {
         return this->scheduler->getSidewayScheduleInfoJsons();
     }
-    string getQueryThroughputsSnapShot()
-    {
+
+    string getQueryThroughputsSnapShot() {
         return this->scheduler->getQueryStagesThroughputs(this->scheduler);
     }
-    string getQueryThroughputsInfoSnapShot()
-    {
+
+    string getQueryThroughputsInfoSnapShot() {
         return this->scheduler->getQueryStagesThroughputsInfo(this->scheduler);
     }
-    void displayAllTasksThroughputsInfo()
-    {
+
+    void displayAllTasksThroughputsInfo() {
         this->scheduler->displayAllTasksThroughputsInfo(this->scheduler);
     }
 
-    bool submitTaskMigrationMission(int stageId,vector<int> taskIds)
-    {
-        this->scheduler->submitTaskMigrationMission(this->scheduler,stageId,taskIds);
+    bool submitTaskMigrationMission(int stageId, vector<int> taskIds) {
+        this->scheduler->submitTaskMigrationMission(this->scheduler, stageId, taskIds);
         return true;
     }
 
-    bool submitBufferMigrationMission(int stageId,vector<int> taskIds,int targetTaskNums)
-    {
-        this->scheduler->submitBufferMigrationMission(this->scheduler,stageId,taskIds,targetTaskNums);
+    bool submitBufferMigrationMission(int stageId, vector<int> taskIds, int targetTaskNums) {
+        this->scheduler->submitBufferMigrationMission(this->scheduler, stageId, taskIds, targetTaskNums);
         return true;
     }
 
-    bool isStageisTuningKnob(int stageId)
-    {
-        if(this->scheduler == NULL)
+    bool isStageisTuningKnob(int stageId) {
+        if (this->scheduler == NULL)
             return false;
 
         auto stage = this->scheduler->getStageExecutionAndSchedulerByStagId(stageId);
         return this->isStageTuningKnob(stage->getStageExecution());
     }
 
-    bool isStageScalable(int stageId)
-    {
-        if(this->scheduler == NULL)
+    bool isStageScalable(int stageId) {
+        if (this->scheduler == NULL)
             return false;
 
-        return this->scheduler->isStageScalable(this->scheduler,stageId);
+        return this->scheduler->isStageScalable(this->scheduler, stageId);
     }
-    bool isStageExist(int stageId)
+
+    bool isStageExist(int stageId) {
+        return this->scheduler->isStageExist(this->scheduler, stageId);
+    }
+
+    string abortQuery()
     {
-        return this->scheduler->isStageExist(this->scheduler,stageId);
+        this->dyScheduler->abortQuery();
+        return "YES";
     }
 
 

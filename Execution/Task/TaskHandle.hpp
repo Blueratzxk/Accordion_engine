@@ -17,7 +17,10 @@ public:
     {
         this->taskId = taskId;
     }
-
+    string getTaskIdStr()
+    {
+        return this->taskId->ToString();
+    }
     void enqueueTaskExecutorRunner(std::shared_ptr<TaskExecutorRunner> runner)
     {
         this->taskExecutorRunners.push(runner);

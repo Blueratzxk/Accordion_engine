@@ -641,10 +641,13 @@
 				<!-- SIDEBAR -->
 				
 								<div class="panel panel-default">
+			
 									<div class="panel-body">
+									<div id = "resultCursor" style="padding-bottom:10px;"></div>
 										<table  class="table table-striped table-bordered table-hover">
 										 <thead id="resultTableHead">
-										
+									
+							
 										 </thead>
 										 <tbody id="resultTableBody">
 											
@@ -711,8 +714,7 @@
 	<!-- CUSTOM SCRIPT -->
 	<script src="js/script.js"></script>
 	<script>
-	
-var serverIp = '192.168.226.129:9080'
+		var serverIp = '192.168.226.129:9080';
 	var queryId = getQueryIdByWindowPara();
 	
 	
@@ -735,6 +737,7 @@ var serverIp = '192.168.226.129:9080'
 			$tr.append($td);
 		}
 		
+		
 		$("#resultTableBody").append($tr);
 		
 	
@@ -742,7 +745,7 @@ var serverIp = '192.168.226.129:9080'
 	
 	function resolveRows(array){
 	
-		var index = 2;
+		var index = 3;
 		for(;index < array.length ; index++)
 		{
 			resolveRow(array,index);
@@ -750,13 +753,38 @@ var serverIp = '192.168.226.129:9080'
 		
 	}
 	
+	var currentCursor;
+	var prevCursor;
+	function resolveMeta(data)
+	{
+		var dats = data.split(':')
+		var indexs = dats[1].split('#')
+		currentCursor = indexs[0];
+		
+		prevCursor = currentCursor -1;
+		if(prevCursor < 0)
+			prevCursor = 0;
+			
+		var cursorStr = 'Page: '+indexs[0]+' of '+indexs[1]+'  &nbsp&nbsp<button onclick=\'loadDataByCursor()\'><</button>&nbsp&nbsp<button onclick=\'loadData()\'>></button>&nbsp&nbsp<input id="gotoIndex" style="width: 30px;">&nbsp<button onclick=\'loadDataByCursorGOTO()\'>GO</button>';
+		if(indexs[1] >= 0)
+			$("#resultCursor").append(cursorStr);
+	}
+	
+	
 	function resolveHeader(data){
+	
+	$("#resultTableHead").empty();
+	$("#resultTableBody").empty();
+	$("#resultCursor").empty();
 	
 		var array = data.split("\n");
 		console.log(array);
 		
-		columns = array[0];
-		types = array[1];
+		resolveMeta(array[0]);
+		
+		columns = array[1];
+		types = array[2];
+		
 		
 		
 		var $tr=$("<tr></tr>");
@@ -792,9 +820,9 @@ var serverIp = '192.168.226.129:9080'
 		}
 	}
 	
+
 	
-	
-	
+	function loadData(){
 	$.ajax({
 	
 	
@@ -820,9 +848,71 @@ var serverIp = '192.168.226.129:9080'
                 //alert('请求失败')
             }
         });
+	}
 		
+	loadData();
 		
-		function createTable1(){
+	function loadDataByCursor(){
+	$.ajax({
+	
+	
+			
+            // 设置ajax的参数
+            // 请求数据的url地址：接口地址
+            url: 'http://'+serverIp+'/v1/query/getQueryResultByCursorExtern/'+queryId+'/'+(prevCursor),  
+            // 请求数据方式：get  post
+            type: 'get',    
+           
+            // data:发送给接口的数据
+            data:{},
+            // 请求成功之后要执行的回调函数
+            success: function (dat) {
+                //dat:服务端返回的数据
+                console.log(dat)
+				resolveData(dat)
+			
+		
+            },
+            // 请求失败
+            error: function (e) {
+                //alert('请求失败')
+            }
+        });
+	}
+	
+	function loadDataByCursorGOTO(){
+	
+	var index = $('#gotoIndex').val();
+	if(index =='')
+	   return;
+	$.ajax({
+	
+			
+			
+            // 设置ajax的参数
+            // 请求数据的url地址：接口地址
+            url: 'http://'+serverIp+'/v1/query/getQueryResultByCursorExtern/'+queryId+'/'+index,  
+            // 请求数据方式：get  post
+            type: 'get',    
+           
+            // data:发送给接口的数据
+            data:{},
+            // 请求成功之后要执行的回调函数
+            success: function (dat) {
+                //dat:服务端返回的数据
+                console.log(dat)
+				resolveData(dat)
+			
+		
+            },
+            // 请求失败
+            error: function (e) {
+                //alert('请求失败')
+            }
+        });
+	}
+	
+	function createTable1(){
 			//创建表格
 			
 			var $table=$("<table></table>");
@@ -830,11 +920,10 @@ var serverIp = '192.168.226.129:9080'
 			var $td=$("<td>Hello,我是td</td>");
 			$tr.append($td);
 			$table.append($tr);
-			$("#resultTableBody").append('<tr><td><a href="#">Fortune 500</a></td><td class="hidden-xs">Gold Level Virtual Server</td><td>$ 2310.23</td><td><span class="label label-success label-sm">Paid</span></td></tr>');
+			$("#resultTableBody").empty().append('<tr><td><a href="#">Fortune 500</a></td><td class="hidden-xs">Gold Level Virtual Server</td><td>$ 2310.23</td><td><span class="label label-success label-sm">Paid</span></td></tr>');
 		
-		$("#resultTableHead").append('<tr><th><i class="fa fa-user"></i> Client</th><th class="hidden-xs"><i class="fa fa-quote-left"></i> Sales Item</th><th><i class="fa fa-dollar"></i> Amount</th><th><i class="fa fa-bars"></i> Status</th></tr>');
-		}
-
+		$("#resultTableHead").empty().append('<tr><th><i class="fa fa-user"></i> Client</th><th class="hidden-xs"><i class="fa fa-quote-left"></i> Sales Item</th><th><i class="fa fa-dollar"></i> Amount</th><th><i class="fa fa-bars"></i> Status</th></tr>');
+	}
 		//createTable1();
 		
 	</script>

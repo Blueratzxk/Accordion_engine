@@ -275,9 +275,20 @@ public:
         return false;
     }
 
-    void abort() override
+    void closePageRequest()
     {
         this->client->abort();
+    }
+
+    void abort() override
+    {
+        this->endSignalCount = this->concurrentCount;
+        this->finished = true;
+
+        if (this->waitInterTaskSync) {
+            this->sidewayTaskEvent->notify();
+            this->waitInterTaskSync = false;
+        }
     }
 
     bool isFinished()

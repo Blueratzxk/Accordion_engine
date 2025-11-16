@@ -14,11 +14,9 @@
 
 class TaskExecutor: public std::enable_shared_from_this<TaskExecutor>
 {
-
+    mutex lock;
     vector<std::shared_ptr<TaskHandle>> tasks;
-    list<std::shared_ptr<TaskExecutorRunner>> allTaskExecutorRunners;
-
-
+    map<string,list<std::shared_ptr<TaskExecutorRunner>>> allTaskExecutorRunners;
     BlockQueue<std::shared_ptr<TaskExecutorRunner>> runnerQueue;
 
     long runnerId = 0;
@@ -81,20 +79,41 @@ public:
     }
 
 
-    void  enqueueSplits(std::shared_ptr<TaskHandle> taskHandle,vector<std::shared_ptr<SplitRunner>> splitRunners)
+    void enqueueSplits(std::shared_ptr<TaskHandle> taskHandle,vector<std::shared_ptr<SplitRunner>> splitRunners)
     {
         for(auto runner : splitRunners)
         {
             std::shared_ptr<TaskExecutorRunner> taskExecutorRunner = std::make_shared<TaskExecutorRunner>(runner,taskHandle);
             taskHandle->enqueueTaskExecutorRunner(taskExecutorRunner);
             spdlog::debug("Add Task!");
-            this->startRunner(taskHandle->pollTaskExecutorRunner());
+            this->startRunner(taskHandle->getTaskIdStr(),taskHandle->pollTaskExecutorRunner());
         }
     }
 
-    void startRunner(std::shared_ptr<TaskExecutorRunner> runner)
+    void killTasksByTaskId(string taskId)
     {
-        allTaskExecutorRunners.push_back(runner);
+        list<std::shared_ptr<TaskExecutorRunner>> runners;
+
+        lock.lock();
+        if(this->allTaskExecutorRunners.contains(taskId))
+            runners = this->allTaskExecutorRunners[taskId];
+        lock.unlock();
+
+        for(auto runner : runners)
+            runner->abort();
+    }
+
+    void startRunner(string taskId,std::shared_ptr<TaskExecutorRunner> runner)
+    {
+        lock.lock();
+
+        if(!allTaskExecutorRunners.contains(taskId))
+            allTaskExecutorRunners[taskId] = {runner};
+        else
+            allTaskExecutorRunners[taskId].push_back(runner);
+
+        lock.unlock();
+
         runnerQueue.Put(runner);
     }
 

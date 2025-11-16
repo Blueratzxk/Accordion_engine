@@ -18,6 +18,7 @@ public:
 
     virtual std::future<std::shared_ptr<LookupSourceProvider>> createLookUpSourceProvider() = 0;
     virtual void tryGetCompletedLookupSource() = 0;
+    virtual void cancelLookupSource() = 0;
     virtual bool isAborted() {return false;}
 };
 #endif //OLVP_LOOKUPSOURCEFACTORY_HPP

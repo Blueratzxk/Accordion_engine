@@ -12,7 +12,7 @@ class SimpleEvent: public Event
 {
     std::mutex mtx;
     std::condition_variable event;
-    bool ready = false;
+    int generation = 0;
 
 public:
     SimpleEvent()
@@ -23,15 +23,17 @@ public:
     void listen() override
     {
         std::unique_lock<std::mutex> lck(mtx);
-        while (!ready) event.wait(lck);
-        this->ready = false;
+        int currentGen = this->generation;
+        event.wait(lck, [this, currentGen] {
+            return this->generation != currentGen;
+        });
 
     }
 
     void notify() override
     {
         std::unique_lock<std::mutex> lck(mtx);
-        this->ready = true;
+        this->generation++;
         event.notify_all();
     }
 

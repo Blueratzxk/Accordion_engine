@@ -59,6 +59,11 @@ public:
         return this->taskManager->closeTask(taskId);
     }
 
+    TaskInfo abortTask(TaskId taskId)
+    {
+        return this->taskManager->abortTask(taskId);
+    }
+
     int getAllActiveThreadNums() {
         int nums = this->taskManager->getAllActiveThreadNums();
         return nums;

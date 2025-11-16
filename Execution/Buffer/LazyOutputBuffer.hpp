@@ -27,6 +27,8 @@ class LazyOutputBuffer: public OutputBuffer
 
     atomic<bool> bufferEventReady = false;
 
+    bool isAbort = false;
+
 public:
     LazyOutputBuffer(shared_ptr<TaskId> taskId){
         this->taskId = taskId;
@@ -123,6 +125,8 @@ public:
     }
     bool isFull() {
 
+        if(isAbort)
+            return false;
 
         while(!bufferReady)usleep(5000);
 
@@ -214,7 +218,13 @@ public:
         this->delegate->setOutputBuffersSchema(schema);
         this->bufferReady = true;
 
+    }
 
+    void abort() override
+    {
+        this->isAbort = true;
+        this->delegate->abort();
+        this->event->notify();
 
     }
 

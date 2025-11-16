@@ -756,6 +756,18 @@ public:
        }
     }
 
+    void abortAllTasks()
+    {
+        vector<shared_ptr<HttpRemoteTask>> allRemoteTasks;
+        allRemoteTasks = this->getAllTasks();
+
+        for(auto task: allRemoteTasks)
+        {
+            if(!task->isDone())
+            task->abort();
+        }
+    }
+
     int getCurrentStageDOP()
     {
         auto allTasks = this->getAllTasks();
@@ -1550,7 +1562,7 @@ public:
             return taskResultFetcher;
         }
         else
-            return taskResultFetcher;
+         return taskResultFetcher;
     }
 
     set<int> getRunningTasksOnTheNode(string nodeIp)

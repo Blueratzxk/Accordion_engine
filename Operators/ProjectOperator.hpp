@@ -264,5 +264,9 @@ public:
         return this->operatorId;
     }
 
+    void abort() override {
+        this->finished = true;
+    }
+
 };
 #endif //OLVP_PROJECTOPERATOR_HPP

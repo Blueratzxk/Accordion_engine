@@ -22,6 +22,7 @@
 
 #include "SidewayExchangeSystem/SidewayExchangeSystem.hpp"
 
+#include "../Task/Fetcher/TaskResultProvider.hpp"
 
 class SqlQueryScheduler : public enable_shared_from_this<SqlQueryScheduler>{
 
@@ -36,9 +37,9 @@ class SqlQueryScheduler : public enable_shared_from_this<SqlQueryScheduler>{
     map<int,double> stageExecutionTimePredictionAfterTuned;
 
     vector<StageExecutionAndScheduler> stageExeSchedulers;
-    shared_ptr<SqlStageExecution> rootStage = NULL;
+    shared_ptr<SqlStageExecution> rootStage = nullptr;
 
-    shared_ptr<QueryStateMachine> stateMachine = NULL;
+    shared_ptr<QueryStateMachine> stateMachine = nullptr;
     list<shared_ptr<DataPage>> resultSet;
 
     atomic<bool> IQRS_Signal = false;
@@ -51,6 +52,10 @@ class SqlQueryScheduler : public enable_shared_from_this<SqlQueryScheduler>{
     shared_ptr<SidewayExchangeSystem> sidewayExchangeSystem;
     shared_ptr<SqlScheduleLock> scheduleLock;
 
+    bool produceAndGetEndPage = false;
+    mutex resultProduceAndGetLock;
+
+    shared_ptr<TaskResultProvider> taskResultProvider = nullptr;
 
 
 public:
@@ -62,6 +67,7 @@ public:
         this->stateMachine = stateMachine;
         this->executionFactory = make_shared<StageTreeExecutionFactory>(this->session);
         this->scheduleLock = make_shared<SqlScheduleLock>();
+        this->taskResultProvider = make_shared<TaskResultProvider>();
 
 
         this->stageExeSchedulers = this->executionFactory->createStageTreeExecutions(this->rootStage, this->root);
@@ -412,8 +418,69 @@ public:
 
     list<shared_ptr<DataPage>> getResultSet()
     {
-        cleanEmptyResult();
-        return this->resultSet;
+        if(isInteractiveOutput()) {
+            if(!this->taskResultProvider->hasFetcher())
+                this->taskResultProvider->setTaskResultFetcher(this->rootStage->getTaskResultFetcher());
+
+            return this->taskResultProvider->nextPage();
+        }
+
+        return this->taskResultProvider->nextPage();
+    }
+
+    list<shared_ptr<DataPage>> getResultByCursor(unsigned int index)
+    {
+        return this->taskResultProvider->getResultByCursor(index);
+    }
+    pair<int,int> getTaskResultMeta()
+    {
+        return {this->taskResultProvider->getCursor(),this->taskResultProvider->getResultSize()};
+    }
+
+    bool isInteractiveOutput()
+    {
+        auto rootPlan = this->rootStage->getFragment();
+        if(rootPlan->hasNodeType("FinalAggregationNode") || rootPlan->hasNodeType("TopKNode"))
+            return false;
+        return true;
+    }
+
+    list<shared_ptr<DataPage>> produceAndGetResults()
+    {
+        if(!this->resultSet.empty()) {
+            auto re = resultSet.front();
+            resultSet.pop_front();
+            return {re};
+        }
+
+        if(this->produceAndGetEndPage)
+            return {};
+
+        resultProduceAndGetLock.lock();
+        auto fetcher = this->rootStage->getTaskResultFetcher();
+
+        shared_ptr<DataPage> result;
+        do {
+            fetcher->schedule();
+            result = fetcher->pollPage();
+        }
+        while(result == NULL || result->getElementsCount() == 0);
+
+        this->resultSet.push_back(result);
+
+        if (result->isEndPage()) {
+            this->produceAndGetEndPage = true;
+        }
+        resultProduceAndGetLock.unlock();
+
+        if(this->resultSet.empty() && this->produceAndGetEndPage)
+            return {};
+        else {
+            auto re = resultSet.front();
+            resultSet.pop_front();
+            return {re};
+        }
+
     }
 
     nlohmann::json getSidewayScheduleInfoJsons()
@@ -1004,6 +1071,18 @@ public:
         scheduler->closeGPUTaskForStage(stageId);
     }
 
+    static void abortQuery(shared_ptr<SqlQueryScheduler> scheduler)
+    {
+
+        if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
+            return;
+
+        auto executions = scheduler->stageExeSchedulers;
+
+        for(auto exe : executions) {
+            exe.getStageExecution()->abortAllTasks();
+        }
+    }
 
 
 
@@ -1123,25 +1202,42 @@ public:
 
             if(scheduler->stateMachine->isFinished()) {
 
-                    shared_ptr<TaskResultFetcher> taskResultFetcher = NULL;
+                /*
+                shared_ptr<TaskResultFetcher> taskResultFetcher = NULL;
 
-                    taskResultFetcher = scheduler->rootStage->getTaskResultFetcher();
-                    taskResultFetcher->schedule();
-                    result = taskResultFetcher->pollPage();
+                taskResultFetcher = scheduler->rootStage->getTaskResultFetcher();
+                taskResultFetcher->schedule();
+                result = taskResultFetcher->pollPage();
 
                 if (result != NULL && !result->isEndPage() && result->getElementsCount() > 0) {
                     scheduler->resultSet.push_back(result);
                 }
 
                 if (result != NULL && !result->isEndPage()) {
-                    ArrowRecordBatchViewer::PrintBatchRows(result->get());
+                    if(!scheduler->isInteractiveOutput())
+                        ArrowRecordBatchViewer::PrintBatchRows(result->get());
                 }
 
                 if (result != NULL && result->isEndPage()) {
-                    scheduler->resultSet.push_back(result);
 
+                    if(scheduler->isInteractiveOutput()) {
+                        scheduler->produceAndGetEndPage = true;
+                        break;
+                    }
+
+                    scheduler->resultSet.push_back(result);
                     break;
                 }
+                 */
+                scheduler->taskResultProvider->setTaskResultFetcher(scheduler->rootStage->getTaskResultFetcher());
+                if(!scheduler->isInteractiveOutput())
+                    scheduler->taskResultProvider->fetchAllPages();
+                scheduler->taskResultProvider->finish();
+                auto res = scheduler->taskResultProvider->nextPage();
+                for(auto re : res)
+                    ArrowRecordBatchViewer::PrintBatchRows(re->get());
+                break;
+
             }
 
         }

@@ -86,6 +86,7 @@ private:
         Routes::Post(router, "/v1/task/updateTask/:taskIdLength/:taskId/:updateRequest_Length/:updateRequest", Routes::bind(&StatsEndpoint::updateTask, this));
         Routes::Post(router, "/v1/task/getTaskInfo/:taskIdLength/:taskId", Routes::bind(&StatsEndpoint::getTaskInfo, this));
         Routes::Post(router, "/v1/task/closeTask/:taskIdLength/:taskId", Routes::bind(&StatsEndpoint::closeTask, this));
+        Routes::Post(router, "/v1/task/abortTask/:taskIdLength/:taskId", Routes::bind(&StatsEndpoint::abortTask, this));
         Routes::Post(router, "/v1/task/createInterTaskMission/:taskIdLength/:taskId/:interTaskMission_Length/:interTaskMissionRequest", Routes::bind(&StatsEndpoint::createInterTaskMission, this));
 
 
@@ -99,7 +100,10 @@ private:
         Routes::Get(router, "/v1/query/getAllRunningQueryInfoExtern", Routes::bind(&StatsEndpoint::getAllRunningQueryInfoExtern, this));
         Routes::Get(router, "/v1/query/getAllQueryInfoExtern", Routes::bind(&StatsEndpoint::getAllQueryInfoExtern, this));
         Routes::Get(router, "/v1/query/getQueryInfoExtern/:queryId", Routes::bind(&StatsEndpoint::getQueryInfoExtern, this));
+        Routes::Get(router, "/v1/query/abortQuery/:queryId", Routes::bind(&StatsEndpoint::abortQuery, this));
         Routes::Get(router, "/v1/query/getQueryResultExtern/:queryId", Routes::bind(&StatsEndpoint::getQueryResultExtern, this));
+        Routes::Get(router, "/v1/query/getQueryResultByCursorExtern/:queryId/:index", Routes::bind(&StatsEndpoint::getQueryResultByCursorExtern, this));
+        Routes::Get(router, "/v1/query/produceAndGetQueryResultExtern/:queryId", Routes::bind(&StatsEndpoint::produceAndGetQueryResultExtern, this));
         Routes::Get(router, "/v1/query/addStageConcurrentExtern/:queryId/:stageId", Routes::bind(&StatsEndpoint::addStageConcurrentExtern, this));
         Routes::Get(router, "/v1/query/decreaseStageParallelismExtern/:queryId/:stageId", Routes::bind(&StatsEndpoint::decreaseStageParallelismExtern, this));
         Routes::Get(router, "/v1/query/addStageTaskGroupConcurrentExtern/:queryId/:stageId/:taskNum", Routes::bind(&StatsEndpoint::addStageTaskGroupConcurrentExtern, this));
@@ -233,6 +237,19 @@ private:
 
     }
 
+    void abortTask(const Rest::Request& request, Http::ResponseWriter response) {
+
+
+        string taskName = getRawValue(request,":taskIdLength",":taskId");
+
+        TaskServerInterFace api;
+        TaskInfo taskResponse = api.abortTask(taskName);
+
+        response.send(Http::Code::Ok,"OK");
+
+    }
+
+
 
 
 
@@ -360,6 +377,50 @@ private:
     }
 
 
+
+    void abortQuery(const Rest::Request& request, Http::ResponseWriter response) {
+
+
+        string queryId;
+        if (request.hasParam(":queryId")) {
+            auto value = request.param(":queryId");
+            queryId = value.as<string>();
+        }
+
+        QueryInterFace api;
+        string taskResponse = api.abortQuery(queryId);
+        nlohmann::json responseString;
+
+        string resultString;
+
+
+        response.headers().add<Http::Header::AccessControlAllowOrigin>("*");
+        response.send(Http::Code::Ok,taskResponse);
+
+    }
+
+
+    void produceAndGetQueryResultExtern(const Rest::Request& request, Http::ResponseWriter response) {
+
+
+        string queryId;
+        if (request.hasParam(":queryId")) {
+            auto value = request.param(":queryId");
+            queryId = value.as<string>();
+        }
+
+        QueryInterFace api;
+        string taskResponse = api.produceAndGetQueryResult(queryId);
+        nlohmann::json responseString;
+
+        string resultString;
+
+
+        response.headers().add<Http::Header::AccessControlAllowOrigin>("*");
+        response.send(Http::Code::Ok,taskResponse);
+
+    }
+
     void getQueryResultExtern(const Rest::Request& request, Http::ResponseWriter response) {
 
 
@@ -371,6 +432,33 @@ private:
 
         QueryInterFace api;
         string taskResponse = api.getQueryResult(queryId);
+        nlohmann::json responseString;
+
+        string resultString;
+
+
+        response.headers().add<Http::Header::AccessControlAllowOrigin>("*");
+        response.send(Http::Code::Ok,taskResponse);
+
+    }
+
+    void getQueryResultByCursorExtern(const Rest::Request& request, Http::ResponseWriter response) {
+
+
+        string queryId;
+        if (request.hasParam(":queryId")) {
+            auto value = request.param(":queryId");
+            queryId = value.as<string>();
+        }
+
+        string index;
+        if (request.hasParam(":index")) {
+            auto value = request.param(":index");
+            index = value.as<string>();
+        }
+
+        QueryInterFace api;
+        string taskResponse = api.getQueryResultByCursor(queryId,atoi(index.c_str()));
         nlohmann::json responseString;
 
         string resultString;
