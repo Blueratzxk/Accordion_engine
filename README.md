@@ -23,7 +23,7 @@ Click on this link to view a more detailed demo video: https://youtu.be/AaD839ZA
 
 Hetero Intra Query Runtime Elasticity: scheduling GPU resources at runtime. 
 
-![image](https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/GPU.gif?raw=true)  
+
 
 # Prerequisites
 
