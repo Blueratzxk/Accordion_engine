@@ -17,8 +17,8 @@ The first IQRE (Intra-Query Runtime Elasticity) SQL query engine (prototype).
 
 
 Accordion's Goal:
-* Building a Unified Cloud-Native OLAP Engine with Intra-Query Runtime Elasticity.
-* Cloud-native data analytics in accordance with the user's mind.
+* **Building a Unified Cloud-Native OLAP Engine with Intra-Query Runtime Elasticity.**
+* **Cloud-native data analytics in accordance with the user's mind.**
 
 
 **Here is a demo:**
