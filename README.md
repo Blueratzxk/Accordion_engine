@@ -21,9 +21,14 @@ Click on this link to view a more detailed demo video: https://youtu.be/AaD839ZA
 
 # New Features!
 
-Hetero Intra-Query Runtime Elasticity: scheduling **GPU** resources at runtime. 
+Runtime **GPU** extension: scheduling GPU resources at runtime. 
 
 ![image](https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/GPU.gif?raw=true)  
+
+Runtime Node Draining: migrating all tasks of a node to other nodes without pausing query data processing. 
+
+![image](https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/TaskMigration.gif?raw=true)  
+
 
 # Prerequisites
 
