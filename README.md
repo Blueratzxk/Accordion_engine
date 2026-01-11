@@ -2,7 +2,7 @@
 
 <img src="https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/icon.png?raw=true" width="20%" />
 
-# Accordion: cloud-native data analysis in accordance with your mind
+# Accordion: SQL for Freedom
 **SIGMOD 2025 Research Paper Access**: https://arxiv.org/pdf/2502.18184
 
 **VLDB 2025 Demo Paper Access**: https://doi.org/10.14778/3750601.3750658
