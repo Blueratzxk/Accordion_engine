@@ -86,6 +86,7 @@
 #include "../TpchTest/Querys/Query2Join_NL_SmallOrders.hpp"
 #include "../TpchTest/Querys/Query2Join_NL_SmallOrders_ProbeShuffle.hpp"
 #include "../TpchTest/Querys/Query2Join_OC.hpp"
+#include "../TpchTest/Querys/Query2_Join_OCO.hpp"
 #include "../TpchTest/Querys/Query2Join_OC_ProbeShuffle.hpp"
 
 #include "../TpchTest/Querys/Query2Join_single.hpp"
@@ -115,6 +116,7 @@ class QueryManager
 
     PlanNode *tree;
     shared_ptr<map<string,shared_ptr<SqlQueryExecution>>> querys;
+    map<string,multimap<string,vector<string>> > queryConfigs;
 
     map<string,shared_ptr<RegQuery>> regQueryList;
     NodesManager nodesManager;
@@ -235,6 +237,7 @@ public:
         regQueryList["Q2_J_NL_SOPS"] = make_shared<Query2_Join_NL_SmallOrders_ProbeShuffle>();
 
         regQueryList["Q2_J_OC_SC"] = make_shared<Query2_Join_OC>();
+        regQueryList["Q2_J_OC"] = make_shared<Query2_Join_OCO>();
         regQueryList["Q2_J_OC_SCPS"] = make_shared<Query2_Join_OC_ProbeShuffle>();
 
 
@@ -310,6 +313,7 @@ public:
         // session->setRumtimeConfigs({{"SET_TABLE_SCAN_SIZE",{"tpch_test_tpch_1_lineitem","123"}}});
         session->setRumtimeConfigs(rconfigs);
         shared_ptr<SqlQueryExecution> queryExecution = make_shared<SqlQueryExecution>(this->getQuerySql(id),session,this->tree);
+        this->queryConfigs[queryId] = rconfigs;
         if(!startQuery(queryId,queryExecution))
             return "NULL";
         return queryId;
@@ -368,6 +372,47 @@ public:
         (*this->querys)[queryId] = queryExecution;
         thread(start,queryExecution).detach();
         return true;
+    }
+
+
+
+    string abortAndRestartQuery(string queryId) {
+
+        shared_ptr<SqlQueryExecution> queryExecution = nullptr;
+
+        if ((*this->querys).find(queryId) == (*this->querys).end()) {
+            queryExecution = (*this->querys)[queryId];
+            return "Query not found!";
+        }
+
+
+        if(!ClusterServer::getNodesManager()->hasNodes()) {
+            spdlog::error("No nodes to be scheduled!");
+            return "NO";
+        }
+
+        thread(processRestartQuery,this,queryId).detach();
+        return "YES";
+    }
+
+    static void processRestartQuery(QueryManager *manager,string queryId) {
+
+
+        auto oldQueryExe = (*manager->querys)[queryId];
+
+        string newQueryId = queryId+"_re";
+        shared_ptr<Session> session = make_shared<Session>(newQueryId,-1);
+        if (manager->queryConfigs.count(queryId) != 0)
+            session->setRumtimeConfigs(manager->queryConfigs[queryId]);
+
+        oldQueryExe->abortQuery();
+        while (!oldQueryExe->isQueryFinished())
+            oldQueryExe->listenStateChange();
+
+        auto newQueryExecution = make_shared<SqlQueryExecution>(oldQueryExe->getRawSql(),session,oldQueryExe->getRoot());
+
+        manager->startQuery(newQueryId,newQueryExecution);
+
     }
 
     static void start(shared_ptr<SqlQueryExecution> execution)

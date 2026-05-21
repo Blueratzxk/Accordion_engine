@@ -212,6 +212,8 @@ class SqlQueryExecution {
     }
 
 
+
+
     void extractProgressAndTuner(shared_ptr<SqlStageExecution> stage, shared_ptr<ProgressAndTuner> progressAndTuner) {
         shared_ptr<SqlStageExecution> tempStage = stage;
         list<shared_ptr<ProgressAndTuner>> dependencies;
@@ -254,7 +256,17 @@ public:
         this->stateMachine = make_shared<QueryStateMachine>();
         this->rawSql = rawSql;
     }
+    void listenStateChange() {
+        this->stateMachine->listen();
+    }
 
+    string getRawSql() {
+        return this->rawSql;
+    }
+
+    PlanNode* getRoot() {
+        return this->PlanNodeRoot;
+    }
 
     shared_ptr<map<int, shared_ptr<map<shared_ptr<ClusterNode>, set<shared_ptr<HttpRemoteTask>>>>>>
     getStagesNodeTaskMap() {
@@ -378,9 +390,7 @@ public:
         return jsonResult;
     }
 
-    string getRawSql() {
-        return this->rawSql;
-    }
+
 
     nlohmann::json getQueryExecutionInfoObj() {
 

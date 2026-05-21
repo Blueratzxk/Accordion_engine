@@ -101,6 +101,7 @@ private:
         Routes::Get(router, "/v1/query/getAllQueryInfoExtern", Routes::bind(&StatsEndpoint::getAllQueryInfoExtern, this));
         Routes::Get(router, "/v1/query/getQueryInfoExtern/:queryId", Routes::bind(&StatsEndpoint::getQueryInfoExtern, this));
         Routes::Get(router, "/v1/query/abortQuery/:queryId", Routes::bind(&StatsEndpoint::abortQuery, this));
+        Routes::Get(router, "/v1/query/abortAndRestartQuery/:queryId", Routes::bind(&StatsEndpoint::abortAndRestartQuery, this));
         Routes::Get(router, "/v1/query/getQueryResultExtern/:queryId", Routes::bind(&StatsEndpoint::getQueryResultExtern, this));
         Routes::Get(router, "/v1/query/getQueryResultByCursorExtern/:queryId/:index", Routes::bind(&StatsEndpoint::getQueryResultByCursorExtern, this));
         Routes::Get(router, "/v1/query/produceAndGetQueryResultExtern/:queryId", Routes::bind(&StatsEndpoint::produceAndGetQueryResultExtern, this));
@@ -398,6 +399,28 @@ private:
         response.send(Http::Code::Ok,taskResponse);
 
     }
+
+    void abortAndRestartQuery(const Rest::Request& request, Http::ResponseWriter response) {
+
+
+        string queryId;
+        if (request.hasParam(":queryId")) {
+            auto value = request.param(":queryId");
+            queryId = value.as<string>();
+        }
+
+        QueryInterFace api;
+        string taskResponse = api.abortAndRestartQuery(queryId);
+        nlohmann::json responseString;
+
+        string resultString;
+
+
+        response.headers().add<Http::Header::AccessControlAllowOrigin>("*");
+        response.send(Http::Code::Ok,taskResponse);
+
+    }
+
 
 
     void produceAndGetQueryResultExtern(const Rest::Request& request, Http::ResponseWriter response) {

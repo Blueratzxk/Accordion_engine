@@ -11,6 +11,7 @@
 #include "tbb/concurrent_queue.h"
 
 #include "BuildComponents/JoinHashComponent.hpp"
+#include "../Execution/Event/SimpleEvent.hpp"
 using namespace std;
 
 
@@ -62,10 +63,12 @@ class PartitionedLookupSourceFactory:public LookupSourceFactory,public enable_sh
 
     atomic<bool> lookupSourceCompleted = false;
 
-    mutex lock2;
+
+
 
     mutable std::shared_mutex lock;
 
+    SimpleEvent simpleEvent;
 
     bool abortedPageSupply = false;
 
@@ -192,12 +195,15 @@ public:
         if(this->partitionSet == this->partitions.size()) {
             completed = true;
         }
-       this->lock.unlock();
+        this->lock.unlock();
+
 
         if(completed) {
-            this->lookupSourceCompleted = true;
             supplyLookupSources();
+            this->lookupSourceCompleted = true;
+            simpleEvent.notify();
         }
+
 
 
     }
@@ -236,17 +242,21 @@ public:
 
         shared_ptr<arrow::Table> getSourceData()
         {
-            if(this->sourceFactory->lookupSourceCompleted)
-                return this->sourceFactory->getSourceData();
-            else
-                return NULL;
+
+            if (!this->sourceFactory->lookupSourceCompleted)
+                this->sourceFactory->simpleEvent.listen();
+
+            return this->sourceFactory->getSourceData();
         }
 
         map<int,shared_ptr<arrow::Table>> getSourceDataByPartition()
         {
             map<int,shared_ptr<arrow::Table>> re;
-            if(this->sourceFactory->lookupSourceCompleted)
-                re = this->sourceFactory->getSourceDataByPartition();
+
+            if (!this->sourceFactory->lookupSourceCompleted)
+                this->sourceFactory->simpleEvent.listen();
+
+            re = this->sourceFactory->getSourceDataByPartition();
 
             return re;
         }
@@ -254,8 +264,11 @@ public:
         vector<shared_ptr<JoinBuildComponents>>  getBuildComponents()
         {
             vector<shared_ptr<JoinBuildComponents>> buildComponents;
-            if(this->sourceFactory->lookupSourceCompleted)
-                buildComponents = this->sourceFactory->getBuildComponents();
+
+            if (!this->sourceFactory->lookupSourceCompleted)
+                this->sourceFactory->simpleEvent.listen();
+
+            buildComponents = this->sourceFactory->getBuildComponents();
 
 
             map<int,shared_ptr<arrow::Table>> re = getSourceDataByPartition();

@@ -12,6 +12,7 @@
 
 #include "PartitionResultCache.hpp"
 //#include "../../../Utils/SafeMap.hpp"
+
 class PartitionCount_BuffersMap:enable_shared_from_this<PartitionCount_BuffersMap>
 {
     int startPartitionNumber = 0;
@@ -468,6 +469,8 @@ public:
             }
             this->unProcessedPagesForRepeat.push(pages[i]);
             this->unProcessedPages->Put(pages[i]);
+
+
             pagesHad++;
         }
 

@@ -553,6 +553,8 @@ add_executable(OLVP main.cpp
         Split/NULLSplit.hpp
         TpchTest/Querys/SimpleTest/Query_SelectLineitem.hpp
         Execution/Task/Fetcher/TaskResultProvider.hpp
+        TpchTest/Querys/Query2_Join_OCO.hpp
+        Execution/Buffer/OutputPartitioningBuffer/ShuffleCache.hpp
 
 
 )

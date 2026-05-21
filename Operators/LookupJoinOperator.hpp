@@ -127,15 +127,22 @@ public:
         spdlog::info("LookupJoinOperator !#@!#@!@@!#!##@!!@##@!#@!#!#@!111111");
         auto buildComponents = provider->getBuildComponents();
         vector<shared_ptr<DataPage>> pagesToUpload;
+
+        int tupleCount = 0;
+
         for(auto com : buildComponents)
         {
             auto pages = com->ToDataPages();
-            for(auto page : pages)
+            for(auto page : pages) {
                 pagesToUpload.push_back(page);
+                tupleCount += page->getElementsCount();
+            }
         }
         spdlog::info("LookupJoinOperator !#@!#@!@@!#!##@!!@##@!#@!#!#@!222222");
         this->driverContext->savePagesForInterTaskMission(this->buildOperatorId,pagesToUpload);
         this->driverContext->savePagesForInterTaskMission(this->buildOperatorId,{DataPage::getEndPage()});
+
+        this->driverContext->reportExternalUploadTuples(this->operatorId, tupleCount);
 
         spdlog::info("LookupJoinOperator !#@!#@!@@!#!##@!!@##@!#@!#!#@!33333");
         shared_ptr<OperatorResponse> response = make_shared<OperatorResponse>();
@@ -146,6 +153,7 @@ public:
 
 
     shared_ptr<OperatorResponse> externalEvent(string parameters) override {
+
         if (!this->lookupsourceStatus) {
             this->operatorMigration = true;
             shared_ptr<OperatorResponse> response = make_shared<OperatorResponse>();
@@ -153,45 +161,40 @@ public:
 
             return response;
 
-        } else {
-            auto table = getLookupSourceData();
-            if (table == NULL) {
-                this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId,
-                                                                  {DataPage::getEndPage()});
-
-                this->driverContext->reportExternalUploadTuples(this->operatorId, -1);
-
-                shared_ptr<OperatorResponse> response = make_shared<OperatorResponse>();
-                response->addOperatorId(this->buildSideRemoteSourceOperatorId,OperatorResponse::MIGRATION);
-
-                return response;
-
-
-            } else {
-
-                if (parameters == "DIRECT_HASHTABLE_INSTALL") {
-                    return this->getJoinBuildComponents();
-                }
-
-
-                auto batches = table->CombineChunksToBatch();
-                auto uploadedPage = make_shared<DataPage>(batches.ValueOrDie());
-                this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId,
-                                                                  {uploadedPage});
-                this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId,
-                                                                  {DataPage::getEndPage()});
-
-                int tupleCount = 0;
-                tupleCount += uploadedPage->getElementsCount();
-                this->driverContext->reportExternalUploadTuples(this->operatorId, tupleCount);
-
-                shared_ptr<OperatorResponse> response = make_shared<OperatorResponse>();
-                response->addOperatorId(this->buildSideRemoteSourceOperatorId,OperatorResponse::MIGRATION);
-
-                return response;
-            }
         }
 
+        if (parameters == "DIRECT_HASHTABLE_INSTALL") {
+            return this->getJoinBuildComponents();
+        }
+
+        auto table = getLookupSourceData();
+        if (table == NULL) {
+            this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId,
+                                                              {DataPage::getEndPage()});
+
+            this->driverContext->reportExternalUploadTuples(this->operatorId, -1);
+
+            shared_ptr<OperatorResponse> response = make_shared<OperatorResponse>();
+            response->addOperatorId(this->buildSideRemoteSourceOperatorId,OperatorResponse::MIGRATION);
+
+            return response;
+        }
+
+        auto batches = table->CombineChunksToBatch();
+        auto uploadedPage = make_shared<DataPage>(batches.ValueOrDie());
+        this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId,
+                                                          {uploadedPage});
+        this->driverContext->savePagesForInterTaskMission(this->buildSideRemoteSourceOperatorId,
+                                                          {DataPage::getEndPage()});
+
+        int tupleCount = 0;
+        tupleCount += uploadedPage->getElementsCount();
+        this->driverContext->reportExternalUploadTuples(this->operatorId, tupleCount);
+
+        shared_ptr<OperatorResponse> response = make_shared<OperatorResponse>();
+        response->addOperatorId(this->buildSideRemoteSourceOperatorId,OperatorResponse::MIGRATION);
+
+        return response;
     }
 
     bool tryFetchLookupSourceProvider()

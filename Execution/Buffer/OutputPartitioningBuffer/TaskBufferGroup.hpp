@@ -8,7 +8,7 @@
 
 #include "PartitionCount_BufferMap.hpp"
 
-
+#include "ShuffleCache.hpp"
 
 class TaskBufferGroup
 {
@@ -74,6 +74,10 @@ class TaskBufferGroup
     set<string> taskIdGenerationBuildStates;
     set<string> taskIdToBuildAbort;
 
+
+    bool shuffleCacheMode = false;
+    shared_ptr<ShuffleCache> shuffle_cache = NULL;
+
 public:
     TaskBufferGroup(){
 
@@ -89,6 +93,7 @@ public:
             this->closePreTaskGroup = true;
         else
             this->closePreTaskGroup = false;
+
 
         string mode2 = executionConfig.getLazy_task_group_close_mode();
         if(mode2 == "true")
@@ -267,7 +272,24 @@ public:
 
             if(this->endPageFound && process) {
                 spdlog::info("Reshuffle task group!!! ID:"+ to_string(this->nextGroupId));
+
+                if (shuffleCacheMode) {
+                    if (this->shuffle_cache->canRedistribute(partitionCount)) {
+                        auto res = this->shuffle_cache->getRedistributionResult(partitionCount);
+
+                        int start = groupMap[this->nextGroupId]->getStartPartitionNumber();
+                        for (auto re : res) {
+                            (*this->buffers)[to_string(start + atoi(re.first.c_str()))]->enqueuePages(re.second);
+                        }
+                        groupMap[this->nextGroupId]->enqueuePages({this->endPageAddr});
+
+                    }
+                    else
+                        groupMap[this->nextGroupId]->enqueuePages({this->allPages});
+                }
+                else
                 groupMap[this->nextGroupId]->enqueuePages({this->allPages});
+
             }
 
         }
@@ -298,15 +320,24 @@ public:
     }
     void enqueueGlobalPages(vector<shared_ptr<DataPage>> pages)
     {
+        if (shuffleCacheMode && this->shuffle_cache == NULL && this->repeatable)
+            this->shuffle_cache = make_shared<ShuffleCache>(hashColumns);
 
         for(int i = 0 ; i < pages.size() ; i++) {
             if(pages[i]->isEndPage())
             {
                 this->setEndPageSignal(pages[i]);
                 this->allPages.push_back(pages[i]);
+
+                if(shuffleCacheMode && this->repeatable)
+                    this->shuffle_cache->enqueueToProcess({pages[i]});
             }
-            else
+            else {
                 this->allPages.push_back(pages[i]);
+
+                if(shuffleCacheMode && this->repeatable)
+                    this->shuffle_cache->enqueueToProcess({pages[i]});
+            }
         }
 
     }

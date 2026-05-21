@@ -129,6 +129,8 @@ public:
     shared_ptr<LookupSourceSupplier> installLookupSource(shared_ptr<JoinHashComponent> joinHashComponent)
     {
         this->pagesIndex->addPage(this->table);
+        this->pageCounter++;
+        this->tupleCounter+= this->table->getElementsCount();
         this->driverContext->getBuildAllCount() += pagesIndex->getPositionCount();
 
         shared_ptr<LookupSourceSupplier> partition = pagesIndex->createLookupSourceSupplierFromComponents(this->hashChannels,this->outputChannels,this->driverContext->getBuildProgress(),joinHashComponent);
@@ -144,7 +146,7 @@ public:
         if (!this->finished) {
             this->finishBuild();
             spdlog::debug("JoinHash Build Finished!");
-            spdlog::info("HashBuilder operator processes " + to_string(this->pageCounter) + " pages, " + to_string(this->tupleCounter) + " tuples!");
+            spdlog::info("HashBuilder operator installs " + to_string(this->pageCounter) + " pages, " + to_string(this->tupleCounter) + " tuples!");
         }
         this->finished = true;
     }

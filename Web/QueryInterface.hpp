@@ -28,6 +28,11 @@ public:
         return QueryServer::queryServer->abortQuery(queryId);
     }
 
+    static string abortAndRestartQuery(string queryId)
+    {
+        return QueryServer::queryServer->abortAndRestartQuery(queryId);
+    }
+
     static string getQueryResult(string queryId)
     {
         return QueryServer::queryServer->getQueryResult(queryId);

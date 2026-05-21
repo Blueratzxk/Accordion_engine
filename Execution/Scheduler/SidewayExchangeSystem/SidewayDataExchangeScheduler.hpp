@@ -73,13 +73,13 @@ public:
                             if (!this->scheduler->sqlStageExecution->isTaskDependenciesSatisfied(task))
                                 return false;
 
-                        if(this->missionType != OPERATOR_MIGRATION_DIRECT_HASH_TABLE_INSTALL)
+
                         if(!this->originTasksFinishSignalSended)
                             for (auto task: this->originTaskIds) {
                                 TaskId id;
                                 this->scheduler->sqlStageExecution->finishTaskByTaskId(id.StringToObject(task)->getId());
                             }
-                        if(this->missionType != OPERATOR_MIGRATION_DIRECT_HASH_TABLE_INSTALL)
+
                         for (auto task: this->originTaskIds) {
                             if (!this->scheduler->sqlStageExecution->isTaskFinished(task)) {
                                 spdlog::info(task + " is finished!");
@@ -487,11 +487,20 @@ public:
             if(this->opsNeedInterTaskExchangeService.contains(op))
                 needExchangeService.insert(op);
 
+        string parameters = "";
+
+
         if(this->sidewayPreparationResponse->hasNotBuildCompleteState()) {
             auto sources = this->sidewayPreparationResponse->getNotBuildCompleteStateSources();
             for(auto source : sources)
                 needExchangeService.insert(source);
         }
+
+        if(!this->sidewayPreparationResponse->hasNotBuildCompleteState() && opsNeededToMigrate.contains("LookupJoinOperator")) {
+            parameters = "DIRECT_HASHTABLE_INSTALL";
+            needExchangeService.insert("LookupJoinOperator");
+        }
+
         string taskIdString = "";
         string ip;
         string port;
@@ -513,7 +522,7 @@ public:
         }
 
         ScheduleResult result = (static_pointer_cast<NormalStageScheduler>(stageScheduler))->cloneTask(taskId,
-                make_shared<TaskExecutionCondition>(TaskExecutionCondition::OPERATOR_MIGRATION,"",migratedOperators));
+                make_shared<TaskExecutionCondition>(TaskExecutionCondition::OPERATOR_MIGRATION,parameters,migratedOperators));
         vector<shared_ptr<HttpRemoteTask>> newTasks = result.getNewTasks();
 
 

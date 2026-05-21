@@ -16,6 +16,7 @@ class HashShuffler
     shared_ptr<SimplePageHashGenerator> hashGen;
     map<int,shared_ptr<DataPageBuilder>> partitionedPage;
 
+
 public:
 
     HashShuffler(vector<int> hashChannelIndexs)
