@@ -72,7 +72,7 @@ private:
 
     vector<shared_ptr<DataPage>> externalBuildComponents;
 
-    shared_ptr<DataPage> table;
+    shared_ptr<arrow::Table> table;
 
 
 public:
@@ -130,7 +130,7 @@ public:
     {
         this->pagesIndex->addPage(this->table);
         this->pageCounter++;
-        this->tupleCounter+= this->table->getElementsCount();
+        this->tupleCounter+= this->table->num_rows();
         this->driverContext->getBuildAllCount() += pagesIndex->getPositionCount();
 
         shared_ptr<LookupSourceSupplier> partition = pagesIndex->createLookupSourceSupplierFromComponents(this->hashChannels,this->outputChannels,this->driverContext->getBuildProgress(),joinHashComponent);

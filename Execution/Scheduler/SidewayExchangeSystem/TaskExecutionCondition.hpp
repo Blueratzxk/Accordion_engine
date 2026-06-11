@@ -7,7 +7,7 @@
 
 
 #include "SidewayPreparationResponse.hpp"
-
+#include "ExtraConditions.hpp"
 class MigratedBufferAddress
 {
     vector<string> TaskId;
@@ -154,7 +154,7 @@ public:
 
 private:
     ConditionType conditionType;
-    string parameters;
+    ExtraConditions extra_conditions;
 
     MigratedBufferAddress migratedBufferAddress;
     MigratedOperators migratedOperators;
@@ -167,40 +167,40 @@ public:
         this->conditionType = NO_CONDITION;
     }
 
-    TaskExecutionCondition(ConditionType conditionType,string parameters,MigratedBufferAddress migratedBufferAddress,MigratedOperators migratedOperators,string extension){
+    TaskExecutionCondition(ConditionType conditionType,ExtraConditions extra_conditions,MigratedBufferAddress migratedBufferAddress,MigratedOperators migratedOperators,string extension){
         this->migratedBufferAddress = migratedBufferAddress;
         this->migratedOperators = migratedOperators;
         this->conditionType = conditionType;
         this->extension = extension;
-        this->parameters = parameters;
+        this->extra_conditions = extra_conditions;
 
     }
 
-    TaskExecutionCondition(ConditionType conditionType,string parameters,MigratedOperators migratedOperators){
+    TaskExecutionCondition(ConditionType conditionType,ExtraConditions extra_conditions,MigratedOperators migratedOperators){
 
         this->conditionType = conditionType;
         this->migratedOperators = migratedOperators;
-        this->parameters = parameters;
+        this->extra_conditions = extra_conditions;
 
     }
 
-    TaskExecutionCondition(ConditionType conditionType,string parameters, MigratedBufferAddress migratedBufferAddress){
+    TaskExecutionCondition(ConditionType conditionType,ExtraConditions extra_conditions, MigratedBufferAddress migratedBufferAddress){
         this->migratedBufferAddress = migratedBufferAddress;
         this->conditionType = conditionType;
-        this->parameters = parameters;
+        this->extra_conditions = extra_conditions;
     }
 
-    TaskExecutionCondition(ConditionType conditionType,string parameters,string extension){
+    TaskExecutionCondition(ConditionType conditionType,ExtraConditions extra_conditions,string extension){
         this->conditionType = conditionType;
         this->extension = extension;
-        this->parameters = parameters;
+        this->extra_conditions = extra_conditions;
     }
 
     MigratedBufferAddress getMigratedBufferAddress(){return migratedBufferAddress;}
 
     MigratedOperators getMigratedOperators(){return migratedOperators;}
 
-    string getParameters(){return this->parameters;}
+    ExtraConditions getExtraConditions(){return this->extra_conditions;}
 
     ConditionType getConditionType(){return this->conditionType;}
 
@@ -211,7 +211,7 @@ public:
         nlohmann::json json;
 
         json["conditionType"] = taskExecutionCondition->conditionType;
-        json["parameters"] = taskExecutionCondition->parameters;
+        json["extra_conditions"] = ExtraConditions::Serialize(taskExecutionCondition->extra_conditions);
         json["migratedBufferAddress"] = MigratedBufferAddress::Serialize(taskExecutionCondition->migratedBufferAddress);
         json["migratedOperators"] = MigratedOperators::Serialize(taskExecutionCondition->migratedOperators);
         json["extension"] = taskExecutionCondition->extension;
@@ -228,8 +228,9 @@ public:
 
         MigratedBufferAddress migratedBufferAddress = MigratedBufferAddress::Deserialize(json["migratedBufferAddress"]);
         MigratedOperators migratedOperators = MigratedOperators::Deserialize(json["migratedOperators"]);
+        ExtraConditions extra_conditions = ExtraConditions::Deserialize(json["extra_conditions"]);
 
-        return make_shared<TaskExecutionCondition>(json["conditionType"],json["parameters"],migratedBufferAddress,migratedOperators,json["extension"]);
+        return make_shared<TaskExecutionCondition>(json["conditionType"],extra_conditions,migratedBufferAddress,migratedOperators,json["extension"]);
     }
 
 

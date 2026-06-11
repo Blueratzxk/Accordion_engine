@@ -555,6 +555,10 @@ add_executable(OLVP main.cpp
         Execution/Task/Fetcher/TaskResultProvider.hpp
         TpchTest/Querys/Query2_Join_OCO.hpp
         Execution/Buffer/OutputPartitioningBuffer/ShuffleCache.hpp
+        Execution/Task/Statistics/CardEstimator/HyperLogLog.hpp
+        Web/ArrowRPC/ByteCoalescingReader.hpp
+        Execution/Scheduler/SidewayExchangeSystem/ExtraConditions.hpp
+        Execution/Buffer/BlockClientBuffer.hpp
 
 
 )
@@ -567,6 +571,8 @@ include_directories(
 
         "/home/zxk/.local/include"
         "/home/zxk/open-codes/oneapi-tbb-2021.9.0/include"
+        "/home/zxk/open-codes/datasketches-cpp/cpc/include"
+        "/home/zxk/open-codes/datasketches-cpp/common/include"
 
 )
 

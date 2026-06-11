@@ -1,27 +1,26 @@
 //
-// Created by zxk on 6/4/23.
+// Created by zxk on 6/10/26.
 //
 
-#ifndef OLVP_CLIENTBUFFER_HPP
-#define OLVP_CLIENTBUFFER_HPP
-
-//#include "../../common.h"
+#ifndef OLVP_BLOCKCLIENTBUFFER_HPP
+#define OLVP_BLOCKCLIENTBUFFER_HPP
 #include "../../Page/DataPage.hpp"
 #include "tbb/concurrent_queue.h"
 
 #include "../Event/SimpleEvent.hpp"
-class ClientBuffer
+class BlockClientBuffer
 {
 
     string bufferId;
-    tbb::concurrent_queue<shared_ptr<DataPage>> pages;
+    std::deque<shared_ptr<DataPage>> pages;
     atomic<bool> findEndPage = false;
     atomic<bool> bufferIsEmpty;
     shared_ptr<SimpleEvent> simpleEvent;
+    mutex lock;
 
 
 public:
-    ClientBuffer(string bufferId){
+    BlockClientBuffer(string bufferId){
         this->bufferId = bufferId;
         this->findEndPage = false;
         this->simpleEvent = make_shared<SimpleEvent>();
@@ -32,36 +31,34 @@ public:
     }
     void enqueuePages(vector<shared_ptr<DataPage>> inputPages)
     {
-
-
-
+        lock.lock();
         if(!inputPages.empty() && inputPages[0]->isEndPage())
         {
             spdlog::info("####enqueue end page!!!#######");
         }
 
         for(int i = 0 ; i < inputPages.size() ; i++) {
-            this->pages.push(inputPages[i]);
+            this->pages.push_back(inputPages[i]);
         }
-
-
+        lock.unlock();
     }
     vector<shared_ptr<DataPage>> getPages()
     {
         vector<shared_ptr<DataPage>> result;
 
-
+        lock.lock();
         if(!this->pages.empty()) {
             while (true) {
                 if (this->pages.empty())
                     break;
-                shared_ptr<DataPage> resultPage;
-                while (!this->pages.try_pop(resultPage));
+                shared_ptr<DataPage> resultPage = this->pages.front();
+                this->pages.pop_front();
+
 
                 if (!resultPage->isEndPage()) {
                     result.push_back(resultPage);
                 } else {
-                    this->pages.push(resultPage);
+                    this->pages.push_back(resultPage);
                     if (this->findEndPage == false) {
                         this->findEndPage = true;
                         break;
@@ -69,16 +66,21 @@ public:
                 }
 
                 if (this->findEndPage == true) {
-                    while (!this->pages.try_pop(resultPage));
+                    resultPage = this->pages.front();
+                    this->pages.pop_front();
+
+                    lock.unlock();
                     return {resultPage};
                 }
             }
         }
         else if(this->findEndPage == true)
         {
+            lock.unlock();
             return {DataPage::getEndPage()};
         }
 
+        lock.unlock();
 
         return result;
     }
@@ -86,15 +88,17 @@ public:
     vector<shared_ptr<DataPage>> getPages(int pageNums)
     {
         vector<shared_ptr<DataPage>> result;
-       
+
         int i = 0 ;
+
+        lock.lock();
 
         if(!this->pages.empty()) {
             while (true) {
                 if (this->pages.empty())
                     break;
-                shared_ptr<DataPage> resultPage;
-                while (!this->pages.try_pop(resultPage));
+                shared_ptr<DataPage> resultPage = this->pages.front();
+                this->pages.pop_front();
 
                 if (!resultPage->isEndPage()) {
                     result.push_back(resultPage);
@@ -102,7 +106,7 @@ public:
                     if (i >= pageNums)
                         break;
                 } else {
-                    this->pages.push(resultPage);
+                    this->pages.push_back(resultPage);
                     if (this->findEndPage == false) {
                         this->findEndPage = true;
                         break;
@@ -110,30 +114,36 @@ public:
                 }
 
                 if (this->findEndPage == true) {
-                    while (!this->pages.try_pop(resultPage));
+                    resultPage = this->pages.front();
+                    this->pages.pop_front();
+                    lock.unlock();
                     return {resultPage};
                 }
             }
         }
         else if(this->findEndPage == true)
         {
+            lock.unlock();
             return {DataPage::getEndPage()};
         }
 
-
-
+        lock.unlock();
         return result;
     }
 
     size_t getPageNums()
     {
-        return this->pages.unsafe_size();
+        lock.lock();
+        int size = this->pages.size();
+        lock.unlock();
+        return size;
     }
     void clear()
     {
+        lock.lock();
         this->pages.clear();
+        lock.unlock();
     }
 };
 
-
-#endif //OLVP_CLIENTBUFFER_HPP
+#endif //OLVP_BLOCKCLIENTBUFFER_HPP

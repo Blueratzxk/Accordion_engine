@@ -17,17 +17,33 @@ public:
 
 private:
     std::map<std::string,OPTYPE> operatorId_Operation;
+    std::map<std::string,vector<string>> operatorId_Parameters;
+    long migrationDataSize = 0;
 
 
 public:
     OperatorResponse(){}
 
-    OperatorResponse(std::map<std::string,OPTYPE> operatorId_Operation){this->operatorId_Operation = operatorId_Operation;}
+    OperatorResponse(std::map<std::string,OPTYPE> operatorId_Operation, long migrationDataSize,std::map<std::string,vector<string>> operatorId_Parameters) {
+        this->operatorId_Operation = operatorId_Operation;
+        this->migrationDataSize = migrationDataSize;
+        this->operatorId_Parameters = operatorId_Parameters;
+    }
 
     void addOperatorId(std::string operatorId,OPTYPE operation)
     {
         operatorId_Operation[operatorId] = operation;
     }
+
+    void addOperatorId_Parameters(std::string operatorId,vector<string> parameters)
+    {
+        operatorId_Parameters[operatorId] = parameters;
+    }
+
+    vector<string> getParametersByOperatorId(std::string operatorId) {
+        return this->operatorId_Parameters[operatorId];
+    }
+
 
     std::set<std::string> getOperatorIds(){
         std::set<std::string> ids;
@@ -68,12 +84,21 @@ public:
         return false;
     }
 
+    void setMigrationDataSize(long size) {
+        this->migrationDataSize = size;
+    }
 
-    static nlohmann::json Serialize(OperatorResponse operatorResponse)
-    {
+    long getMigrationDataSize() {
+        return this->migrationDataSize;
+    }
+
+
+    static nlohmann::json Serialize(OperatorResponse operatorResponse) {
         nlohmann::json json;
 
         json["operatorId_Operation"] = operatorResponse.operatorId_Operation;
+        json["migrationDataSize"] = operatorResponse.migrationDataSize;
+        json["operatorId_Parameters"] = operatorResponse.operatorId_Parameters;
 
         return json;
     }
@@ -83,7 +108,7 @@ public:
        // nlohmann::json json = nlohmann::json::parse(operatorResponse);
 
 
-        auto result = make_shared<OperatorResponse>(json["operatorId_Operation"]);
+        auto result = make_shared<OperatorResponse>(json["operatorId_Operation"],json["migrationDataSize"],json["operatorId_Parameters"]);
 
         return  result;
     }

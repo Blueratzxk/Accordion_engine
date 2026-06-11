@@ -59,6 +59,7 @@ public:
         funcMap.insert(make_pair("CANCEL_HETERO_PIPE", &InstructionExecutor::CANCEL_HETERO_PIPELINE));
         funcMap.insert(make_pair("DRAIN_NODE", &InstructionExecutor::DRAIN_NODE));
         funcMap.insert(make_pair("MOVE_BUFFER", &InstructionExecutor::MOVE_BUFFER));
+        funcMap.insert(make_pair("ABORT_AND_START_QUERY", &InstructionExecutor::ABORT_AND_START_QUERY));
     }
 
 
@@ -258,6 +259,15 @@ public:
             monitor->addInfo(queryId,info.dump());
         }
 
+    }
+
+    bool ABORT_AND_START_QUERY(Instruction instruction,ScriptExecutionContext &context) {
+        string queryId;
+        if(!context.getQueryId(queryId)) return false;
+        this->queryManager->abortQuery(queryId);
+        END(instruction,context);
+        context.cleanQueryId();
+        return START_QUERY(instruction,context);
     }
 
 

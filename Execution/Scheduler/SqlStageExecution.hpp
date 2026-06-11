@@ -103,6 +103,21 @@ public:
 
     }
 
+    shared_ptr<ClusterNode> getNodeByTaskId(shared_ptr<HttpRemoteTask> target) {
+
+        tasksLock.lock();
+        for(auto task : this->tasks)
+        {
+            for (auto t : task.second) {
+                if (t->getTaskId()->getId() == target->getTaskId()->getId()) {
+                    tasksLock.unlock();
+                    return task.first;
+                }
+            }
+        }
+        tasksLock.unlock();
+        return NULL;
+    }
 
 
     shared_ptr<map<shared_ptr<ClusterNode>, set<shared_ptr<HttpRemoteTask>>>> getActiveTaskNodeMap()
@@ -1522,7 +1537,7 @@ public:
         return result;
     }
 
-    shared_ptr<InterTaskDataHandle> taskMigrationPreparation(int taskId,set<string> operatorTypes,string parameters)
+    shared_ptr<InterTaskDataHandle> taskMigrationPreparation(int taskId,set<string> operatorTypes,ExtraConditions extra_conditions)
     {
 
         shared_ptr<HttpRemoteTask> target = NULL;
@@ -1540,7 +1555,7 @@ public:
         shared_ptr<InterTaskDataHandle> handle;
         if (target != NULL && !target->isDone()) {
             result = target->createInterTaskMission(
-                    make_shared<InterTaskMissionDescriptor>(InterTaskMissionDescriptor::OPERATOR_MIGRATION,parameters,operatorTypes));
+                    make_shared<InterTaskMissionDescriptor>(InterTaskMissionDescriptor::OPERATOR_MIGRATION,extra_conditions,operatorTypes));
             if(result == "NULL")
                 return NULL;
             handle = InterTaskDataHandle::Deserialize(result);

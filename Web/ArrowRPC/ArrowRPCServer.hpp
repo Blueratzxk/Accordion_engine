@@ -23,6 +23,7 @@
 #include <arrow/flight/api.h>
 #include <arrow/flight/client.h>
 
+#include "ByteCoalescingReader.hpp"
 #include "../../Config/WebConfig.hpp"
 #include "../TaskServerInferface.hpp"
 #include "PageTransformer.hpp"
@@ -119,12 +120,17 @@ public:
 
 
         //  cout << "$$" << d2a.getSchema()->num_fields() << endl;
-
-        ARROW_ASSIGN_OR_RAISE(auto owning_reader, arrow::RecordBatchReader::Make(
-                std::move(batches), d2a.getSchema()));
-        *stream = std::unique_ptr<arrow::flight::FlightDataStream>(
-                new arrow::flight::RecordBatchStream(owning_reader));
-
+        if(ticketType == "normal") {
+            ARROW_ASSIGN_OR_RAISE(auto owning_reader, arrow::RecordBatchReader::Make(
+                    std::move(batches), d2a.getSchema()));
+            *stream = std::unique_ptr<arrow::flight::FlightDataStream>(
+                    new arrow::flight::RecordBatchStream(owning_reader));
+        }
+        else {
+            auto owning_reader = make_shared<ByteCoalescingReader>(std::move(batches));
+            *stream = std::unique_ptr<arrow::flight::FlightDataStream>(
+                    new arrow::flight::RecordBatchStream(owning_reader));
+        }
 
 
         return arrow::Status::OK();

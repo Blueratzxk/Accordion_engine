@@ -103,7 +103,7 @@ public:
         json["remainingBufferTuples"] = desc.remainingBufferTuples;
         json["lastEnqueuedTuples"] = desc.lastEnqueuedTuples;
         json["throughputBytes"] = desc.throughputBytes;
-        json["throughputBytes"] = desc.totalTuplesBytes;
+        json["totalTuplesBytes"] = desc.totalTuplesBytes;
         json["currentRequestTuplesCount"] = desc.currentRequestTuplesCount;
 
         string result = json.dump();
@@ -119,7 +119,7 @@ public:
         return make_shared<TaskThroughputInfo>(json["currentTupleCount"],json["throughputBytes"],
                                                json["timeStamp"],json["remainingBufferTuples"],
                                                json["remainingTuples"],json["lastEnqueuedTuples"],
-                                               json["throughputBytes"],json["currentRequestTuplesCount"]);
+                                               json["totalTuplesBytes"],json["currentRequestTuplesCount"]);
     }
 
 

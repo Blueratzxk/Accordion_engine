@@ -72,6 +72,24 @@ public:
         return ids;
     }
 
+
+    map<string,vector<string>> getOperatorIdsParametersNeedMigrationByOperatorType(string type) {
+
+       map<string,vector<string>> ids;
+
+        if (!sourceToResponses.contains(type))
+            return ids;
+
+        for (auto id: sourceToResponses[type]) {
+            auto idSet = id->getOperatorIdsNeedMigration();
+            for (auto idStr: idSet)
+                ids[idStr] = id->getParametersByOperatorId(idStr);
+        }
+
+        return ids;
+    }
+
+
     set<string> getOperatorIdsNeedCloseByOperatorType(string type) {
         set<string> ids;
 
@@ -109,6 +127,17 @@ public:
         }
 
         return false;
+    }
+
+    long getTotalMigrationBytes() {
+
+        long totalMigrationBytes = 0;
+        for (auto res : sourceToResponses) {
+            for (auto reponses : res.second) {
+                totalMigrationBytes += reponses->getMigrationDataSize();
+            }
+        }
+        return totalMigrationBytes;
     }
 
 

@@ -410,6 +410,8 @@ class TaskInfoFetcher : public enable_shared_from_this<TaskInfoFetcher>
 
     atomic<bool> abortFetch = false;
 
+    long totalTupleBytes = 0;
+
     shared_ptr<TaskThroughputInfo> taskThroughputInfo = make_shared<TaskThroughputInfo>();
 
     shared_ptr<throughputWindow> tw;
@@ -499,6 +501,7 @@ public:
         lock.lock();
         this->taskInfo = TaskInfo::Deserialize(result);
         TaskThroughputInfo taskThroughputInfo1 = this->taskInfo->getTaskInfoDescriptor()->getTaskThroughputInfo();
+        this->totalTupleBytes = taskThroughputInfo1.getTotalTuplesBytes();
 
         long a = (taskThroughputInfo1.getCurrentTupleCount() - this->taskThroughputInfo->getCurrentTupleCount());
         double b = (taskThroughputInfo1.getTimeStamp()-this->taskThroughputInfo->getTimeStamp());

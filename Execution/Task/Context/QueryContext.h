@@ -39,14 +39,17 @@ public:
         this->interTaskDataExchangeManager->savePages(sourceId,pages);
     }
 
-    void releaseRemoteInterTaskDataFetcher(string taskId,string targetId,string ip,string port,string sourceId, string bufferId)
+    void releaseRemoteInterTaskDataFetcher(string taskId,string targetId,string ip,string port,string sourceId, string bufferId, vector<string> dataSetOfSource)
     {
-        thread executor(requestRemoteInterTaskData,shared_from_this(),taskId,targetId,ip,port,sourceId,bufferId);
+        thread executor(requestRemoteInterTaskData,shared_from_this(),taskId,targetId,ip,port,sourceId,bufferId ,dataSetOfSource);
         executor.detach();
     }
-    static vector<shared_ptr<DataPage>> requestRemoteInterTaskData(shared_ptr<QueryContext> queryContext,string curTaskId,string targetId,string sourceIp,string sourcePort,string sourceId,string bufferId)
+    static vector<shared_ptr<DataPage>> requestRemoteInterTaskData(shared_ptr<QueryContext> queryContext,string curTaskId,string targetId,string sourceIp,string sourcePort,string sourceId,string bufferId, vector<string> dataSetOfSource)
     {
         auto result = queryContext->interTaskDataExchangeManager->requestRemoteInterTaskPages(curTaskId,sourceIp,sourcePort,sourceId,bufferId);
+        if (result.empty())
+            return result;
+
         TaskId tId;
         queryContext->inputInterTaskDataByComponentId(*tId.StringToObject(curTaskId),targetId,result);
         return result;

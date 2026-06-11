@@ -6,6 +6,7 @@
 #define OLVP_JOINHASHCOMPONENT_HPP
 
 #include "../Utils/StringUtils.hpp"
+#include "../Utils/TimeCommon.hpp"
 
 class JoinHashComponent : public JoinBuildComponents
 {
@@ -18,6 +19,8 @@ class JoinHashComponent : public JoinBuildComponents
     std::shared_ptr<int> partitionToPositionLinks;
 
     shared_ptr<arrow::Table> table;
+
+    bool combineTableBatches = false;
 
 public:
 
@@ -255,7 +258,7 @@ public:
 
 
 
-    shared_ptr<DataPage> tables_TransformToRecordBatch() {
+    vector<shared_ptr<DataPage>> tables_TransformToRecordBatch() {
 
 
         auto fields = table->schema()->fields();
@@ -266,14 +269,30 @@ public:
             cn.append("_HashJoinBuildComponentsTables_partitionId_" + to_string(partitionId));
         }
         auto newTable = renameTableSchema(table, colNames);
-        auto recordBatch = newTable->CombineChunksToBatch().ValueOrDie();
-        return make_shared<DataPage>(recordBatch);
+
+        if (combineTableBatches) {
+            auto recordBatch = newTable->CombineChunksToBatch().ValueOrDie();
+            return {make_shared<DataPage>(recordBatch)};
+        }
+
+        auto reader = std::make_shared<arrow::TableBatchReader>(*newTable);
+        std::vector<std::shared_ptr<DataPage>> batches;
+
+        std::shared_ptr<arrow::RecordBatch> batch;
+
+        auto start = TimeCommon::getCurrentTimeStamp();
+        while (reader->ReadNext(&batch).ok() && batch) {
+            batches.push_back(make_shared<DataPage>(batch));
+        }
+        auto end = TimeCommon::getCurrentTimeStamp();
+
+        spdlog::info("ToBatchesTime:"+to_string(end - start));
+        return batches;
+
 
     }
 
-
-    void recordBatch_ToTables(shared_ptr<DataPage> page)
-    {
+    bool isTablePage(shared_ptr<DataPage> page) {
 
         auto batch = page->get();
         auto schema = batch->schema();
@@ -282,10 +301,15 @@ public:
         for(auto field : allFields)
             spdlog::info(field->name());
 
-        if(allFields[0]->name().find("_HashJoinBuildComponentsTables") == std::string::npos)
-            return;
+        return (allFields[0]->name().find("_HashJoinBuildComponentsTables") != std::string::npos);
+    }
 
+    void recordBatch_ToTables(vector<shared_ptr<DataPage>> pages)
+    {
 
+        auto batch = pages[0]->get();
+        auto schema = batch->schema();
+        auto allFields = schema->fields();
 
 
         vector<string> trueFields;
@@ -301,8 +325,19 @@ public:
 
             trueFields.push_back(trueFieldName);
         }
-        auto table = arrow::Table::FromRecordBatches({batch});
-        auto newTable = renameTableSchema(table.ValueOrDie(),trueFields);
+
+
+        std::shared_ptr<arrow::Table> table;
+        vector<shared_ptr<arrow::RecordBatch>> batches;
+        for (auto page : pages) {
+            batches.push_back(page->get());
+        }
+
+        table = arrow::Table::FromRecordBatches(batches).ValueOrDie();
+
+
+        //auto table = arrow::Table::FromRecordBatches({batch});
+        auto newTable = renameTableSchema(table,trueFields);
 
         this->table = newTable;
     }
@@ -350,8 +385,9 @@ public:
         pages.push_back(re);
 
         spdlog::info("tables_TransformToRecordBatch");
-        re = tables_TransformToRecordBatch();
-        pages.push_back(re);
+        auto res = tables_TransformToRecordBatch();
+        for (auto re : res)
+            pages.push_back(re);
 
         return pages;
     }
@@ -365,22 +401,28 @@ public:
         return this->positionCount;
     }
 
-    shared_ptr<DataPage> getTable()
+    shared_ptr<arrow::Table> getTable()
     {
-        auto batch = this->table->CombineChunksToBatch();
-        return make_shared<DataPage>(batch.ValueOrDie());
+        //auto batch = this->table->CombineChunksToBatch();
+        //return make_shared<DataPage>(batch.ValueOrDie());
+        return this->table;
     }
 
 
     void fromDataPages(vector<shared_ptr<DataPage>> pages) override
     {
+        vector<shared_ptr<DataPage>> tablePages;
         for(auto page : pages)
         {
-            recordBatch_ToTables(page);
+            if (isTablePage(page))
+                tablePages.push_back(page);
+
             recordBatch_ToPartitionToPositionLinks(page);
             recordBatch_ToPartitionToHashKeyArray(page);
             recordBatch_ToPartitionToPositionToHashes(page);
         }
+
+        recordBatch_ToTables(tablePages);
     }
 
     int getComponentPartitionId(shared_ptr<DataPage> page)

@@ -54,6 +54,8 @@ class HttpRemoteTask
 
     int parallelismFactor = 1;
 
+    long totalTupleBytes = 0;
+
 public:
     HttpRemoteTask(shared_ptr<Event> eventListener,shared_ptr<TaskId> taskId,shared_ptr<PlanFragment> fragment,string nodeLocation,
                    shared_ptr<OutputBufferSchema> schema,shared_ptr<TaskSource> initial_taskSources,shared_ptr<Session> session,

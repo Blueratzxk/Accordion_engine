@@ -38,10 +38,13 @@ class SidewayExchangeSystem
     shared_ptr<std::chrono::system_clock::time_point> nodeDrainingStartTime = NULL;
     shared_ptr<std::chrono::system_clock::time_point> nodeDrainingFinishTime = NULL;
 
+    map<int, shared_ptr<StageExecutionAndScheduler>> stageExecutionsMap;
+
 public:
-    SidewayExchangeSystem(vector<StageExecutionAndScheduler> stageExeSchedulers, shared_ptr<SqlScheduleLock> sqlScheduleLock){
+    SidewayExchangeSystem(vector<StageExecutionAndScheduler> stageExeSchedulers, map<int, shared_ptr<StageExecutionAndScheduler>> stageExecutionsMap, shared_ptr<SqlScheduleLock> sqlScheduleLock){
         this->stageExeSchedulers = stageExeSchedulers;
         this->sqlScheduleLock = sqlScheduleLock;
+        this->stageExecutionsMap = stageExecutionsMap;
     }
 
     shared_ptr<SqlStageExecution> getStageExecution(int stageId)
@@ -65,6 +68,26 @@ public:
                 return item.getStageLinkage();
         return NULL;
     }
+    shared_ptr<StageExecutionAndScheduler> getStageExecutionAndSchedulerByStagId(int stageId)
+    {
+        if(this->stageExecutionsMap.count(stageId) > 0)
+            return this->stageExecutionsMap[stageId];
+
+        return NULL;
+    }
+
+
+    shared_ptr<StageExecutionAndScheduler> findRootTableScanStageForStage(string stageId) {
+        shared_ptr<StageExecutionAndScheduler> es = this->getStageExecutionAndSchedulerByStagId(atoi(stageId.c_str()));
+
+        while(!es->getStageLinkage()->getChildStages().empty())
+        {
+            auto stageExe = es->getStageLinkage()->getChildStages()[0];
+            es = getStageExecutionAndSchedulerByStagId(stageExe->getStageId().getId());
+        }
+        return es;
+    }
+
 
     void releaseExecutor()
     {
@@ -140,12 +163,16 @@ public:
         system->sidewayExecutorActivated = false;
     }
 
+
     void submitSidewayExchangeTask(int stageId,vector<int> taskIds,SidewayDataExchangeScheduler::MissionType type, SidewayDataExchangeScheduler::DataExchangeMode mode=SidewayDataExchangeScheduler::ONE_TO_ONE)
     {
 
         auto stageExe = this->getStageExecution(stageId);
         auto stageLink = this->getStageLinkage(stageId);
         auto stageSche =this->getStageScheduler(stageId);
+
+        double timeLimit = this->findRootTableScanStageForStage(to_string(stageId))->getStageExecution()->getRemainingTime();
+
 
 
         vector<int> rightIds;
@@ -154,7 +181,7 @@ public:
             if (!checkTaskIds(stageId, tid, rightId))
                 tid = rightId;
         }
-        auto sidewayTask = make_shared<SidewayDataExchangeScheduler>(type,stageExe,stageSche,stageLink,taskIds);
+        auto sidewayTask = make_shared<SidewayDataExchangeScheduler>(type,stageExe,stageSche,stageLink,taskIds,timeLimit);
 
         sidewayTask->setStartTime();
 
@@ -189,6 +216,7 @@ public:
             info["finish"] = schedule->getFinishedSchedulingTime();
             info["newTaskIds"] = schedule->getNewTaskIds();
             info["originTaskIds"] = schedule->getOriginTaskIds();
+            info["estimatedMigrationTime"] = schedule->getEstimatedMigrationTime();
             infos.push_back(info);
         }
 
@@ -228,7 +256,11 @@ public:
         for(auto id : newestTaskIds)
             taskGroupIds.push_back(id.getId());
 
-        auto sidewayTask = make_shared<SidewayDataExchangeScheduler>(type,stageExe,stageSche,stageLink,taskIds);
+
+        double timeLimit = this->findRootTableScanStageForStage(to_string(stageId))->getStageExecution()->getRemainingTime();
+
+
+        auto sidewayTask = make_shared<SidewayDataExchangeScheduler>(type,stageExe,stageSche,stageLink,taskIds,timeLimit);
         sidewayTask->setStartTime();
         this->sidewayExchangeTasks.push_back(sidewayTask);
 
@@ -450,7 +482,8 @@ public:
 
     void resetNodeAliveStatus(string nodeUrl)
     {
-        auto resetNodeStatus = make_shared<SidewayDataExchangeScheduler>(SidewayDataExchangeScheduler::NODE_STATUS_RESETTING,nodeUrl);
+
+        auto resetNodeStatus = make_shared<SidewayDataExchangeScheduler>(SidewayDataExchangeScheduler::NODE_STATUS_RESETTING,nodeUrl,-1);
         this->lock.lock();
         this->sidewayExchangeTaskQueue.push_back(resetNodeStatus);
         this->lock.unlock();

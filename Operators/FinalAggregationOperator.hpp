@@ -26,7 +26,7 @@
 #include "tbb/concurrent_queue.h"
 #include "../Utils/BlockQueue.hpp"
 #include "../Execution/Event/SimpleEvent.hpp"
-
+#include  "../Execution/Task/Statistics/CardEstimator/HyperLogLog.hpp"
 class FinalAggregationOperator:public Operator {
 
     bool finished;
@@ -97,8 +97,6 @@ class FinalAggregationOperator:public Operator {
     std::shared_ptr<DataPageTransfer> transfer;
 
 
-
-
     long totalElementCount = 0;
     bool intermediateMode = false;
     std::map<string/*inputKey*/,std::pair<string,string>/*functionName,outputName*/> intermediateTransformMap;
@@ -107,8 +105,48 @@ class FinalAggregationOperator:public Operator {
     shared_ptr<Event> interTaskEvent;
     list<shared_ptr<DataPage>> interTaskPages;
 
+    shared_ptr<HyperLogLog> hyper_log_log;
+
 public:
 
+    void estimateGroupCount(shared_ptr<DataPage> page) {
+
+        if (page->isEndPage())
+            return;
+        if (this->groupByKeys.empty())
+            return;
+
+        auto input = page->get();
+
+        auto schema = input->schema();
+
+        std::vector<std::shared_ptr<arrow::Field>> new_fields;
+        std::vector<std::shared_ptr<arrow::Array>> new_arrays;
+
+        for (auto& g : groupByKeys)
+        {
+            for (int i = 0; i < schema->num_fields(); i++)
+            {
+                if (schema->field(i)->name() == *(g.name()))
+                {
+                    new_fields.push_back(schema->field(i));
+                    new_arrays.push_back(input->column(i)); // ? zero-copy
+                    break;
+                }
+            }
+        }
+
+        auto new_schema = arrow::schema(new_fields);
+
+        auto new_batch = arrow::RecordBatch::Make(
+            new_schema,
+            input->num_rows(),
+            new_arrays
+        );
+
+        auto newDataPage = make_shared<DataPage>(new_batch);
+        this->hyper_log_log->update(newDataPage);
+    }
 
     shared_ptr<OperatorResponse> externalEvent(string parameter) override
     {
@@ -123,6 +161,15 @@ public:
         auto response = make_shared<OperatorResponse>();
         response->addOperatorId(this->operatorId,OperatorResponse::MIGRATION);
 
+
+        long tupleSize = 0;
+        if (this->input_schema != NULL) {
+            for (auto field : this->input_schema->fields()) {
+                tupleSize += field->type()->byte_width();
+            }
+        }
+        int tupleCount = this->hyper_log_log->getEstimation();
+        response->setMigrationDataSize(tupleCount * tupleSize);
         operatorMigration = true;
         return response;
     }
@@ -187,6 +234,9 @@ public:
         this->driverContext = driverContext;
 
         this->interTaskEvent = make_shared<SimpleEvent>();
+
+        this->hyper_log_log = make_shared<HyperLogLog>();
+
         setupAggregations();
 
     }
@@ -230,11 +280,11 @@ public:
                         this->driverContext->savePagesForInterTaskMission(this->operatorId,{DataPage::getEndPage()});
                     return;
                 }
-                else {
 
-                    this->input_schema = this->inputPage->get()->schema();
-                    thread(GenerateAgg, this).detach();
-                }
+
+                this->input_schema = this->inputPage->get()->schema();
+                thread(GenerateAgg, this).detach();
+                this->estimateGroupCount(input);
             }
 
             if(this->inputPage->isEndPage()) {
@@ -243,6 +293,7 @@ public:
             }
             bool ok;
             do{
+                this->estimateGroupCount(input);
                ok = this->transfer->givePage(this->inputPage);
             }
             while (!ok);

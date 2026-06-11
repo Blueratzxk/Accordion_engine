@@ -132,8 +132,7 @@ public:
                 continue;
             auto temp = partitions[index]->get()->getChunkedArrayVector();
             auto tempTable = arrow::Table::Make(inputSchema,temp,temp[0]->length());
-            auto batch = tempTable->CombineChunksToBatch().ValueOrDie();
-            partitionToBatch[index] = arrow::Table::FromRecordBatches({batch}).ValueOrDie();
+            partitionToBatch[index] = tempTable;
         }
 
         return partitionToBatch;

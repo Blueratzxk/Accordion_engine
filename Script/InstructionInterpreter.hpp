@@ -65,6 +65,7 @@ class InstructionInterpreter
         funcMap.insert(make_pair("DRAIN_NODE", &InstructionInterpreter::DRAIN_NODE));
 
         funcMap.insert(make_pair("MOVE_BUFFER", &InstructionInterpreter::MOVE_BUFFER));
+        funcMap.insert(make_pair("ABORT_AND_START_QUERY", &InstructionInterpreter::ABORT_AND_START_QUERY));
 
 
     }
@@ -124,6 +125,21 @@ class InstructionInterpreter
         return true;
     }
     bool START_QUERY(Instruction instruction)
+    {
+        vector<string> parameters = instruction.getParameters();
+        if(parameters.size() != 1)
+        {
+            spdlog::error("Start_Query Instruction only need one parameter.");
+            return false;
+        }
+        else
+        {
+            spdlog::debug("Query "+parameters[0]+" start!");
+            return true;
+        }
+    }
+
+    bool ABORT_AND_START_QUERY(Instruction instruction)
     {
         vector<string> parameters = instruction.getParameters();
         if(parameters.size() != 1)

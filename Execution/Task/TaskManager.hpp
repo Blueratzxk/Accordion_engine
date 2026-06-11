@@ -127,10 +127,11 @@ public:
             string sourceIp = condition->getMigratedOperators().getIP();
             string sourcePort = condition->getMigratedOperators().getPort();
             string preTaskId = condition->getMigratedOperators().getTaskId();
-            string parameters = condition->getParameters();
+
 
             int bufferId = 0;
             set<string> targetOperatorIds;
+            map<string,vector<string>> targetOperatorIds_Parameters;
             set<string> operatorsNeedTransferService;
             operatorsNeedTransferService = condition->getMigratedOperators().getOperatorsNeedInterTaskExchange();
             //auto idmaps = condition->getMigratedOperators().getOperator_Type_Id_Map();
@@ -140,15 +141,18 @@ public:
             for(auto op : operatorsNeedTransferService)
             {
                 auto ids = sidewayPreparationResponse->getOperatorIdsNeedMigrationByOperatorType(op);
+                auto ids_paras = sidewayPreparationResponse->getOperatorIdsParametersNeedMigrationByOperatorType(op);
                 targetOperatorIds.insert(ids.begin(),ids.end());
+                targetOperatorIds_Parameters.insert(ids_paras.begin(),ids_paras.end());
+
             }
 
 
             for(auto target : targetOperatorIds) {
                 string trueSourceId = preTaskId+"$"+target;
-                InterTaskSourceDescriptor interTaskSourceDescriptor(sourceIp,sourcePort,trueSourceId, to_string(bufferId),target);
+                InterTaskSourceDescriptor interTaskSourceDescriptor(sourceIp,sourcePort,trueSourceId, to_string(bufferId),target,targetOperatorIds_Parameters[target]);
 
-                auto mission = make_shared<InterTaskMissionDescriptor>(InterTaskMissionDescriptor::INTERTASK_EXCHANGE_SERVICE,parameters,
+                auto mission = make_shared<InterTaskMissionDescriptor>(InterTaskMissionDescriptor::INTERTASK_EXCHANGE_SERVICE,condition->getExtraConditions(),
                                                                        interTaskSourceDescriptor);
 
                 this->createInterTaskMission(taskId,*mission);
@@ -290,7 +294,7 @@ public:
         if(interTaskMissionDescriptor.getMissionType() == InterTaskMissionDescriptor::OPERATOR_MIGRATION) {
 
             re = this->queryContext->prepareInterTaskDataByComponentId(taskId,
-                                                                       interTaskMissionDescriptor.getSourceTypes(),sidewayPreparationResponse,interTaskMissionDescriptor.getParameters());
+                                                                       interTaskMissionDescriptor.getSourceTypes(),sidewayPreparationResponse,interTaskMissionDescriptor.getExtraConditions().getExtraConditionName());
         }
         else if(interTaskMissionDescriptor.getMissionType() == InterTaskMissionDescriptor::INTERTASK_EXCHANGE_SERVICE) {
             this->queryContext->releaseRemoteInterTaskDataFetcher(taskId.ToString(),
@@ -298,7 +302,8 @@ public:
                                                                   interTaskMissionDescriptor.getInterTaskSourceDescriptor().getInterSource_ip(),
                                                                   interTaskMissionDescriptor.getInterTaskSourceDescriptor().getInterSource_port(),
                                                                   interTaskMissionDescriptor.getInterTaskSourceDescriptor().getInterSourceId(),
-                                                                  interTaskMissionDescriptor.getInterTaskSourceDescriptor().getBufferId());
+                                                                  interTaskMissionDescriptor.getInterTaskSourceDescriptor().getBufferId(),
+                                                                  interTaskMissionDescriptor.getExtraConditions().getExtraParameters());
         }
         string message = "No problem!";
         if(re == false)

@@ -64,7 +64,6 @@ class LookupJoinOperator :public Operator{
 
     bool operatorMigration = false;
 
-
 public:
 
 
@@ -104,8 +103,6 @@ public:
             this->probe = this->joinProbeFactory->createJoinProbe(this->inputPage);
             inputPageCounter++;
 
-
-
         } else {
 
             this->inputPage = input;
@@ -128,6 +125,8 @@ public:
         auto buildComponents = provider->getBuildComponents();
         vector<shared_ptr<DataPage>> pagesToUpload;
 
+
+
         int tupleCount = 0;
 
         for(auto com : buildComponents)
@@ -137,17 +136,34 @@ public:
                 pagesToUpload.push_back(page);
                 tupleCount += page->getElementsCount();
             }
+
         }
         spdlog::info("LookupJoinOperator !#@!#@!@@!#!##@!!@##@!#@!#!#@!222222");
+        long totalDataSize = 0;
+        for (auto page : pagesToUpload) {
+
+            auto fields = page->get()->schema()->fields();
+            long tupleSize = 0;
+            for (auto field : fields)
+                tupleSize += field->type()->byte_width();
+            totalDataSize += (tupleSize * page->getElementsCount());
+
+        }
+
         this->driverContext->savePagesForInterTaskMission(this->buildOperatorId,pagesToUpload);
         this->driverContext->savePagesForInterTaskMission(this->buildOperatorId,{DataPage::getEndPage()});
+
+
+
 
         this->driverContext->reportExternalUploadTuples(this->operatorId, tupleCount);
 
         spdlog::info("LookupJoinOperator !#@!#@!@@!#!##@!!@##@!#@!#!#@!33333");
         shared_ptr<OperatorResponse> response = make_shared<OperatorResponse>();
+        response->addOperatorId_Parameters(this->buildOperatorId,{"HASH_DATA","TABLE_DATA"});
         response->addOperatorId(this->buildOperatorId,OperatorResponse::MIGRATION);
         response->addOperatorId(this->buildSideRemoteSourceOperatorId,OperatorResponse::CLOSE);
+        response->setMigrationDataSize(totalDataSize);
         return response;
     }
 

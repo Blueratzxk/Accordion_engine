@@ -47,6 +47,8 @@ public:
     void addQuery(string queryId)
     {
         lock.lock();
+
+
         if(queryLogs.count(queryId) == 0) {
             queryLogs[queryId] = make_shared<ofstream>();
             queryLogs[queryId]->open(dirName+"/"+queryId+"_Data");
@@ -57,9 +59,9 @@ public:
             thread(ScriptQueryMonitor::scriptMonitor,this).detach();
             this->monitorOn = true;
         }
-
         lock.unlock();
     }
+
     bool hasQueries()
     {
         bool yes = false;

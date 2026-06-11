@@ -50,6 +50,20 @@ public:
 
     }
 
+    void addPage(std::shared_ptr<arrow::Table> table)
+    {
+        if(table->num_rows() == 0)
+            return;
+
+        for(int i = 0 ; i < this->channels.size() ; i++)
+        {
+            for (auto chunk : table->column(i)->chunks())
+                this->channels[i].addChunk(chunk);
+        }
+        this->positionCount += table->num_rows();
+
+    }
+
     int getPositionCount()
     {
         return this->positionCount;

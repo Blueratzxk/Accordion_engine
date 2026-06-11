@@ -8,7 +8,7 @@
 #include <atomic>
 //#include "../../common.h"
 #include "OutputBuffer.hpp"
-#include "ClientBuffer.hpp"
+#include "BlockClientBuffer.hpp"
 #include "OutputBufferSchema.hpp"
 #include "tbb/concurrent_map.h"
 
@@ -18,7 +18,7 @@ class InterTaskSimpleOutputBuffer: public OutputBuffer
     atomic<int> pageNumsLimit = 1;
     int maxPageNumsLimit = 1000;
     shared_ptr<OutputBufferSchema> bufferSchema = OutputBufferSchema::createInitialEmptyOutputBufferSchema(OutputBufferSchema::BufferType::SIMPLE);
-    shared_ptr<ClientBuffer> oneBuffer = make_shared<ClientBuffer>("0");
+    shared_ptr<BlockClientBuffer> oneBuffer = make_shared<BlockClientBuffer>("0");
 
 
     atomic<bool> endPageFounded = false;
@@ -48,6 +48,8 @@ class InterTaskSimpleOutputBuffer: public OutputBuffer
 
     mutex timelock;
 
+    std::deque<std::vector<std::shared_ptr<DataPage>>> groupedPages;
+
 
 public:
 
@@ -66,7 +68,45 @@ public:
         return "SimpleOutputBuffer";
     }
 
+    std::deque<std::vector<std::shared_ptr<DataPage>>>
+    GroupByAdjacentSchema(
+        const std::vector<std::shared_ptr<DataPage>>& pages) {
 
+        std::deque<std::vector<std::shared_ptr<DataPage>>> result;
+
+        if (pages.empty()) {
+            return result;
+        }
+
+        if (pages[0]->isEndPage()) {
+            result.push_front({pages[0]});
+            return result;
+        }
+        auto current_schema = pages[0]->get()->schema();
+        std::vector<std::shared_ptr<DataPage>> group;
+        group.reserve(1024);
+
+        for (const auto& page : pages) {
+
+            auto schema = page->get()->schema();
+
+            // schema变化 -> flush上一组
+            if (!schema->Equals(*current_schema)) {
+                result.push_front(std::move(group));
+                group.clear();
+                current_schema = schema;
+            }
+
+            group.push_back(page);
+        }
+
+        // flush最后一组
+        if (!group.empty()) {
+            result.push_front(std::move(group));
+        }
+
+        return result;
+    }
 
     vector<shared_ptr<DataPage>> getPages(string bufferId,long token) {
 
@@ -121,7 +161,8 @@ public:
             }
         }
 
-        result = this->oneBuffer->getPages(pageNums);
+
+        result = this->oneBuffer->getPages();
 
         for(auto re :result) {
             this->remainingTuples -= re->getElementsCount();
@@ -138,6 +179,83 @@ public:
 
     }
 
+    vector<shared_ptr<DataPage>> getPagesBySchema(string bufferId,long token) {
+
+        vector<shared_ptr<DataPage>> result;
+
+
+        if(this->bufferIdToEndPage.count(bufferId) == 0)
+            this->bufferIdToEndPage[bufferId] = false;
+
+        if (this->endPageFounded) {
+            //  this->buffers[bufferId]->enqueuePages({this->EndPageAddr});
+
+            if(this->bufferIdToEndPage.count(bufferId) > 0) {
+                if(bufferIdToEndPage[bufferId] == false) {
+                    this->oneBuffer->enqueuePages({DataPage::getEndPage()});
+                    bufferIdToEndPage[bufferId] = true;
+                }
+                else
+                {
+                    this->oneBuffer->enqueuePages({DataPage::getEndPage()});
+                }
+            }
+
+        }
+        else
+        {
+            if(this->bufferIdToEndPage.count(bufferId) > 0)//we don't find end page,but the buffer is stopped,this is an early stop
+            {
+                if(this->bufferIdToEndPage[bufferId] == true) {
+                    result.push_back(DataPage::getEndPage());
+                    return result;
+                }
+
+            }
+        }
+
+        if (this->groupedPages.empty()) {
+            result = this->oneBuffer->getPages();
+            this->groupedPages = this->GroupByAdjacentSchema(result);
+        }
+
+        spdlog::warn("+++++++");
+        for (auto group : this->groupedPages) {
+            spdlog::warn("--------");
+            string schemas;
+            int elememts = 0;
+            for (auto page : group) {
+                elememts += page->getElementsCount();
+            }
+            if (!group.empty() && !group[0]->isEndPage()) {
+                schemas += group[0]->get()->schema()->ToString();
+                schemas+="|";
+                schemas+=to_string(group.size());
+                schemas+="|";
+                schemas += to_string(elememts);
+                spdlog::warn(schemas);
+            }
+            spdlog::warn("--------");
+        }
+        spdlog::warn("+++++++++");
+
+        result = this->groupedPages.back();
+        this->groupedPages.pop_back();
+
+        for(auto re :result) {
+            this->remainingTuples -= re->getElementsCount();
+
+        }
+
+        //spdlog::info("All:"+ to_string(this->oneBuffer->getPageNums())+"Request:"+to_string(pageNums)+" Get:"+ to_string(result.size()));
+
+        tuneBufferCapacity("consumer");
+        this->traffic += result.size();
+        this->resetBufferSizeByTrafficRate();
+
+        return result;
+
+    }
     void resetBufferSizeByTrafficRate()
     {
         timelock.lock();
@@ -222,8 +340,9 @@ public:
     void enqueue(vector<shared_ptr<DataPage>> pages) {
 
 
-        vector<shared_ptr<ClientBuffer>> client_buffers;
+        vector<shared_ptr<BlockClientBuffer>> client_buffers;
 
+        vector<shared_ptr<DataPage>> allPagesToSend;
         for(int i = 0 ; i < pages.size() ; i++)
         {
 
@@ -231,17 +350,18 @@ public:
                 this->endPageNum++;
 
                 this->endPageFounded = true;
-                this->oneBuffer->enqueuePages({pages[i]});
+                allPagesToSend.push_back(pages[i]);
 
             }
             else
             {
-                this->oneBuffer->enqueuePages({pages[i]});
+                allPagesToSend.push_back(pages[i]);
+
                 this->remainingTuples += pages[i]->getElementsCount();
 
             }
         }
-
+        this->oneBuffer->enqueuePages(allPagesToSend);
 
 
         tuneBufferCapacity("producer");

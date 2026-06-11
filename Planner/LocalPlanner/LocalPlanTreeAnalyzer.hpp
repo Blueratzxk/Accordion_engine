@@ -234,7 +234,7 @@ public:
 
         bool buildSidewayDataSync = false;
         if(condition != NULL && condition->getConditionType() == TaskExecutionCondition::OPERATOR_MIGRATION) {
-            if(condition->getParameters() == "DIRECT_HASHTABLE_INSTALL")
+            if(condition->getExtraConditions().getExtraConditionName() == "DIRECT_HASHTABLE_INSTALL")
                 buildSidewayDataSync = true;
         }
 

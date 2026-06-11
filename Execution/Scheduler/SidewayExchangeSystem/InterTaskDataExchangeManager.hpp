@@ -16,6 +16,7 @@ class InterTaskDataExchangeManager:public enable_shared_from_this<InterTaskDataE
 
     map<string, std::shared_ptr<InterTaskRPCClient>> interTaskRpcClients;
     map<string, shared_ptr<InterTaskSimpleOutputBuffer>> pageCaches;
+    mutex rpcLock;
 public:
     InterTaskDataExchangeManager() {
         savePages("test",{});
@@ -38,7 +39,7 @@ public:
         if (!pageCaches.contains(componentId))
             return {};
 
-        auto re = pageCaches[componentId]->getPages(bufferId, 0, pageNums);
+        auto re = pageCaches[componentId]->getPagesBySchema(bufferId, 0);
 
         spdlog::info("Take page" + componentId+" ok!");
         for(auto rePage : re) {
@@ -54,7 +55,15 @@ public:
     vector<shared_ptr<DataPage>> requestRemoteInterTaskPages(string taskId,string ip,string port,string sourceId, string bufferId) {
 
         TaskId id;
-        interTaskRpcClients[sourceId] = make_shared<InterTaskRPCClient>();
+        rpcLock.lock();
+        if (!interTaskRpcClients.contains(sourceId))
+            interTaskRpcClients[sourceId] = make_shared<InterTaskRPCClient>();
+        else {
+            rpcLock.unlock();
+            return {};
+        }
+        rpcLock.unlock();
+
         interTaskRpcClients[sourceId]->addInterTaskDataExchangePath(make_shared<InterTaskSplit>(id.StringToObject(taskId),sourceId,
                                                                                                    make_shared<Location>(ip,"9081",bufferId)));
 

@@ -27,16 +27,19 @@ public:
         return this->runtimeConfigs;
     }
 
+    void cleanQueryId() {
+        this->queryId = "";
+        this->queryName = "";
+    }
+
     bool setQueryId(string id)
     {
         if(this->queryId == "") {
             this->queryId = id;
             return true;
         }
-        else {
-            spdlog::error("Trying to start multi-queries in a script.");
-            return false;
-        }
+        spdlog::error("Trying to start multi-queries in a script.");
+        return false;
     }
 
     bool getQueryId(string &id)
@@ -56,10 +59,8 @@ public:
             this->queryName = name;
             return true;
         }
-        else {
-            spdlog::error("Trying to start multi-queries in a script.");
-            return false;
-        }
+        spdlog::error("Trying to start multi-queries in a script.");
+        return false;
     }
 
     bool getQueryName(string &name)

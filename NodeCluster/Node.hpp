@@ -22,6 +22,74 @@ public:
         DRAIN
     };
 
+
+class netWindow
+{
+
+    int windowLength = 0;
+
+    vector<double> recWindow;
+    vector<double> transWindow;
+    int index = 0;
+    double avgRec = 0;
+    double avgTrans = 0;
+    mutex lock;
+
+public:
+    netWindow(int windowLength)
+    {
+        this->windowLength = windowLength;
+    }
+
+    void put(double rec, double trans)
+    {
+
+        if(index%windowLength >= recWindow.size())
+        {
+            recWindow.push_back(rec);
+            transWindow.push_back(trans);
+            index++;
+            index = index%windowLength;
+        }
+        else
+        {
+            recWindow[index] = rec;
+            transWindow[index] = trans;
+            index++;
+            index = index%windowLength;
+        }
+        avgRec = computeAvgRec();
+        avgTrans = computeAvgTrans();
+
+    }
+    double getAvgRec(){return this->avgRec;}
+    double getAvgTrans(){return this->avgTrans;}
+
+    double computeAvgRec()
+    {
+        double all = 0;
+        for(auto n : this->recWindow)
+        {
+            all +=n;
+        }
+        return all / this->recWindow.size();
+
+    }
+
+    double computeAvgTrans()
+    {
+        double all = 0;
+        for(auto n : this->transWindow)
+        {
+            all +=n;
+        }
+        return all / this->transWindow.size();
+
+    }
+
+};
+
+
 private:
     string nodeIdentifier;
 
@@ -40,6 +108,7 @@ private:
     bool hasStorage = false;
 
     set<string> extensions;
+    shared_ptr<netWindow> netWindows;
 
     int nodeId;
 
@@ -50,6 +119,7 @@ public:
         this->hasStorage = hasStorage;
         this->nodeId = nodeId;
         this->nodeStatus = ALIVE;
+        this->netWindows = make_shared<netWindow>(10);
     }
 
     int getNodeId()
@@ -133,6 +203,27 @@ public:
     void updateNetRecRate(double val){this->netRecRate = val;}
     void updateNetTransRate(double val) {this->netTransRate = val;}
 
+    void updateNetRecAndNetTransRate(double rec,double trans) {
+        this->netRecRate = rec;
+        this->netTransRate = trans;
+        this->netWindows->put(rec,trans);
+    }
+
+    double getAvgRemainingNetRec() {
+
+        auto re = this->getMaxNetSpeed()-this->netWindows->getAvgRec();
+        if(re < 0)
+            return 0;
+        return re;
+    }
+    double getAvgRemainingNetTrans() {
+
+        auto re = this->getMaxNetSpeed()-this->netWindows->getAvgTrans();
+        if(re < 0)
+            return 0;
+        return re;
+    }
+
     void setNetSpeed(int speed)
     {
         this->netSpeed = speed;
@@ -144,7 +235,7 @@ public:
 
     float getMaxNetSpeed()
     {
-        return ((float)this->netSpeed)*1.024/8*1000;
+        return ((float)this->netSpeed)*1.024/8*1000; // KB/s
     }
     float difference()
     {

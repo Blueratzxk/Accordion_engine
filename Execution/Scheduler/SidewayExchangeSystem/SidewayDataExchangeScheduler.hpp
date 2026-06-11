@@ -5,7 +5,7 @@
 #ifndef OLVP_SIDEWAYDATAEXCHANGESCHEDULER_HPP
 #define OLVP_SIDEWAYDATAEXCHANGESCHEDULER_HPP
 
-
+#include "ExtraConditions.hpp"
 class SidewayDataExchangeScheduler : enable_shared_from_this<SidewayDataExchangeScheduler>
 {
 
@@ -212,9 +212,12 @@ private:
     set<string> newTaskIdStrs;
     set<string> originTaskIdStrs;
 
+    double estimatedMigrationTime = 0.0;
+    double migrationTimeLimit = 0.0;
+
 public:
 
-    SidewayDataExchangeScheduler(MissionType type,shared_ptr<SqlStageExecution> sqlStageExecution,shared_ptr<StageScheduler> stageScheduler,shared_ptr<StageLinkage> stageLinkage,vector<int> taskIds)
+    SidewayDataExchangeScheduler(MissionType type,shared_ptr<SqlStageExecution> sqlStageExecution,shared_ptr<StageScheduler> stageScheduler,shared_ptr<StageLinkage> stageLinkage,vector<int> taskIds,double timeLimit)
     {
         this->missionType = type;
         this->sqlStageExecution = sqlStageExecution;
@@ -222,18 +225,22 @@ public:
         this->stageLinkage = stageLinkage;
         this->taskIds = taskIds;
         this->sidewayPreparationResponse = make_shared<SidewayPreparationResponse>();
+        this->migrationTimeLimit = timeLimit;
     }
 
-    SidewayDataExchangeScheduler(MissionType type,string nodeUrl)
+    SidewayDataExchangeScheduler(MissionType type,string nodeUrl,double timeLimit)
     {
         this->missionType = type;
         this->nodeDrainingMissionHelper_nodeUrl = nodeUrl;
         this->sidewayPreparationResponse = make_shared<SidewayPreparationResponse>();
+        this->migrationTimeLimit = timeLimit;
     }
 
     MissionType getMissionType(){
         return this->missionType;
     }
+    double getEstimatedMigrationTime(){return this->estimatedMigrationTime;}
+
     string getNodeDrainingMissionHelper_nodeUrl()
     {
         return this->nodeDrainingMissionHelper_nodeUrl;
@@ -306,15 +313,15 @@ public:
         if(opsNeededToMigrate.empty())
             return false;
 
-        string parameters;
+        string extraCondition;
         if(opsNeededToMigrate.contains("LookupJoinOperator"))
-            parameters = "DIRECT_HASHTABLE_INSTALL";
+            extraCondition = "DIRECT_HASHTABLE_INSTALL";
         if(this->missionType == OPERATOR_MIGRATION_DIRECT_HASH_TABLE_INSTALL)
-            parameters = "DIRECT_HASHTABLE_INSTALL";
+            extraCondition = "DIRECT_HASHTABLE_INSTALL";
 
 
 
-        auto result = sqlStageExecution->taskMigrationPreparation(taskId,opsNeededToMigrate,parameters);
+        auto result = sqlStageExecution->taskMigrationPreparation(taskId,opsNeededToMigrate,ExtraConditions(extraCondition));
         if(result == NULL) {
             spdlog::info("Migrate operator preparation: rejected!");
             return false;
@@ -324,6 +331,19 @@ public:
         this->sidewayPreparationResponse = result->getSidewayPreparationResponse();
         if(this->sidewayPreparationResponse == NULL)
             this->sidewayPreparationResponse = make_shared<SidewayPreparationResponse>();
+
+        long migrationTotalBytes = this->sidewayPreparationResponse->getTotalMigrationBytes();
+        auto node = this->sqlStageExecution->getNodeByTaskId(this->sqlStageExecution->findMaxGenerationTask(taskId));
+        auto targetTrans = node->getAvgRemainingNetTrans();
+        targetTrans *= 1000;
+        this->estimatedMigrationTime = (double)(migrationTotalBytes) / targetTrans;
+        spdlog::info("MigrationBytes is "+to_string(migrationTotalBytes) +". Current net trans is "+to_string(targetTrans) + " Bytes/s");
+        if (this->migrationTimeLimit > 0 && this->estimatedMigrationTime > this->migrationTimeLimit/1000) {
+            spdlog::warn("Task Operator Migration rejected ! Estimated:"+to_string(this->estimatedMigrationTime)+" Remaining:"+to_string(this->migrationTimeLimit/1000));
+            return false;
+        }
+
+        spdlog::warn(to_string(this->estimatedMigrationTime) +"--"+ to_string(this->migrationTimeLimit));
 
         return result->getStatus();
     }
@@ -340,13 +360,13 @@ public:
         if(this->sidewayPreparationResponse->hasNotBuildCompleteState())
             return closeOriginAndCreateNewOne(taskId);
 
-        string parameters;
+        string extraCondition;
         if(this->missionType == OPERATOR_MIGRATION_DIRECT_HASH_TABLE_INSTALL) {
-            parameters = "DIRECT_HASHTABLE_INSTALL";
+            extraCondition = "DIRECT_HASHTABLE_INSTALL";
             needExchangeService.insert("LookupJoinOperator");
         }
         if(opsNeededToMigrate.contains("LookupJoinOperator")) {
-            parameters = "DIRECT_HASHTABLE_INSTALL";
+            extraCondition = "DIRECT_HASHTABLE_INSTALL";
             needExchangeService.insert("LookupJoinOperator");
         }
 
@@ -373,7 +393,7 @@ public:
 
 
         ScheduleResult result = (static_pointer_cast<NormalStageScheduler>(stageScheduler))->addConcurrentForInterTaskMission(
-                make_shared<TaskExecutionCondition>(TaskExecutionCondition::OPERATOR_MIGRATION,parameters,migratedOperators));
+                make_shared<TaskExecutionCondition>(TaskExecutionCondition::OPERATOR_MIGRATION,ExtraConditions(extraCondition),migratedOperators));
         vector<shared_ptr<HttpRemoteTask>> newTasks = result.getNewTasks();
 
         for(auto newTask : newTasks)
@@ -487,7 +507,7 @@ public:
             if(this->opsNeedInterTaskExchangeService.contains(op))
                 needExchangeService.insert(op);
 
-        string parameters = "";
+        string extraCondition = "";
 
 
         if(this->sidewayPreparationResponse->hasNotBuildCompleteState()) {
@@ -497,7 +517,7 @@ public:
         }
 
         if(!this->sidewayPreparationResponse->hasNotBuildCompleteState() && opsNeededToMigrate.contains("LookupJoinOperator")) {
-            parameters = "DIRECT_HASHTABLE_INSTALL";
+            extraCondition = "DIRECT_HASHTABLE_INSTALL";
             needExchangeService.insert("LookupJoinOperator");
         }
 
@@ -522,7 +542,7 @@ public:
         }
 
         ScheduleResult result = (static_pointer_cast<NormalStageScheduler>(stageScheduler))->cloneTask(taskId,
-                make_shared<TaskExecutionCondition>(TaskExecutionCondition::OPERATOR_MIGRATION,parameters,migratedOperators));
+                make_shared<TaskExecutionCondition>(TaskExecutionCondition::OPERATOR_MIGRATION,ExtraConditions(extraCondition),migratedOperators));
         vector<shared_ptr<HttpRemoteTask>> newTasks = result.getNewTasks();
 
 
@@ -568,9 +588,16 @@ public:
         if(oldTaskPtr == NULL)
             return false;
 
+        shared_ptr<ClusterNode> cnode = sqlStageExecution->getNodeByTaskId(oldTaskPtr);
+        auto totalBytes = oldTaskPtr->getTaskInfo()->getTaskInfoDescriptor()->getTaskThroughputInfo().getTotalTuplesBytes();
+        auto targetTrans = cnode->getAvgRemainingNetTrans();
+        targetTrans *= 1000;
+        this->estimatedMigrationTime = (double)totalBytes/targetTrans;
+        spdlog::info("MigrationBytes is "+to_string(totalBytes) +". Current net trans is "+to_string(targetTrans) + " Bytes/s");
+
         TaskId taskIdTemp;
         MigratedBufferAddress migratedBufferAddress({taskIdTemp.Serialize(*oldTaskPtr->getTaskId())},{oldTaskPtr->getIP()},{"9081"},{"-1"});
-        shared_ptr<TaskExecutionCondition> condition = make_shared<TaskExecutionCondition>(TaskExecutionCondition::BUFFER_MIGRATION,"",migratedBufferAddress);
+        shared_ptr<TaskExecutionCondition> condition = make_shared<TaskExecutionCondition>(TaskExecutionCondition::BUFFER_MIGRATION,ExtraConditions(""),migratedBufferAddress);
 
 
         if(this->stageScheduler->getSchedulerType() != "NormalStageScheduler") {
@@ -633,7 +660,7 @@ public:
 
         }
 
-        shared_ptr<TaskExecutionCondition> condition = make_shared<TaskExecutionCondition>(TaskExecutionCondition::BUFFER_MIGRATION,"",migratedBufferAddress);
+        shared_ptr<TaskExecutionCondition> condition = make_shared<TaskExecutionCondition>(TaskExecutionCondition::BUFFER_MIGRATION,ExtraConditions(""),migratedBufferAddress);
 
 
         vector<shared_ptr<HttpRemoteTask>> newTasks;

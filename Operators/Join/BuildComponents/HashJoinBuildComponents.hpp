@@ -351,6 +351,34 @@ public:
         return pages;
     }
 
+    vector<shared_ptr<DataPage>> ToHashDataPages()
+    {
+        vector<shared_ptr<DataPage>> pages;
+
+        auto re = partitionToHashKeyArray_TransformToRecordBatch();
+        pages.push_back(re);
+
+        re = partitionToPositionLinks_TransformToRecordBatch();
+        pages.push_back(re);
+
+        re = partitionToPositionToHashes_TransformToRecordBatch();
+        pages.push_back(re);
+
+        return pages;
+    }
+
+    vector<shared_ptr<DataPage>> ToBuildDataPages()
+    {
+        vector<shared_ptr<DataPage>> pages;
+
+        vector<shared_ptr<DataPage>> res;
+        res = tables_TransformToRecordBatch();
+        for(auto re : res)
+            pages.push_back(re);
+
+        return pages;
+    }
+
 
     void fromDataPages(vector<shared_ptr<DataPage>> pages)
     {

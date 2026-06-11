@@ -102,7 +102,7 @@ bool QueryContext::prepareInterTaskDataByComponentId(TaskId taskId,set<string> s
                    preparationResponse->addSourceResponse(op->getOperatorType(),response);
 
 
-                    if(op->getOperatorType() == "lookupJoinOperator")
+                    if(op->getOperatorType() == "LookupJoinOperator")
                         lookupJoinOperatorPrepared = true;
                 }
             }

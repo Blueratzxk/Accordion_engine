@@ -82,7 +82,7 @@ public:
         for(auto exe : this->stageExeSchedulers)
             stageExecutions.push_back(exe.getStageExecution());
 
-        this->sidewayExchangeSystem = make_shared<SidewayExchangeSystem>(this->stageExeSchedulers,this->scheduleLock);
+        this->sidewayExchangeSystem = make_shared<SidewayExchangeSystem>(this->stageExeSchedulers,this->stageExecutionsMap,this->scheduleLock);
 
         this->stageProcessingTimeCollector = make_shared<StageProcessingTimeCollector>(stageExecutions);
         this->stageProcessingTimeCollector->start();
@@ -587,7 +587,7 @@ public:
 
                 if (executions[i].getStageExecution()->isStageScalable()) {
 
-                    shared_ptr<TaskExecutionCondition> condition = make_shared<TaskExecutionCondition>(TaskExecutionCondition::HETERO_TASK_SCHEDULE,"","GPU");
+                    shared_ptr<TaskExecutionCondition> condition = make_shared<TaskExecutionCondition>(TaskExecutionCondition::HETERO_TASK_SCHEDULE,ExtraConditions("",{}),"GPU");
 
                     auto result = (static_pointer_cast<NormalStageScheduler>(executions[i].getStageScheduler()))->addHeteroTask("GPU",condition);
                     if(result.getNewTasks().empty()) {
@@ -982,7 +982,7 @@ public:
         }
         else if(para == "buffer")
         {
-            scheduler->sidewayExchangeSystem->submitSidewayExchangeTask(3,{0},SidewayDataExchangeScheduler::BUFFER_MIGRATION,SidewayDataExchangeScheduler::MANY_TO_MANY,3);
+            scheduler->sidewayExchangeSystem->submitSidewayExchangeTask(3,{0},SidewayDataExchangeScheduler::BUFFER_MIGRATION,SidewayDataExchangeScheduler::ONE_TO_ONE,0);
             return true;
         }
 
@@ -994,6 +994,8 @@ public:
         if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
             return false;
 
+        auto tableScanStage = scheduler->findRootTableScanStageForStage(to_string(stageId));
+
         scheduler->sidewayExchangeSystem->submitTaskMigrationMission(stageId,taskIds);
         return true;
     }
@@ -1002,6 +1004,8 @@ public:
     {
         if(scheduler->stateMachine->isFinished() || !scheduler->canIQRS())
             return false;
+
+        auto tableScanStage = scheduler->findRootTableScanStageForStage(to_string(stageId));
 
         if(targetTaskNums <= 0)
             scheduler->sidewayExchangeSystem->submitBufferMigrationMission(stageId,taskIds,SidewayDataExchangeScheduler::ONE_TO_ONE,-1);
@@ -1026,7 +1030,7 @@ public:
                                                        executions[i].getStageExecution(),
                                                        executions[i].getStageScheduler(),
                                                        executions[i].getStageLinkage(),
-                                                       {taskId});
+                                                       {taskId},-1);
                 scheduler.schedule();
             }
 
