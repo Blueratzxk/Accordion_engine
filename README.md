@@ -48,6 +48,10 @@ The first prototype SQL query engine featuring Intra-Query Runtime Elasticity (I
 
 # New Features!
 
+* *IQRE-Agent**
+
+![image](https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/IQRE-Agent.gif?raw=true)  
+
 * **Runtime GPU extension**: scheduling GPU resources at runtime. 
 
 ![image](https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/GPU.gif?raw=true)  
