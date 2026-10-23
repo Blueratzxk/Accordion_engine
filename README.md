@@ -48,7 +48,7 @@ The first prototype SQL query engine featuring Intra-Query Runtime Elasticity (I
 
 # New Features!
 
-* *IQRE-Agent**
+* **IQRE-Agent**
 
 ![image](https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/IQRE-Agent.gif?raw=true)  
 
