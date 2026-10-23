@@ -3,34 +3,46 @@
 <img src="https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/icon.png?raw=true" width="20%" />
 
 # Accordion: SQL for Freedom
-**Intra-Query Runtime Elasticity for Cloud-Native Data Analysis (SIGMOD 2025)**: Core IQRE design and implementation  
-Paper Access: https://arxiv.org/pdf/2502.18184
+## Publications
 
-**Accordion: Balancing Performance and Cost in Cloud-Native Data Analysis with Intra-Query Runtime Elasticity (VLDB 2025)**: Interactive system demonstration  
-Paper Access: https://doi.org/10.14778/3750601.3750658
+**1. SIGMOD 2025 — Core IQRE Design**
+*Intra-Query Runtime Elasticity for Cloud-Native Data Analysis*  
+[Paper](https://arxiv.org/pdf/2502.18184)
 
-**Intra-Query Runtime Elasticity (VLDB Journal)**: Generalizing IQRE to heterogeneous cloud resources  
-Paper Access: https://rdcu.be/7Frhd7JT7Rja
+**2. VLDB 2025 — Interactive System Demo**
+*Accordion: Balancing Performance and Cost in Cloud-Native Data Analysis with Intra-Query Runtime Elasticity*  
+[Paper](https://doi.org/10.14778/3750601.3750658)
 
-The first IQRE (Intra-Query Runtime Elasticity) SQL query engine (prototype).
+**3. The VLDB Journal — Heterogeneous Resource Support**
+*Intra-Query Runtime Elasticity*  
+[Paper](https://rdcu.be/7Frhd7JT7Rja)
 
-* Accordion can tune the parallelism of a query at any time during its execution, and the tuning process will not affect the query execution.
-* The auto-tuner facilitates parallelism tuning. It can guide users to tune DOP manually or automatically tune DOP for users.
-* Accordion supports IQRE over heterogeneous compute resources (CPU, GPU, Preemptible resources).
-* Accordion can be used to solve the problem of cost-performance tradeoffs when analyzing data on the cloud. 
-* It can also be used to build a fully serverless cloud-native database or data warehouse.
+---
 
+## Overview
 
-Accordion's Goal:
-* **Building a Unified Cloud-Native OLAP Engine with Intra-Query Runtime Elasticity.**
-* **Cloud-native data analytics in accordance with the user's mind.**
+The first prototype SQL query engine featuring Intra-Query Runtime Elasticity (IQRE).
 
+### Key Features
 
-**Here is a demo:**
+- **Runtime Elasticity:** Tune query parallelism at any time without interrupting query execution.
+- **Automatic Tuning:** Guide manual tuning or automatically adjust the degree of parallelism (DOP).
+- **Heterogeneous Resources:** Support elastic query execution across CPUs, GPUs, and preemptible resources.
+- **Cost-Performance Tradeoffs:** Balance query execution time and cloud resource costs.
 
-![image](https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/demo.gif?raw=true)  
+## Vision
 
-Click on this link to view a more detailed demo video: https://youtu.be/AaD839ZA7is
+- **Unified Engine:** Build a unified cloud-native OLAP engine with IQRE.
+- **User-Driven Analytics:** Enable cloud-native data analytics according to users' needs.
+- **Serverless Analytics:** Enable future serverless cloud-native databases and data warehouses.
+
+---
+
+## Demo
+
+![Accordion Demo](https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/demo.gif?raw=true)
+
+**[Watch the full demo video](https://youtu.be/AaD839ZA7is)**
 
 # New Features!
 
