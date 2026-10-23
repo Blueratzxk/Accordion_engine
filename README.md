@@ -3,9 +3,11 @@
 <img src="https://github.com/Blueratzxk/Accordion_engine/blob/main/imgs/icon.png?raw=true" width="20%" />
 
 # Accordion: SQL for Freedom
-**SIGMOD 2025 Research Paper Access**: https://arxiv.org/pdf/2502.18184
+**Intra-Query Runtime Elasticity for Cloud-Native Data Analysis (SIGMOD 2025)**: https://arxiv.org/pdf/2502.18184
 
-**VLDB 2025 Demo Paper Access**: https://doi.org/10.14778/3750601.3750658
+**Accordion: Balancing Performance and Cost in Cloud-Native Data Analysis with Intra-Query Runtime Elasticity (VLDB 2025)**: https://doi.org/10.14778/3750601.3750658
+
+**Intra-Query Runtime Elasticity (VLDB Journal)**: https://rdcu.be/7Frhd7JT7Rja
 
 The first IQRE (Intra-Query Runtime Elasticity) SQL query engine (prototype).
 
