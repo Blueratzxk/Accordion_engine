@@ -5,17 +5,19 @@
 # Accordion: SQL for Freedom
 ## Publications
 
-**1. SIGMOD 2025 — Core IQRE Design**
 
-Title: *Intra-Query Runtime Elasticity for Cloud-Native Data Analysis*  [Paper](https://arxiv.org/pdf/2502.18184)
+### Episode 1. SIGMOD 2025 — Core IQRE Design
 
-**2. VLDB 2025 — Interactive System Demo**
+*Intra-Query Runtime Elasticity for Cloud-Native Data Analysis* ([Paper](https://arxiv.org/pdf/2502.18184))
 
-Title: *Accordion: Balancing Performance and Cost in Cloud-Native Data Analysis with Intra-Query Runtime Elasticity*  [Paper](https://doi.org/10.14778/3750601.3750658)
+### Episode 2. VLDB 2025 — Interactive System Demo
 
-**3. The VLDB Journal — Generalizing IQRE to heterogeneous cloud resources**
+*Accordion: Balancing Performance and Cost in Cloud-Native Data Analysis with Intra-Query Runtime Elasticity* ([Paper](https://doi.org/10.14778/3750601.3750658))
 
-Title: *Intra-Query Runtime Elasticity*  [Paper](https://rdcu.be/7Frhd7JT7Rja)
+### Episode 3. The VLDB Journal — Generalizing IQRE to Heterogeneous Cloud Resources
+
+*Intra-Query Runtime Elasticity* ([Paper](https://rdcu.be/7Frhd7JT7Rja))
+
 
 ---
 
