@@ -14,7 +14,7 @@ Title: *Intra-Query Runtime Elasticity for Cloud-Native Data Analysis* ([Paper](
 
 Title: *Accordion: Balancing Performance and Cost in Cloud-Native Data Analysis with Intra-Query Runtime Elasticity* ([Paper](https://doi.org/10.14778/3750601.3750658))
 
-### Episode III: The Expansion => Generalizing IQRE to Heterogeneous Resources (The VLDB Journal)
+### Episode III: The Expansion => Heterogeneous Resources (The VLDB Journal)
 
 Title: *Intra-Query Runtime Elasticity* ([Paper](https://rdcu.be/7Frhd7JT7Rja))
 
