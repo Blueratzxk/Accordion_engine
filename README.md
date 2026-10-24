@@ -6,18 +6,17 @@
 ## Publications
 
 
-### Episode 1. Core IQRE Design (SIGMOD 2025)
+### Episode I: The Beginning => Core IQRE Design (SIGMOD 2025)
 
 Title: *Intra-Query Runtime Elasticity for Cloud-Native Data Analysis* ([Paper](https://arxiv.org/pdf/2502.18184))
 
-### Episode 2. Interactive System Demo (VLDB 2025)
+### Episode II: The Interaction => Interactive System Demo (VLDB 2025)
 
 Title: *Accordion: Balancing Performance and Cost in Cloud-Native Data Analysis with Intra-Query Runtime Elasticity* ([Paper](https://doi.org/10.14778/3750601.3750658))
 
-### Episode 3. Generalizing IQRE to Heterogeneous Resources (The VLDB Journal)
+### Episode III: The Expansion => Generalizing IQRE to Heterogeneous Resources (The VLDB Journal)
 
 Title: *Intra-Query Runtime Elasticity* ([Paper](https://rdcu.be/7Frhd7JT7Rja))
-
 
 ---
 
